@@ -4,7 +4,7 @@
 
 <h1 align="center">Nyaa Paper</h1>
 <p align="center">
-  <em>A keyboard‑first wallpaper engine frontend for Linux</em>
+  <em>~</em>
 </p>
 
 <p align="center">

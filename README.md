@@ -20,7 +20,6 @@
 - 🖥️ **Multi‑monitor support** – assign different wallpapers to each screen
 - 🎮 **GPU selection** – per‑wallpaper DRI_PRIME or NVIDIA Prime Offload
 - 📸 **Screenshot mode** – integrate with PyWAL or other colour tools
-- ⌨️ **Full keyboard control** – browse, configure, and apply entirely with the keyboard
 - 📦 **System tray** – minimise to tray and restore later
 - ⚙️ **First‑run launcher** – auto‑detects monitors, sets memory limits, and configures paths
 - 🔄 **Workshop watcher** – automatically picks up new wallpapers

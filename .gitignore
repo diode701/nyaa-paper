@@ -43,6 +43,9 @@ bin/
 .DS_Store
 
 
-yes.png
 nyaa-paper-*/
 .idea/
+####
+####
+!lib/
+!lib/*.jar

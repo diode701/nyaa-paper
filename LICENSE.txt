@@ -1,4 +1,4 @@
-Copyright (c) 2026 diode701
+Copyright (c) 2026 Muhammad Mustafa Ummair (diode701)
 Licensed under CC BY-NC 4.0
 
 

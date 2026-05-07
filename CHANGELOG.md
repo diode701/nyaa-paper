@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] — Unreleased
 
-Massive upgrade from v0.1.0. Adds wallpaper config persistence, full playlist system with video-duration detection, autostart, and a dozen parser/UI fixes.
+Massive upgrade from v0.1.1. Adds wallpaper config persistence, full playlist system with video-duration detection, autostart, and a dozen parser/UI fixes.
 
 ### Added
 

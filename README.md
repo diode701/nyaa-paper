@@ -308,7 +308,6 @@ See [CHANGELOG.md](CHANGELOG.md) for the full release history.
 - Playlist video-duration detection needs `ffprobe` installed (usually part of `ffmpeg`). Without it, the fallback interval is used
 - **Playlists** are a relatively new feature — they work but haven't been battle-tested across every corner case. Report anything weird
 - **Keyboard shortcuts** will be further refined. Some views have more coverage than others. Feedback welcome
-- **AUR package** (`nyaa-paper-bin`) will be updated to v0.2.0 shortly after release
 
 ---
 

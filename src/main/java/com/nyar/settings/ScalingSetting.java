@@ -18,7 +18,9 @@ public class ScalingSetting extends GlobalOption {
     @Override
     public Node createControl(Consumer<Setting> onChange) {
         VBox box = new VBox(5);
-        box.getChildren().add(new Label(description));
+        Label heading = new Label(description);
+        heading.setStyle("-fx-font-weight: bold; -fx-text-fill: #e0e0e0;");
+        box.getChildren().add(heading);
         ComboBox<String> combo = new ComboBox<>();
         combo.getItems().addAll(OPTIONS);
         combo.setValue(scaling);
@@ -37,4 +39,18 @@ public class ScalingSetting extends GlobalOption {
         }
         return List.of();
     }
+
+    @Override
+    public String getValueString() { return scaling; }
+
+    @Override
+    public void setValueFromString(String s) {
+        if (s != null && OPTIONS.contains(s)) scaling = s;
+    }
+
+    @Override
+    public boolean isPrePropertyFlag() {
+        return false;
+    }
+
 }

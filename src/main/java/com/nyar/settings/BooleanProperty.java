@@ -24,4 +24,12 @@ public class BooleanProperty extends CustomProperty<Boolean> {
     protected String valueToString() {
         return value ? "1" : "0";
     }
+
+    @Override
+    public String getValueString() { return valueToString(); }
+
+    @Override
+    public void setValueFromString(String s) {
+        value = "true".equalsIgnoreCase(s) || "1".equals(s);
+    }
 }

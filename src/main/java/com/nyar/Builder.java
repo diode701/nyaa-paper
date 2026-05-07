@@ -1,11 +1,14 @@
 package com.nyar;
 
 import com.nyar.config.Settings;
+import com.nyar.config.WallpaperConfigManager;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Builder {
     private List<Wppr> wallpapers;
@@ -34,6 +37,13 @@ public class Builder {
     public WpprLib build() {
         WpprLib lib = new WpprLib(activeWorkshopPath);
         lib.addAll(wallpapers);
+
+        // Clean up saved configs for wallpapers no longer subscribed
+        Set<String> activeIds = wallpapers.stream()
+                .map(Wppr::getId)
+                .collect(Collectors.toSet());
+        WallpaperConfigManager.getInstance().cleanupStale(activeIds);
+
         return lib;
     }
 

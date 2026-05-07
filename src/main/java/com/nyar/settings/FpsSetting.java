@@ -2,9 +2,11 @@ package com.nyar.settings;
 
 import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -18,7 +20,11 @@ public class FpsSetting extends GlobalOption {
 
     @Override
     public Node createControl(Consumer<Setting> onChange) {
-        HBox box = new HBox(10);
+        VBox container = new VBox(5);
+        Label heading = new Label(description);
+        heading.setStyle("-fx-font-weight: bold; -fx-text-fill: #e0e0e0;");
+
+        HBox row = new HBox(10);
         CheckBox enableCheck = new CheckBox("Limit FPS");
         enableCheck.setSelected(enabled);
 
@@ -38,15 +44,28 @@ public class FpsSetting extends GlobalOption {
             onChange.accept(this);
         });
 
-        box.getChildren().addAll(enableCheck, spinner);
-        return box;
+        row.getChildren().addAll(enableCheck, spinner);
+        container.getChildren().addAll(heading, row);
+        return container;
     }
 
     @Override
     public List<String> toCommandArgs() {
         if (enabled && fps > 0) {
-            return List.of("--fps", String.valueOf(fps)); // Integer
+            return List.of("--fps", String.valueOf(fps));
         }
         return List.of();
+    }
+
+    @Override
+    public String getValueString() { return enabled + "|" + fps; }
+
+    @Override
+    public void setValueFromString(String s) {
+        String[] parts = s.split("\\|", 2);
+        if (parts.length == 2) {
+            enabled = "true".equals(parts[0]);
+            try { fps = Integer.parseInt(parts[1]); } catch (NumberFormatException e) { fps = 30; }
+        }
     }
 }

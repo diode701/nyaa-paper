@@ -18,4 +18,16 @@ public abstract class Setting {
 
     public abstract Node createControl(Consumer<Setting> onChange);
     public abstract List<String> toCommandArgs();
+
+    public String getValueString() { return null; }
+    public void setValueFromString(String s) { /* no-op – override in subclasses that carry state */ }
+    /**
+     * Controls where this setting’s arguments appear in the command line.
+     * @return true if arguments go <b>before</b> --set-property (and other per‑property flags),
+     *         false if they go <b>after</b> (like scaling, clamp, custom properties).
+     */
+    public boolean isPrePropertyFlag() {
+        return true;
+    }
+
 }

@@ -9,6 +9,7 @@ public class GpuConfig {
 
     private Mode mode = Mode.DEFAULT;
     private int driPrimeNumber = 1;
+    private boolean glThreadedOpt = false;
 
     public GpuConfig() {}
 
@@ -17,4 +18,7 @@ public class GpuConfig {
 
     public int getDriPrimeNumber() { return driPrimeNumber; }
     public void setDriPrimeNumber(int driPrimeNumber) { this.driPrimeNumber = driPrimeNumber; }
+
+    public boolean isGlThreadedOpt() { return glThreadedOpt; }
+    public void setGlThreadedOpt(boolean glThreadedOpt) { this.glThreadedOpt = glThreadedOpt; }
 }

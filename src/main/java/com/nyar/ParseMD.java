@@ -9,7 +9,7 @@ public class ParseMD {
 
             String title = json.optString("title", "Unknown Title");
             String type = json.optString("type", "unknown");
-
+            String file = json.optString("file", "unknown file");
             // Extract properties from the "general" object
             JSONObject properties = null;
             if (json.has("general")) {
@@ -19,7 +19,7 @@ public class ParseMD {
                 }
             }
 
-            return new Wppr(id, title, type, basePath, properties);
+            return new Wppr(id, title, type, basePath, file, properties);
 
         } catch (Exception e) {
             System.out.println("Failed to parse JSON for " + id + ": " + e.getMessage());

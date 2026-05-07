@@ -32,3 +32,31 @@
     -fx-padding: 5 15;
     -fx-effect: dropshadow(gaussian, black, 5, 0, 0, -2);
 }
+
+.playlist-entry {
+    -fx-background-color: #2a2a2a;
+    -fx-background-radius: 4;
+    -fx-border-color: #3a3a3a;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+}
+
+.playlist-entry.selected {
+    -fx-border-color: #4a90e2;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, #4a90e2, 8, 0.3, 0, 0);
+}
+
+.playlist-entry:hover {
+    -fx-background-color: #333333;
+}
+
+.playlist-control-btn {
+    -fx-background-color: #444;
+    -fx-text-fill: white;
+    -fx-background-radius: 4;
+}
+
+.playlist-control-btn:hover {
+    -fx-background-color: #555;
+}

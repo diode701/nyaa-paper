@@ -15,8 +15,10 @@ public class Settings {
             "/.local/share/Steam/steamapps/workshop/content/431960/";
     private String pywalPath = System.getProperty("user.home") + "/.cache/wal/";
     private String monitorConfig = "eDP-1";
-    private String screenshotPath = System.getProperty("user.home") + "/Pictures/nyaa_screenshot.png";
+    private String screenshotPath = System.getProperty("user.home") + "/Pictures/";
     private boolean nvidiaAvailable = false;
+    private boolean persistOnStart = true;
+    private boolean autoStartOnBoot = false;
 
     public Settings() {}
 
@@ -42,6 +44,12 @@ public class Settings {
     public boolean isNvidiaAvailable() { return nvidiaAvailable; }
     public void setNvidiaAvailable(boolean nvidiaAvailable) { this.nvidiaAvailable = nvidiaAvailable; }
 
+    public boolean isPersistOnStart() { return persistOnStart; }
+    public void setPersistOnStart(boolean persistOnStart) { this.persistOnStart = persistOnStart; }
+
+    public boolean isAutoStartOnBoot() { return autoStartOnBoot; }
+    public void setAutoStartOnBoot(boolean autoStartOnBoot) { this.autoStartOnBoot = autoStartOnBoot; }
+
     public List<String> getMonitors() {
         if (monitorConfig == null || monitorConfig.trim().isEmpty()) {
             return Arrays.asList("eDP-1");
@@ -61,6 +69,8 @@ public class Settings {
         obj.put("monitorConfig", monitorConfig);
         obj.put("screenshotPath", screenshotPath);
         obj.put("nvidiaAvailable", nvidiaAvailable);
+        obj.put("persistOnStart", persistOnStart);
+        obj.put("autoStartOnBoot", autoStartOnBoot);
         return obj;
     }
 
@@ -73,6 +83,8 @@ public class Settings {
         if (obj.has("monitorConfig")) s.monitorConfig = obj.getString("monitorConfig");
         if (obj.has("screenshotPath")) s.screenshotPath = obj.getString("screenshotPath");
         if (obj.has("nvidiaAvailable")) s.nvidiaAvailable = obj.getBoolean("nvidiaAvailable");
+        if (obj.has("persistOnStart")) s.persistOnStart = obj.getBoolean("persistOnStart");
+        if (obj.has("autoStartOnBoot")) s.autoStartOnBoot = obj.getBoolean("autoStartOnBoot");
         return s;
     }
 }

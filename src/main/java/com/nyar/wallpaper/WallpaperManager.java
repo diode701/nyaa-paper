@@ -6,15 +6,30 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 
 public class WallpaperManager {
     private static final WallpaperManager INSTANCE = new WallpaperManager();
     private final Map<String, WallpaperInstance> instances = new ConcurrentHashMap<>();
+    private BiConsumer<String, Integer> crashListener;
 
     private WallpaperManager() {}
 
     public static WallpaperManager getInstance() {
         return INSTANCE;
+    }
+
+    public void setCrashListener(BiConsumer<String, Integer> listener) {
+        this.crashListener = listener;
+    }
+
+    void notifyCrash(String monitor, int exitCode, WallpaperInstance crashed) {
+        // Only remove if it's still the same instance (not already replaced)
+        if (instances.remove(monitor, crashed)) {
+            if (crashListener != null) {
+                crashListener.accept(monitor, exitCode);
+            }
+        }
     }
 
  public synchronized void apply(String monitor, String wallpaperId, List<Setting> settings,

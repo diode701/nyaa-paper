@@ -57,13 +57,13 @@ Full walkthrough: launcher intro → launcher setup → browser grid → propert
 ## Screenshots
 
 <p align="center">
-  <img src="prev/browserview.png" alt="Wallpaper browser grid" width="700"><br>
-  <em>Wallpaper browser — grid view with keyboard navigation</em>
+  <img src="prev/launcherview.png" alt="Launcher intro" width="700"><br>
+  <em>Launcher — intro screen</em>
 </p>
 
 <p align="center">
-  <img src="prev/launcherview.png" alt="Launcher intro" width="700"><br>
-  <em>Launcher — intro screen</em>
+  <img src="prev/browserview.png" alt="Wallpaper browser grid" width="700"><br>
+  <em>Wallpaper browser — grid view with keyboard navigation</em>
 </p>
 
 <p align="center">

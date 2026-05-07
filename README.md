@@ -11,7 +11,7 @@
   <a href="https://github.com/diode701/nyaa-paper/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL%20v3-blue"></a>
   <a href="https://aur.archlinux.org/packages/nyaa-paper-bin"><img src="https://img.shields.io/aur/version/nyaa-paper-bin"></a>
   <a href="https://github.com/diode701/nyaa-paper/releases"><img src="https://img.shields.io/github/v/release/diode701/nyaa-paper?include_prereleases&label=latest"></a>
-  <a href="https://github.com/diode701/nyaa-paper/actions"><img src="https://img.shields.io/github/actions/workflow/status/diode701/nyaa-paper/build.yml?branch=main"></a>
+  #<a href="https://github.com/diode701/nyaa-paper/actions"><img src="https://img.shields.io/github/actions/workflow/status/diode701/nyaa-paper/build.yml?branch=main"></a>
 </p>
 
 ---

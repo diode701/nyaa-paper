@@ -328,4 +328,4 @@ diode701 — design, code, upkeep
 
 [GNU AGPLv3](LICENSE)
 
-Built for the people.
+Meow

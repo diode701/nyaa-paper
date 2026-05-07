@@ -44,4 +44,8 @@ if command -v update-desktop-database &> /dev/null; then
     update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
 fi
 
-echo "✅ Installation complete. Run 'nyaa-paper' from terminal or application menu."
+echo "✅ Installation complete. Run 'nyaa-paper' from terminal or application menu.
+.
+.
+.
+Never gonna give you up"

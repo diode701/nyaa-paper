@@ -1,7 +1,8 @@
 package com.nyar.wallpaper;
 
-import com.nyar.config.SettingsManager;
 import com.nyar.settings.*;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,8 +15,9 @@ public class WallpaperInstance {
     private final String wallpaperId;
     private final List<Setting> settings;
     private final GpuConfig gpuConfig;
-    private final String screenshotPath;      // can be null
+    private final String screenshotDir;      // can be null
     private final int screenshotDelay;        // only used if screenshotPath != null
+    private final String screenshotName = "nyaa_sc.png";
     private Process process;
 
     public WallpaperInstance(String monitor, String wallpaperId, List<Setting> settings,
@@ -24,44 +26,29 @@ public class WallpaperInstance {
         this.wallpaperId = wallpaperId;
         this.settings = new ArrayList<>(settings);
         this.gpuConfig = gpuConfig;
-        this.screenshotPath = screenshotPath;
+        this.screenshotDir = screenshotPath;
         this.screenshotDelay = screenshotDelay;
         start();
     }
 
     private void start() throws IOException {
-        List<String> command = new ArrayList<>();
-        command.add("linux-wallpaperengine");
+        List<String> command = getStrings();
 
-        // Screen and background
-        command.add("--screen-root");
-        command.add(monitor);
-        command.add("--bg");
-        command.add(wallpaperId);
-
-        // Screenshot (if enabled)
-        if (screenshotPath != null && !screenshotPath.isBlank()) {
-            command.add("--screenshot");
-            command.add(screenshotPath);
-            command.add("--screenshot-delay");
-            command.add(String.valueOf(screenshotDelay));
-        }
-
-        // Add per‑screen settings (Scaling, Clamping, CustomProperty)
+        // 1. Pre‑property flags (volume, fps, boolean flags, etc.)
         for (Setting s : settings) {
-            List<String> args = s.toCommandArgs();
-            if (!args.isEmpty()) {
-                if (s instanceof ScalingSetting || s instanceof ClampingSetting || s instanceof CustomProperty) {
+            if (s.isPrePropertyFlag()) {
+                List<String> args = s.toCommandArgs();
+                if (!args.isEmpty()) {
                     command.addAll(args);
                 }
             }
         }
 
-        // Add global settings (Volume, FPS, Boolean flags, etc.)
+        // 2. Post‑property flags and custom properties (scaling, clamp, --set-property)
         for (Setting s : settings) {
-            List<String> args = s.toCommandArgs();
-            if (!args.isEmpty()) {
-                if (!(s instanceof ScalingSetting || s instanceof ClampingSetting || s instanceof CustomProperty)) {
+            if (!s.isPrePropertyFlag()) {
+                List<String> args = s.toCommandArgs();
+                if (!args.isEmpty()) {
                     command.addAll(args);
                 }
             }
@@ -83,11 +70,45 @@ public class WallpaperInstance {
             // DEFAULT: nothing
         }
 
+        if (gpuConfig.isGlThreadedOpt()) {
+            pb.environment().put("__GL_THREADED_OPTIMIZATIONS", "0");
+        }
+
         pb.inheritIO();
         process = pb.start();
+
+        // Event-based crash detection — fires when the process exits on its own
+        process.onExit().thenAccept(p -> {
+            int code = p.exitValue();
+            if (code != 0 && code != 143) { // 143 = SIGTERM from stop()
+                WallpaperManager.getInstance().notifyCrash(monitor, code, WallpaperInstance.this);
+            }
+        });
     }
 
-   public void stop() {
+    private @NotNull List<String> getStrings() {
+        List<String> command = new ArrayList<>();
+        command.add("linux-wallpaperengine");
+
+        // Screen and background
+        command.add("--screen-root");
+        command.add(monitor);
+        command.add("--bg");
+        command.add(wallpaperId);
+
+        // Screenshot (if enabled)
+        if (screenshotDir != null && !screenshotDir.isBlank()) {
+            command.add("--screenshot");
+            String sep = screenshotDir.endsWith("/") ? "" : "/";
+            String screenshotPath = screenshotDir + sep + monitor + "_" + screenshotName;
+            command.add(screenshotPath);
+            command.add("--screenshot-delay");
+            command.add(String.valueOf(screenshotDelay));
+        }
+        return command;
+    }
+
+    public void stop() {
        if (process == null || !process.isAlive()) return;
 
        ProcessHandle handle = process.toHandle();

@@ -19,4 +19,10 @@ public abstract class CustomProperty<T> extends Setting {
     }
 
     protected abstract String valueToString();
+
+
+    @Override
+    public boolean isPrePropertyFlag() {
+        return false;
+    }
 }

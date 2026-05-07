@@ -23,21 +23,31 @@ public class SliderProperty extends CustomProperty<Double> {
     public Node createControl(Consumer<Setting> onChange) {
         HBox box = new HBox(10);
         Slider slider = new Slider(min, max, value);
-        slider.setShowTickMarks(true);
-        slider.setMajorTickUnit(step * 5);
         slider.setBlockIncrement(step);
+        if ((max - min) / Math.max(step, 0.001) <= 200) {
+            slider.setShowTickMarks(true);
+            slider.setMajorTickUnit(Math.max(step, (max - min) / 10));
+        }
         Label valueLabel = new Label(String.format("%.2f", value));
         slider.valueProperty().addListener((obs, old, newVal) -> {
             this.value = newVal.doubleValue();
             valueLabel.setText(String.format("%.2f", newVal.doubleValue()));
             onChange.accept(this);
         });
-        box.getChildren().addAll(slider, valueLabel);
+        box.getChildren().addAll(new Label(description), slider, valueLabel);
         return box;
     }
 
     @Override
     protected String valueToString() {
         return String.format("%.2f", value);
+    }
+
+    @Override
+    public String getValueString() { return valueToString(); }
+
+    @Override
+    public void setValueFromString(String s) {
+        try { value = Double.parseDouble(s); } catch (NumberFormatException ignored) {}
     }
 }

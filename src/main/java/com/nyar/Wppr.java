@@ -8,14 +8,17 @@ public class Wppr {
     private final String title;
     private final String type;
     private final String basePath;
+    private final String file;
     private final JSONObject properties;  // Store raw properties from JSON
     private final Map<String, Object> parsedProperties;  // Cache parsed values
 
-    public Wppr(String id, String title, String type, String basePath, JSONObject properties) {
+
+    public Wppr(String id, String title, String type, String basePath, String file, JSONObject properties) {
         this.id = id;
         this.title = title;
         this.type = type;
         this.basePath = basePath;
+        this.file = file;
         this.properties = properties != null ? properties : new JSONObject();
         this.parsedProperties = new HashMap<>();
     }
@@ -24,6 +27,7 @@ public class Wppr {
     public String getTitle() { return title; }
     public String getType() { return type; }
     public String getBasePath() { return basePath; }
+    public String getFile() {return file;}
 
     public String getPreviewPath() {
         return basePath + "/preview.jpg";  // or .gif

@@ -7,9 +7,16 @@ import java.util.*;
 
 
 public class WpprLib {
+    private static volatile WpprLib instance;
+
     private List<Wppr> wpprLib;
     private Map<String, Wppr> idMap;
     private final Path workshopPath;
+
+    public static WpprLib getInstance() { return instance; }
+
+    public static void setInstance(WpprLib lib) { instance = lib; }
+
     public WpprLib(Path workshopPath){
         this.wpprLib = new ArrayList<>();
         this.idMap = new HashMap<>();

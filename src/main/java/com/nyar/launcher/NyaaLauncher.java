@@ -52,6 +52,18 @@ public class NyaaLauncher extends Application {
     private TextField pywalField;
     private TextField screenshotField;
 
+    // Startup toggles
+    private CheckBox persistCheck;
+    private CheckBox autoStartCheck;
+    private boolean persistOnStart = true;
+    private boolean autoStartOnBoot = false;
+
+    private static final Path AUTOSTART_DIR = Paths.get(
+            System.getProperty("user.home"), ".config", "autostart");
+    private static final Path AUTOSTART_SCRIPT = Paths.get(
+            System.getProperty("user.home"), ".local", "share", "NyaaPaper", "nyaa-paper-autostart");
+    private static final Path AUTOSTART_DESKTOP = AUTOSTART_DIR.resolve("nyaa-paper-autostart.desktop");
+
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
 
@@ -87,9 +99,12 @@ public class NyaaLauncher extends Application {
     private void showIntroWithOptions() {
         // Load existing settings to populate fields if user clicks Setup
         Settings existing = SettingsManager.load();
+        heapSizeMB = existing.getMaxRam();
         steamPath = existing.getSteamPath();
         pywalPath = existing.getPywalPath();
         screenshotPath = existing.getScreenshotPath();
+        persistOnStart = existing.isPersistOnStart();
+        autoStartOnBoot = existing.isAutoStartOnBoot();
         selectedMonitors.clear();
         selectedMonitors.addAll(existing.getMonitors());
 
@@ -161,9 +176,12 @@ public class NyaaLauncher extends Application {
     private void showIntroThenSetup() {
         // Load defaults (or empty) – SettingsManager.load() will create defaults if file missing
         Settings defaults = SettingsManager.load();
+        heapSizeMB = defaults.getMaxRam();
         steamPath = defaults.getSteamPath();
         pywalPath = defaults.getPywalPath();
         screenshotPath = defaults.getScreenshotPath();
+        persistOnStart = defaults.isPersistOnStart();
+        autoStartOnBoot = defaults.isAutoStartOnBoot();
         selectedMonitors.clear();
         selectedMonitors.addAll(defaults.getMonitors());
 
@@ -237,11 +255,12 @@ public class NyaaLauncher extends Application {
     VBox form = new VBox(20);
     form.setPadding(new Insets(20));
     form.setAlignment(Pos.TOP_CENTER);
-    form.getChildren().addAll(
-            createMonitorSection(),
-            createMemorySection(),
-            createPathsSection()
-    );
+        form.getChildren().addAll(
+                createMonitorSection(),
+                createMemorySection(),
+                createPathsSection(),
+                createStartupSection()
+        );
 
     ScrollPane scroll = new ScrollPane(form);
     scroll.setFitToWidth(true);
@@ -368,7 +387,7 @@ public class NyaaLauncher extends Application {
         Label screenshotLabel = new Label("Screenshot path");
         screenshotLabel.setTextFill(Color.LIGHTGRAY);
         screenshotField = new TextField(screenshotPath);
-        screenshotField.setPromptText("Full path (e.g., /home/user/Pictures/wallpaper.png");
+        screenshotField.setPromptText("Full path (e.g., /home/user/Pictures/");
         screenshotField.textProperty().addListener((obs, old, val) -> screenshotPath = val);
 
         box.getChildren().addAll(header,
@@ -377,6 +396,65 @@ public class NyaaLauncher extends Application {
                 screenshotLabel, screenshotField);
         return box;
     }
+
+    private VBox createStartupSection() {
+        VBox box = new VBox(10);
+        box.setStyle("-fx-background-color: #2a2a2a; -fx-background-radius: 10; -fx-padding: 15;");
+
+        Label header = new Label("🚀 Startup");
+        header.setTextFill(Color.WHITE);
+        header.setFont(Font.font(18));
+
+        persistCheck = new CheckBox("Restore wallpapers on start");
+        persistCheck.setTextFill(Color.LIGHTGRAY);
+        persistCheck.setSelected(persistOnStart);
+        persistCheck.setOnAction(e -> persistOnStart = persistCheck.isSelected());
+
+        autoStartCheck = new CheckBox("Start on login (skips launcher, runs in tray)");
+        autoStartCheck.setTextFill(Color.LIGHTGRAY);
+        autoStartCheck.setSelected(autoStartOnBoot);
+        autoStartCheck.setOnAction(e -> autoStartOnBoot = autoStartCheck.isSelected());
+
+        box.getChildren().addAll(header, persistCheck, autoStartCheck);
+        return box;
+    }
+
+   private void applyAutoStart(boolean enable) {
+    try {
+        if (enable) {
+            // Path to the launcher JAR itself
+            Path launcherJar = Paths.get(NyaaLauncher.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI());
+            // Ensure it’s an absolute path
+            launcherJar = launcherJar.toRealPath();
+
+            // Write a tiny shell script that just launches the launcher in tray mode
+            String script = "#!/bin/bash\n"
+                    + "exec java -jar \"" + launcherJar + "\" --tray\n";
+            Files.createDirectories(AUTOSTART_SCRIPT.getParent());
+            Files.writeString(AUTOSTART_SCRIPT, script);
+            AUTOSTART_SCRIPT.toFile().setExecutable(true, false);
+
+            // Write the autostart desktop entry
+            String desktop = "[Desktop Entry]\n"
+                    + "Name=Nyaa Paper\n"
+                    + "Comment=Wallpaper Engine frontend\n"
+                    + "Exec=" + AUTOSTART_SCRIPT + "\n"
+                    + "Icon=" + System.getProperty("user.home")
+                        + "/.local/share/NyaaPaper/icon.png\n"
+                    + "Terminal=false\n"
+                    + "Type=Application\n"
+                    + "X-GNOME-Autostart-enabled=true\n";
+            Files.createDirectories(AUTOSTART_DESKTOP.getParent());
+            Files.writeString(AUTOSTART_DESKTOP, desktop);
+        } else {
+            Files.deleteIfExists(AUTOSTART_DESKTOP);
+            Files.deleteIfExists(AUTOSTART_SCRIPT);
+        }
+    } catch (Exception e) {
+        statusLabel.setText("Autostart setup failed: " + e.getMessage());
+    }
+}
 
     private HBox createBottomBar() {
         HBox bar = new HBox(20);
@@ -459,14 +537,20 @@ public class NyaaLauncher extends Application {
 
         Settings settings = new Settings();
         settings.setMonitorConfig(String.join(",", selectedMonitors));
+        settings.setMaxRam(heapSizeMB);
         settings.setSteamPath(steamPath);
         settings.setPywalPath(pywalPath);
         settings.setScreenshotPath(screenshotPath);
         settings.setNvidiaAvailable(detectNvidia());
+        settings.setPersistOnStart(persistOnStart);
+        settings.setAutoStartOnBoot(autoStartOnBoot);
 
         try {
             Files.createDirectories(CONFIG_FILE.getParent());
             SettingsManager.save(settings);
+
+            // Handle autostart files on disk
+            applyAutoStart(autoStartOnBoot);
         } catch (IOException e) {
             statusLabel.setText("Failed to save config: " + e.getMessage());
             return;
@@ -548,6 +632,35 @@ public class NyaaLauncher extends Application {
         if (args.length > 0 && "--setup".equals(args[0])) {
             System.setProperty("nyaa.forceSetup", "true");
         }
+        if (args.length > 0 && "--tray".equals(args[0])) {
+            launchTrayAndExit();
+            return;
+        }
         launch(args);
+    }
+
+    private static void launchTrayAndExit() {
+        Settings settings = SettingsManager.load();
+        Path jarDir = Paths.get(System.getProperty("user.home"),
+                ".local", "share", "NyaaPaper");
+        Path appJar = jarDir.resolve("nyaa-paper-app.jar");
+
+        if (!Files.exists(appJar)) {
+            System.err.println("App JAR not found at " + appJar);
+            System.exit(1);
+        }
+
+        try {
+            String javaBin = Paths.get(System.getProperty("java.home"), "bin", "java").toString();
+            new ProcessBuilder(javaBin,
+                    "-Dnyaa.tray=true",
+                    "-Xmx" + settings.getMaxRam() + "m",
+                    "-jar", appJar.toString())
+                    .inheritIO().start();
+            System.exit(0);
+        } catch (IOException e) {
+            System.err.println("Failed to launch: " + e.getMessage());
+            System.exit(1);
+        }
     }
 }

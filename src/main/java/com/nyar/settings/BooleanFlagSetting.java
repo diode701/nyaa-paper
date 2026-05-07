@@ -32,4 +32,12 @@ public class BooleanFlagSetting extends GlobalOption {
         }
         return List.of();
     }
+
+    @Override
+    public String getValueString() { return String.valueOf(enabled); }
+
+    @Override
+    public void setValueFromString(String s) {
+        enabled = "true".equalsIgnoreCase(s);
+    }
 }

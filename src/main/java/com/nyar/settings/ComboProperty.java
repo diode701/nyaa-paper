@@ -40,4 +40,12 @@ public class ComboProperty extends CustomProperty<Integer> {
     protected String valueToString() {
         return String.valueOf(value);
     }
+
+    @Override
+    public String getValueString() { return valueToString(); }
+
+    @Override
+    public void setValueFromString(String s) {
+        try { value = Integer.parseInt(s); } catch (NumberFormatException ignored) {}
+    }
 }

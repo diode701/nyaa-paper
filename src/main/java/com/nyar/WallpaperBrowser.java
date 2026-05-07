@@ -2,6 +2,10 @@ package com.nyar;
 
 import com.nyar.config.Settings;
 import com.nyar.config.SettingsManager;
+import com.nyar.config.WallpaperConfig;
+import com.nyar.config.WallpaperConfigManager;
+import com.nyar.settings.*;
+import com.nyar.wallpaper.GpuConfig;
 import com.nyar.wallpaper.WallpaperManager;
 import dorkbox.systemTray.SystemTray;
 import dorkbox.systemTray.MenuItem;
@@ -29,9 +33,7 @@ import javafx.util.Duration;
 
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -79,6 +81,7 @@ public class WallpaperBrowser extends Application {
     private static final int VGAP = 15;
 
     private WallpaperPropertiesView currentPropertiesView = null;
+    private PlaylistManagerView currentPlaylistManagerView = null;
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -100,21 +103,35 @@ public class WallpaperBrowser extends Application {
         Settings config = SettingsManager.load();
         Builder builder = new Builder(config).scanWorkshop();
         library = builder.build();
+        WpprLib.setInstance(library);
         watcher = builder.buildWatcher(library, this::onLibraryChange);
 // SHUTDOWN HOOK - ensures wallpapers are killed even on SIGTERM
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("Shutdown hook: stopping all wallpaper processes");
             WallpaperManager.getInstance().stopAll();
         }));
+
+        boolean trayMode = "true".equals(System.getProperty("nyaa.tray"));
+
+        // Restore wallpapers from saved configs if enabled
+        if (config.isPersistOnStart()) {
+            autoRestoreWallpapers(config);
+        }
+
         initUI(stage);
         recomputeGrid();
         loadPage(0);
         watcher.startWatching();
 
-        stage.setOnCloseRequest(e -> {
-            e.consume();
+        if (trayMode) {
+            stage.show();
             collapseToTray(stage);
-        });
+        } else {
+            stage.setOnCloseRequest(e -> {
+                e.consume();
+                collapseToTray(stage);
+            });
+        }
     }
 
     private void initUI(Stage stage) {
@@ -243,6 +260,9 @@ public class WallpaperBrowser extends Application {
         if (currentPropertiesView != null) {
             currentPropertiesView.shutdown();
         }
+        if (currentPlaylistManagerView != null) {
+            currentPlaylistManagerView = null;
+        }
         loadingTasks.values().forEach(f -> f.cancel(true));
         preloadTasks.values().forEach(f -> f.cancel(true));
         if (watcher != null) watcher.stopWatching();
@@ -270,6 +290,78 @@ public class WallpaperBrowser extends Application {
         Platform.exit();
         System.exit(0);
     }
+    // ----------------------------------------------------------------------
+    // Auto-restore wallpapers on startup
+    // ----------------------------------------------------------------------
+    private void autoRestoreWallpapers(Settings settings) {
+        WallpaperConfigManager cfgMgr = WallpaperConfigManager.getInstance();
+        WallpaperManager wm = WallpaperManager.getInstance();
+        Path baseDir = Paths.get(System.getProperty("user.home"),
+                ".config", "NyaaPaper", "wallpapers");
+
+        for (String monitor : settings.getMonitors()) {
+            Path monDir = baseDir.resolve(monitor);
+            if (!Files.isDirectory(monDir)) continue;
+            try (var stream = Files.newDirectoryStream(monDir, "*.json")) {
+                for (Path file : stream) {
+                    String name = file.getFileName().toString();
+                    String wallpaperId = name.substring(0, name.length() - 5);
+                    WallpaperConfig cfg = cfgMgr.load(monitor, wallpaperId);
+                    if (cfg == null) continue;
+
+                    // Skip if wallpaper no longer subscribed
+                    Wppr wp = library.findById(wallpaperId);
+                    if (wp == null) {
+                        cfgMgr.delete(monitor, wallpaperId);
+                        continue;
+                    }
+
+                    GpuConfig gpu = new GpuConfig();
+                    gpu.setMode(GpuConfig.Mode.valueOf(cfg.getGpuMode()));
+                    gpu.setDriPrimeNumber(cfg.getDriPrimeNumber());
+                    gpu.setGlThreadedOpt(cfg.isGlThreadedOpt());
+
+                    List<Setting> savedSettings = buildSettingsFromConfig(cfg, wp);
+                    try {
+                        wm.apply(monitor, wallpaperId, savedSettings, gpu, null, 0);
+                        System.out.println("Auto-restored " + wallpaperId + " on " + monitor);
+                    } catch (Exception e) {
+                        System.out.println("Auto-restore failed on " + monitor + ": " + e.getMessage());
+                    }
+                    break; // one wallpaper per monitor
+                }
+            } catch (IOException ignored) {}
+        }
+    }
+
+    private List<Setting> buildSettingsFromConfig(WallpaperConfig cfg, Wppr wp) {
+        List<Setting> defaults = PropertyParser.parseFromWppr(wp);
+        Map<String, String> saved = cfg.getSettings();
+        for (Setting s : defaults) {
+            String val = saved.get(s.getName());
+            if (val != null) {
+                s.setValueFromString(val);
+            }
+        }
+        // Also add global options with saved values
+        List<Setting> all = new ArrayList<>(defaults);
+        all.addAll(buildGlobalOptionsFromConfig(saved));
+        return all;
+    }
+
+    private List<Setting> buildGlobalOptionsFromConfig(Map<String, String> saved) {
+        List<GlobalOption> globals = GlobalOptionsFactory.createAll();
+        List<Setting> result = new ArrayList<>();
+        for (Setting g : globals) {
+            String val = saved.get(g.getName());
+            if (val != null) {
+                g.setValueFromString(val);
+            }
+            result.add(g);
+        }
+        return result;
+    }
+
     // ----------------------------------------------------------------------
     // Grid Management
     // ----------------------------------------------------------------------
@@ -343,6 +435,7 @@ public class WallpaperBrowser extends Application {
                 case PAGE_DOWN:
                 case P:     if (currentPageIndex < totalPages() - 1) loadPage(currentPageIndex + 1); break;
                 case ENTER: selectCurrent(); break;
+                case M:     showPlaylistManager(); break;
                 case Q:     hardExit(); break;
                 default: break;
             }
@@ -422,7 +515,7 @@ public class WallpaperBrowser extends Application {
         if (!currentPage.isEmpty() && selectedIndex < currentPage.size()) {
             selInfo = " | " + currentPage.get(selectedIndex).getTitle();
         }
-        statusLabel.setText(pageInfo + selInfo + " | ←↑↓→ move | N/P page | Enter select | Q quit");
+        statusLabel.setText(pageInfo + selInfo + " | ←↑↓→ move | N/P page | Enter select | M playlists | Q quit");
     }
 
     private int totalPages() {
@@ -453,8 +546,20 @@ private void showGrid() {
         currentPropertiesView.shutdown();
         currentPropertiesView = null;
     }
+    if (currentPlaylistManagerView != null) {
+        currentPlaylistManagerView = null;
+    }
     root.setCenter(gridContainer);
     loadPage(currentPageIndex);
+}
+
+private void showPlaylistManager() {
+    if (currentPropertiesView != null) {
+        currentPropertiesView.shutdown();
+        currentPropertiesView = null;
+    }
+    currentPlaylistManagerView = new PlaylistManagerView(this::showGrid);
+    root.setCenter(currentPlaylistManagerView.getView());
 }
 
     // ----------------------------------------------------------------------

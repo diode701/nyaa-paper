@@ -4,7 +4,7 @@
 
 <h1 align="center">Nyaa Paper</h1>
 <p align="center">
-  <em>linux-wallpaperengine GUI — per-monitor wallpapers, system tray, playlists, fat JARs</em>
+  <em>linux-wallpaperengine GUI — per-monitor wallpapers, system tray, playlists, pre-compiled JARs</em>
 </p>
 
 <p align="center">

@@ -50,6 +50,7 @@ Pre-compiled JARs. No Python. No C build chain. No dependency hell.
 </p>
 Full walkthrough: launcher intro → launcher setup → browser grid → properties view → playlist manager.
 Click to play the demo.
+
 ---
 
 ## Screenshots

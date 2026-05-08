@@ -44,11 +44,10 @@ Pre-compiled JARs. No Python. No C build chain. No dependency hell.
 ## Demo
 
 <p align="center">
-  <video controls width="800">
-    <source src="prev/nyaapaper.mp4" type="video/mp4">
-  </video>
+  <a href="https://www.youtube.com/watch?v=Xi-unn0jWRg" target="_blank">
+    <img src="https://img.youtube.com/vi/Xi-unn0jWRg/maxresdefault.jpg" alt="Watch the video" width="800">
+  </a>
 </p>
-
 Full walkthrough: launcher intro → launcher setup → browser grid → properties view → playlist manager.
 
 ---

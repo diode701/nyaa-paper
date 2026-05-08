@@ -300,6 +300,18 @@ See [CHANGELOG.md](CHANGELOG.md) for the full release history.
 
 ---
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for bug reports, feature requests, pull requests, and code guidelines.
+
+---
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for the security policy and how to report vulnerabilities.
+
+---
+
 ## Known issues
 
 - The tray/window icon sometimes doesn't show. Restarting doesn't reliably fix it

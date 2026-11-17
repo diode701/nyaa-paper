@@ -49,3 +49,10 @@ nyaa-paper-*/
 ####
 !lib/
 !lib/*.jar
+
+# --- v2: Rust daemon + Qt/QML client ---
+daemon/target/
+gui/build/
+compile_commands.json
+CMakeUserPresets.json
+.cache/

@@ -1,0 +1,40 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<!--
+  org.nyar.Paper.Library — what is subscribed, and where it lives.
+
+  The daemon only ever reports facts it can see on disk: an id, the directory
+  it came from, and a modification stamp. It does NOT parse project.json,
+  does NOT read preview images, and does NOT know that `type` exists.
+
+  The C++ side reads <basePath>/project.json itself and builds the typed
+  wallpaper model. This is what keeps every domain type out of the daemon and
+  makes the daemon ~200 lines instead of ~800.
+
+  Contract
+  --------
+  List     Paged. Order is stable between LibraryChanged signals (sorted by id).
+           Returns (id, basePath, projectJsonMtime). A missing or unreadable
+           project.json is not a reason to omit an entry — the GUI decides.
+  Rescan   Forces a synchronous rescan; returns the new total count.
+  Signals  LibraryChanged fires at most once per 500 ms, coalescing bursts
+           (Steam writes project.json last, so partial states are normal).
+           It means "the set of ids may have changed" — not "everything
+           changed". The GUI re-lists from offset 0.
+-->
+<node>
+  <interface name="org.nyar.Paper.Library">
+    <method name="List">
+      <arg name="offset" type="u" direction="in"/>
+      <arg name="limit" type="u" direction="in"/>
+      <arg name="wallpapers" type="a(ssx)" direction="out"/>
+    </method>
+    <method name="Count">
+      <arg name="total" type="u" direction="out"/>
+    </method>
+    <method name="Rescan">
+      <arg name="total" type="u" direction="out"/>
+    </method>
+    <signal name="LibraryChanged"/>
+  </interface>
+</node>

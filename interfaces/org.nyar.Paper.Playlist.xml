@@ -1,0 +1,70 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<!--
+  org.nyar.Paper.Playlist — one playlist per monitor, executed by the daemon.
+
+  The daemon stores the document opaquely except for the fields it needs to
+  schedule: intervalSec, mode, loop, currentIndex, and each entry's
+  durationSec. Everything else (arguments, environment, labels) is passed back
+  to the GUI untouched.
+
+  Schema (version 1) is frozen. Adding fields is allowed; changing or
+  removing them is a schema bump.
+
+    {
+      "schema": 1,
+      "mode": "sequential" | "random",
+      "intervalSec": 60,
+      "loop": true,
+      "currentIndex": 0,
+      "entries": [
+        {
+          "wallpaperId": "1234",
+          "argv": ["--screen-root", "eDP-1", "--bg", "1234", "--set-property", "x=1"],
+          "env": { "DRI_PRIME": "1" },
+          "durationSec": 42.5
+        }
+      ]
+    }
+
+  durationSec is the display duration for that entry: the video length for
+  video wallpapers (probed once by the GUI at add time), or the playlist
+  interval when unknown/zero. The daemon never runs ffprobe.
+
+  States reported by State()/StateChanged: "idle", "playing", "paused".
+  *Index is the entry being shown, or -1 when idle.
+-->
+<node>
+  <interface name="org.nyar.Paper.Playlist">
+    <method name="Set">
+      <arg name="monitor" type="s" direction="in"/>
+      <arg name="json" type="s" direction="in"/>
+    </method>
+    <method name="Get">
+      <arg name="monitor" type="s" direction="in"/>
+      <arg name="json" type="s" direction="out"/>
+    </method>
+    <method name="Play">
+      <arg name="monitor" type="s" direction="in"/>
+    </method>
+    <method name="Pause">
+      <arg name="monitor" type="s" direction="in"/>
+    </method>
+    <method name="Stop">
+      <arg name="monitor" type="s" direction="in"/>
+    </method>
+    <method name="State">
+      <arg name="monitor" type="s" direction="in"/>
+      <arg name="state" type="s" direction="out"/>
+      <arg name="index" type="i" direction="out"/>
+    </method>
+    <signal name="StateChanged">
+      <arg name="monitor" type="s"/>
+      <arg name="state" type="s"/>
+      <arg name="index" type="i"/>
+    </signal>
+    <signal name="PlaylistChanged">
+      <arg name="monitor" type="s"/>
+    </signal>
+  </interface>
+</node>

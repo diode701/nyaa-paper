@@ -25,7 +25,7 @@ apply/stop, property editing from `project.json`, playlists, shared config,
 per-monitor "Load last". Not finished: the Flatpak build (manifest exists, LWE
 module is a placeholder), tray integration, screenshot capture in the UI.
 
-Port map and remaining gaps: `docs/PORT-STATUS.md`. Viva/interview notes:
+Start with `docs/START-HERE.md`; the port checklist is `docs/TODO.md`. Viva/interview notes:
 `docs/DEFENSE.md`.
 
 ## Build

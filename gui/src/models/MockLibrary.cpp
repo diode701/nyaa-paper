@@ -44,7 +44,7 @@ QVector<WallpaperItem> MockLibrary::fromWorkshop(const QString &root)
         if (preview.isEmpty() && kind.isEmpty())
             continue; // not a wallpaper folder
 
-        items.push_back({id, title, kind, preview});
+        items.push_back({id, title, kind, preview, wallpaperDir.absolutePath()});
     }
     return items;
 }
@@ -61,7 +61,7 @@ QVector<WallpaperItem> MockLibrary::sample()
         const QString kind = (i % 3 == 0) ? QStringLiteral("video")
                             : (i % 3 == 1) ? QStringLiteral("scene")
                                            : QStringLiteral("web");
-        items.push_back({QStringLiteral("sample-%1").arg(i + 1), titles[i], kind, {}});
+        items.push_back({QStringLiteral("sample-%1").arg(i + 1), titles[i], kind, {}, {}});
     }
     return items;
 }

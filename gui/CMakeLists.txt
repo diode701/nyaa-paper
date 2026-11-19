@@ -21,12 +21,17 @@ qt_add_executable(nyaa-paper-qt
     src/domain/Renderer.cpp
     src/domain/options/GlobalOptions.cpp
     src/io/ProjectJson.cpp
+    src/util/VideoDuration.cpp
     src/io/ConfigStore.cpp
     src/domain/settings/Settings.cpp
     src/engine/IEngine.hpp
     src/engine/DbusEngine.hpp
     src/engine/DbusEngine.cpp
     src/engine/MockEngine.hpp
+    src/bridge/ConfigBridge.hpp
+    src/bridge/ConfigBridge.cpp
+    src/bridge/PlaylistBridge.hpp
+    src/bridge/PlaylistBridge.cpp
     src/bridge/EngineBridge.hpp
     src/bridge/EngineBridge.cpp
     src/models/WallpaperModel.hpp
@@ -59,6 +64,7 @@ qt_add_qml_module(nyaa-paper-qt
         qml/views/BrowserView.qml
         qml/views/PropertiesView.qml
         qml/views/PlaylistView.qml
+        qml/views/SettingsView.qml
         qml/components/Cell.qml
         qml/components/HintBar.qml
         qml/components/KeyCap.qml
@@ -101,3 +107,8 @@ add_executable(config_test tests/config_test.cpp src/io/ConfigStore.cpp)
 target_include_directories(config_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(config_test PRIVATE Qt6::Core)
 add_test(NAME config_test COMMAND config_test)
+
+add_executable(videoduration_test tests/videoduration_test.cpp src/util/VideoDuration.cpp)
+target_include_directories(videoduration_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(videoduration_test PRIVATE Qt6::Core)
+add_test(NAME videoduration_test COMMAND videoduration_test)

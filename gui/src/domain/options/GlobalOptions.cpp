@@ -144,6 +144,16 @@ std::map<std::string, std::string> GlobalOptions::serialize() const
     return out;
 }
 
+void GlobalOptions::setFlag(const std::string &name, bool enabled)
+{
+    for (auto &flag : flags_) {
+        if (flag.getName() == name) {
+            flag.setEnabled(enabled);
+            return;
+        }
+    }
+}
+
 void GlobalOptions::restore(const std::map<std::string, std::string> &saved)
 {
     std::vector<GlobalOption *> mutableOptions{&volume_, &fps_, &scaling_, &clamp_};

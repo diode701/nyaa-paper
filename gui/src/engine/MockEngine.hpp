@@ -26,7 +26,7 @@ public:
     }
 
 public Q_SLOTS:
-    void apply(const QString &monitor, const EngineCommand &command) override
+    void apply(const QString &monitor, const EngineRequest &command) override
     {
         Q_UNUSED(monitor);
         Q_UNUSED(command);

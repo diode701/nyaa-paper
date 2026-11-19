@@ -12,6 +12,7 @@ struct WallpaperItem
     QString title;
     QString type;
     QString preview;
+    QString basePath;
 };
 
 /// The grid's data source. Filtering lives here so the view stays dumb.
@@ -22,7 +23,7 @@ class WallpaperModel : public QAbstractListModel
     Q_PROPERTY(int count READ count NOTIFY countChanged)
 
 public:
-    enum Role { IdRole = Qt::UserRole + 1, TitleRole, TypeRole, PreviewRole };
+    enum Role { IdRole = Qt::UserRole + 1, TitleRole, TypeRole, PreviewRole, BasePathRole };
 
     explicit WallpaperModel(QObject *parent = nullptr);
 

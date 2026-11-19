@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
+import NyaaPaper.Backend 1.0
 import "views"
 import "components"
 
@@ -17,9 +18,11 @@ ApplicationWindow {
     color: Theme.bg
 
     property int view: 0
+    property bool settingsOpen: false
     property string currentId: ""
     property string currentTitle: ""
     property string currentPreview: ""
+    property string currentBasePath: ""
 
     // read by the NYAA_KEYS dev hook; no effect on behaviour
     readonly property int debugCursor: browser.cursor
@@ -41,11 +44,12 @@ ApplicationWindow {
     Shortcut { sequence: "/";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.openSearch() }
     Shortcut { sequence: "M";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.playlists() }
     Shortcut { sequence: "G";      enabled: app.keysEnabled && app.view === 0; onActivated: Settings.cycle() }
+    Shortcut { sequence: "S";      enabled: app.keysEnabled && app.view === 0; onActivated: app.settingsOpen = true }
     Shortcut { sequence: "Escape"; enabled: app.view !== 0; onActivated: { app.view = 0; root.forceActiveFocus() } }
     Shortcut {
         sequence: "Ctrl+Return"
         enabled: app.view === 1
-        onActivated: Engine.applyWallpaper(properties.targetMonitor, properties.wallpaperId)
+        onActivated: Engine.applyWallpaper(properties.targetMonitor, properties.wallpaperId, properties.wallpaperBasePath)
     }
     Shortcut {
         sequence: "S"
@@ -55,7 +59,17 @@ ApplicationWindow {
     Shortcut {
         sequence: "A"
         enabled: app.view === 0 && app.keysEnabled
-        onActivated: Engine.applyWallpaper(Engine.monitors.length > 0 ? Engine.monitors[0] : "", app.currentId)
+        onActivated: Engine.applyWallpaper(Engine.monitors.length > 0 ? Engine.monitors[0] : "", app.currentId, app.currentBasePath)
+    }
+    Shortcut {
+        sequence: "A"
+        enabled: app.view === 1 && app.keysEnabled
+        onActivated: Playlist.add(Engine.playlistEntry(properties.targetMonitor, properties.wallpaperId, properties.wallpaperBasePath))
+    }
+    Shortcut {
+        sequence: "Space"
+        enabled: app.view === 2
+        onActivated: Playlist.state === "playing" ? Playlist.pause() : Playlist.play()
     }
 
     Item {
@@ -76,10 +90,11 @@ ApplicationWindow {
                     id: browser
                     anchors.fill: parent
                     visible: app.view === 0
-                    onOpen: (wallpaperId, title, preview) => {
+                    onOpen: (wallpaperId, title, preview, basePath) => {
                         app.currentId = wallpaperId
                         app.currentTitle = title
                         app.currentPreview = preview
+                        app.currentBasePath = basePath
                         app.view = 1
                         root.forceActiveFocus()
                     }
@@ -91,6 +106,7 @@ ApplicationWindow {
                     wallpaperId: app.currentId
                     wallpaperTitle: app.currentTitle
                     wallpaperPreview: app.currentPreview
+                    wallpaperBasePath: app.currentBasePath
                     anchors.fill: parent
                     visible: app.view === 1
                     onBack: { app.view = 0; root.forceActiveFocus() }
@@ -108,6 +124,15 @@ ApplicationWindow {
                 mode: app.view
                 pageLabel: app.view === 0 ? browser.pageLabel : ""
                 selection: app.view === 0 ? browser.cursorTitle : ""
+            }
+        }
+
+        SettingsView {
+            anchors.fill: parent
+            open: app.settingsOpen
+            onClose: {
+                app.settingsOpen = false
+                root.forceActiveFocus()
             }
         }
 

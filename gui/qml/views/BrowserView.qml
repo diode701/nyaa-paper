@@ -7,7 +7,7 @@ import "../components"
 Item {
     id: view
 
-    signal open(string wallpaperId, string title, string preview)
+    signal open(string wallpaperId, string title, string preview, string basePath)
     signal playlists
     signal requestFocus
 
@@ -79,7 +79,7 @@ Item {
     function openCurrent() {
         const item = current()
         if (item)
-            open(item.id, item.title, item.preview)
+            open(item.id, item.title, item.preview, item.basePath)
     }
 
     function openSearch() {

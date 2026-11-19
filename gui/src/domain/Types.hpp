@@ -33,6 +33,14 @@ struct Screenshot
     bool enabled() const { return !directory.empty(); }
 };
 
+/// Engine invocation details that are configuration, not wallpaper data.
+struct EngineOptions
+{
+    std::string workshopRoot;   // used to decide id vs path for --bg
+    std::string assetsDir;      // empty: let the engine use its built-in assets
+    std::string layer;          // Wayland layer; empty: don't pass the flag
+};
+
 /// Exactly what the daemon will execute: the binary is implied, everything the
 /// caller wants appended is here, and the environment is "KEY=VALUE" strings.
 struct EngineCommand

@@ -13,6 +13,7 @@ Item {
     property string wallpaperId: ""
     property string wallpaperTitle: ""
     property string wallpaperPreview: ""
+    property string wallpaperBasePath: ""
     property string targetMonitor: Engine.monitors.length > 0 ? Engine.monitors[0] : ""
 
     function handleKey(event) {
@@ -203,7 +204,11 @@ Item {
                 spacing: 12
                 Button {
                     text: "Apply"
-                    onClicked: Engine.applyWallpaper(view.targetMonitor, view.wallpaperId)
+                    onClicked: Engine.applyWallpaper(view.targetMonitor, view.wallpaperId, view.wallpaperBasePath)
+                }
+                Button {
+                    text: "Add to playlist"
+                    onClicked: Playlist.add(Engine.playlistEntry(view.targetMonitor, view.wallpaperId, view.wallpaperBasePath))
                 }
                 Button {
                     text: "Stop"

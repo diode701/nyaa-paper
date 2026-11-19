@@ -79,7 +79,8 @@ void DbusLibrary::onJson(const QString &json)
         items.push_back({obj.value(QStringLiteral("id")).toString(),
                          obj.value(QStringLiteral("title")).toString(),
                          obj.value(QStringLiteral("type")).toString(),
-                         previewFor(basePath)});
+                         previewFor(basePath),
+                         basePath});
     }
 
     emit wallpapersLoaded(items);

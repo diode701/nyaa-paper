@@ -24,7 +24,7 @@ struct Entry {
 }
 
 struct Inner {
-    root: PathBuf,
+    root: Mutex<PathBuf>,
     entries: Mutex<Vec<Entry>>,
     dirty: Arc<AtomicBool>,
     conn: Mutex<Option<Connection>>,
@@ -40,7 +40,7 @@ impl Library {
     pub fn new() -> Self {
         let library = Self {
             inner: Arc::new(Inner {
-                root: paths::workshop_root(),
+                root: Mutex::new(paths::workshop_root()),
                 entries: Mutex::new(Vec::new()),
                 dirty: Arc::new(AtomicBool::new(false)),
                 conn: Mutex::new(None),
@@ -48,7 +48,7 @@ impl Library {
             }),
         };
         let total = library.rescan_now();
-        info!(root = %library.inner.root.display(), total, "library scanned");
+        info!(root = %library.inner.root.lock().unwrap().display(), total, "library scanned");
         library
     }
 
@@ -56,9 +56,10 @@ impl Library {
         *self.inner.conn.lock().unwrap() = Some(conn.clone());
     }
 
-    /// Watcher callback only raises a flag; one task turns that flag into a
-    /// rescan plus a signal, so a burst of Steam writes costs one refresh.
-    pub fn start_watching(&self) {
+    /// Points the watcher at the configured root. Called at startup and again
+    /// whenever the GUI changes paths.workshop and asks for a rescan.
+    fn rewatch(&self) {
+        let root = self.inner.root.lock().unwrap().clone();
         let dirty = self.inner.dirty.clone();
         let mut watcher = match notify::recommended_watcher(move |result: notify::Result<notify::Event>| {
             match result {
@@ -73,11 +74,17 @@ impl Library {
             }
         };
 
-        if let Err(e) = watcher.watch(&self.inner.root, RecursiveMode::NonRecursive) {
-            warn!(root = %self.inner.root.display(), %e, "cannot watch workshop folder");
+        if let Err(e) = watcher.watch(&root, RecursiveMode::NonRecursive) {
+            warn!(root = %root.display(), %e, "cannot watch workshop folder");
             return;
         }
         *self.inner.watcher.lock().unwrap() = Some(watcher);
+    }
+
+    /// Watcher callback only raises a flag; one task turns that flag into a
+    /// rescan plus a signal, so a burst of Steam writes costs one refresh.
+    pub fn start_watching(&self) {
+        self.rewatch();
 
         let inner = self.inner.clone();
         tokio::spawn(async move {
@@ -86,7 +93,8 @@ impl Library {
                 if !inner.dirty.swap(false, Ordering::SeqCst) {
                     continue;
                 }
-                let entries = scan(&inner.root);
+                let root = inner.root.lock().unwrap().clone();
+                let entries = scan(&root);
                 let total = entries.len() as u32;
                 *inner.entries.lock().unwrap() = entries;
                 info!(total, "library changed");
@@ -105,7 +113,8 @@ impl Library {
     }
 
     fn rescan_now(&self) -> u32 {
-        let entries = scan(&self.inner.root);
+        let root = self.inner.root.lock().unwrap().clone();
+        let entries = scan(&root);
         let total = entries.len() as u32;
         *self.inner.entries.lock().unwrap() = entries;
         total
@@ -141,6 +150,16 @@ impl Library {
     }
 
     fn rescan(&self) -> u32 {
+        // The GUI may have changed paths.workshop; pick it up without a restart.
+        let configured = paths::workshop_root();
+        {
+            let mut root = self.inner.root.lock().unwrap();
+            if *root != configured {
+                info!(root = %configured.display(), "workshop root changed");
+                *root = configured;
+            }
+        }
+        self.rewatch();
         self.rescan_now()
     }
 

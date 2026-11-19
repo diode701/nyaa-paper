@@ -60,7 +60,7 @@ void DbusEngine::refreshRunning()
             });
 }
 
-void DbusEngine::apply(const QString &monitor, const EngineCommand &command)
+void DbusEngine::apply(const QString &monitor, const EngineRequest &command)
 {
     if (!m_engine) {
         emit daemonError(tr("daemon is not available"));

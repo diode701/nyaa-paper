@@ -4,9 +4,11 @@
 #include <QObject>
 #include <QStringList>
 #include <QVariantMap>
+#include <QVariantList>
 #include <memory>
 
 #include "engine/IEngine.hpp"
+#include "io/AppConfig.h"
 
 /// The QML-facing engine API. Everything QML may call about playback lives
 /// here; QML never sees D-Bus, never sees argv, never sees a PID it can misuse.
@@ -20,7 +22,7 @@ class EngineBridge : public QObject
     Q_PROPERTY(bool mock READ mock CONSTANT)
 
 public:
-    explicit EngineBridge(QObject *parent = nullptr);
+    explicit EngineBridge(const nyaa::io::AppConfig &config, QObject *parent = nullptr);
 
     QString version() const { return m_engine->version(); }
     QString enginePath() const { return m_engine->enginePath(); }
@@ -35,7 +37,15 @@ public:
 
     /// Apply by id with the bare minimum argv. The domain Renderer will replace
     /// this once the Setting hierarchy lands; the daemon does not care either way.
-    Q_INVOKABLE void applyWallpaper(const QString &monitor, const QString &wallpaperId);
+    /// Builds the real argv through domain::Renderer: parses the wallpaper's
+    /// project.json, applies the global defaults and the configured paths.
+    Q_INVOKABLE void applyWallpaper(const QString &monitor, const QString &wallpaperId,
+                                    const QString &basePath);
+
+    /// One playlist entry for the daemon: the rendered argv, env and the display
+    /// duration (video length when it is a video, 0 otherwise).
+    Q_INVOKABLE QVariantMap playlistEntry(const QString &monitor, const QString &wallpaperId,
+                                          const QString &basePath);
 
 Q_SIGNALS:
     void infoChanged();
@@ -44,7 +54,11 @@ Q_SIGNALS:
     void error(const QString &message);
 
 private:
+    EngineRequest buildRequest(const QString &monitor, const QString &wallpaperId,
+                               const QString &basePath);
+
     std::unique_ptr<IEngine> m_engine;
+    const nyaa::io::AppConfig &m_config;
     QVariantMap m_running;
     QStringList m_monitors;
     bool m_mock = false;

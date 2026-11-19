@@ -51,13 +51,14 @@ QVariant WallpaperModel::data(const QModelIndex &index, int role) const
     case TitleRole:   return item.title;
     case TypeRole:    return item.type;
     case PreviewRole: return item.preview;
+    case BasePathRole: return item.basePath;
     default:          return {};
     }
 }
 
 QHash<int, QByteArray> WallpaperModel::roleNames() const
 {
-    return {{IdRole, "wallpaperId"}, {TitleRole, "title"}, {TypeRole, "kind"}, {PreviewRole, "preview"}};
+    return {{IdRole, "wallpaperId"}, {TitleRole, "title"}, {TypeRole, "kind"}, {PreviewRole, "preview"}, {BasePathRole, "basePath"}};
 }
 
 QString WallpaperModel::idAt(int row) const
@@ -84,5 +85,6 @@ QVariantMap WallpaperModel::at(int row) const
     out.insert(QStringLiteral("title"), item.title);
     out.insert(QStringLiteral("kind"), item.type);
     out.insert(QStringLiteral("preview"), item.preview);
+    out.insert(QStringLiteral("basePath"), item.basePath);
     return out;
 }

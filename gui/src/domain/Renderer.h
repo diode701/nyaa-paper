@@ -20,7 +20,8 @@ public:
                                 const settings::SettingList &settings,
                                 const options::GlobalOptions &globals,
                                 const GpuConfig &gpu,
-                                const Screenshot &screenshot);
+                                const Screenshot &screenshot,
+                                const EngineOptions &options);
 };
 
 } // namespace nyaa::domain

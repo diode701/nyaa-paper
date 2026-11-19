@@ -9,7 +9,10 @@
 #include <QTimer>
 #include <QtQml>
 
+#include "bridge/ConfigBridge.hpp"
 #include "bridge/EngineBridge.hpp"
+#include "bridge/PlaylistBridge.hpp"
+#include "io/ConfigStore.h"
 #include "models/DbusLibrary.hpp"
 #include "models/MockLibrary.hpp"
 #include "models/WallpaperModel.hpp"
@@ -29,9 +32,14 @@ int main(int argc, char *argv[])
     app.setOrganizationName(QStringLiteral("diode701"));
     app.setDesktopFileName(QStringLiteral("io.github.diode701.NyaaPaper"));
 
+    nyaa::io::ConfigStore configStore;
+    const nyaa::io::AppConfig appConfig = configStore.load();
+
     Theme theme;
     PreviewSettings settings;
-    EngineBridge engine;
+    ConfigBridge config;
+    EngineBridge engine(config.config());
+    PlaylistBridge playlist;
     WallpaperModel library;
     if (qEnvironmentVariableIsSet("NYAA_MOCK")) {
         library.setAll(MockLibrary::load());
@@ -49,6 +57,8 @@ int main(int argc, char *argv[])
 
     qmlRegisterSingletonInstance("NyaaPaper.Theme", 1, 0, "Theme", &theme);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Settings", &settings);
+    qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Config", &config);
+    qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Playlist", &playlist);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Engine", &engine);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Library", &library);
 
@@ -92,8 +102,13 @@ int main(int argc, char *argv[])
     }
 
     // Dev aid: NYAA_VIEW=1|2 opens properties or playlist for screenshots.
-    if (qEnvironmentVariableIsSet("NYAA_VIEW"))
-        qml.rootObjects().first()->setProperty("view", qEnvironmentVariableIntValue("NYAA_VIEW"));
+    if (qEnvironmentVariableIsSet("NYAA_VIEW")) {
+        const int requested = qEnvironmentVariableIntValue("NYAA_VIEW");
+        if (requested == 3)
+            qml.rootObjects().first()->setProperty("settingsOpen", true);
+        else
+            qml.rootObjects().first()->setProperty("view", requested);
+    }
 
     // Dev aid: NYAA_SHOT=/path/frame.png renders one frame and exits.
     if (qEnvironmentVariableIsSet("NYAA_SHOT")) {

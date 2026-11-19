@@ -38,15 +38,39 @@ void appendEnvironment(std::vector<std::string> &env, const GpuConfig &gpu)
 }
 } // namespace
 
+namespace {
+/// An id lets linux-wallpaperengine find the wallpaper through Steam's standard
+/// directories. Anywhere else it must be handed the folder itself.
+std::string backgroundArgument(const Wallpaper &wallpaper, const std::string &workshopRoot)
+{
+    if (workshopRoot.empty() || wallpaper.basePath.empty())
+        return wallpaper.id;
+    const std::string prefix = workshopRoot.back() == '/' ? workshopRoot : workshopRoot + "/";
+    if (wallpaper.basePath.rfind(prefix, 0) == 0)
+        return wallpaper.id;
+    return wallpaper.basePath;
+}
+} // namespace
+
 EngineCommand Renderer::render(const std::string &monitor, const Wallpaper &wallpaper,
                                const settings::SettingList &settings,
                                const options::GlobalOptions &globals, const GpuConfig &gpu,
-                               const Screenshot &screenshot)
+                               const Screenshot &screenshot, const EngineOptions &options)
 {
     EngineCommand command;
     command.wallpaperId = wallpaper.id;
 
-    command.argv = {"--screen-root", monitor, "--bg", wallpaper.id};
+    command.argv = {"--screen-root", monitor, "--bg", backgroundArgument(wallpaper, options.workshopRoot)};
+
+    if (!options.assetsDir.empty()) {
+        command.argv.push_back("--assets-dir");
+        command.argv.push_back(options.assetsDir);
+    }
+    if (!options.layer.empty()) {
+        command.argv.push_back("--layer");
+        command.argv.push_back(options.layer);
+    }
+
     appendScreenshot(command.argv, monitor, screenshot);
 
     // engine-wide flags first (volume, fps, boolean flags), then the flags that

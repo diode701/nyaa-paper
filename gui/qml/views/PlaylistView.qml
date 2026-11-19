@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
@@ -13,6 +14,11 @@ Item {
             back()
             event.accepted = true
         }
+    }
+
+    onVisibleChanged: {
+        if (visible)
+            Playlist.load(Engine.monitors.length > 0 ? Engine.monitors[0] : "")
     }
 
     RowLayout {
@@ -40,8 +46,8 @@ Item {
                     Layout.fillWidth: true
                     height: 46
                     radius: 8
-                    color: index === 0 ? Theme.panelAlt : "transparent"
-                    border.color: index === 0 ? Theme.accent : Theme.line
+                    color: Playlist.monitor === modelData ? Theme.panelAlt : "transparent"
+                    border.color: Playlist.monitor === modelData ? Theme.accent : Theme.line
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
@@ -60,6 +66,10 @@ Item {
                         anchors.rightMargin: 12
                         color: Engine.running[modelData] !== undefined ? Theme.accent : Theme.dim
                     }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: Playlist.load(modelData)
+                    }
                 }
             }
 
@@ -71,47 +81,71 @@ Item {
             Layout.fillHeight: true
             spacing: 10
 
+            RowLayout {
+                Layout.fillWidth: true
+                Text {
+                    text: "PLAYLIST"
+                    color: Theme.muted
+                    font.pixelSize: 10
+                    font.letterSpacing: 2
+                }
+                Item { Layout.fillWidth: true }
+                Text {
+                    text: Playlist.state + (Playlist.index >= 0 ? "  ·  " + (Playlist.index + 1) : "")
+                    color: Theme.accent
+                    font.pixelSize: 10
+                    font.letterSpacing: 2
+                }
+            }
+
             Text {
-                text: "PLAYLIST"
-                color: Theme.muted
-                font.pixelSize: 10
-                font.letterSpacing: 2
+                visible: Playlist.entries.length === 0
+                text: "no entries yet — press A in the properties view to add the selected wallpaper"
+                color: Theme.dim
+                font.pixelSize: 12
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
             }
 
             Repeater {
-                model: 4
+                model: Playlist.entries
                 delegate: Rectangle {
                     required property int index
+                    required property var modelData
                     Layout.fillWidth: true
-                    height: 64
+                    height: 52
                     radius: 8
-                    color: index === 0 ? Theme.panelAlt : "transparent"
-                    border.color: index === 0 ? Theme.accent : Theme.line
+                    color: Playlist.index === index ? Theme.panelAlt : "transparent"
+                    border.color: Playlist.index === index ? Theme.accent : Theme.line
 
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: 12
                         spacing: 14
-
                         Text {
                             text: ("0" + (index + 1)).slice(-2)
                             color: Theme.dim
                             font.family: Theme.mono
                             font.pixelSize: 11
                         }
-                        Rectangle {
-                            width: 64
-                            height: 36
-                            radius: 4
-                            color: Theme.accentDim
+                        Text {
+                            text: "wallpaper " + modelData.wallpaperId
+                            color: Theme.text
+                            font.pixelSize: 13
+                            Layout.fillWidth: true
                         }
-                        ColumnLayout {
-                            spacing: 2
-                            Text { text: "wallpaper " + (index + 1); color: Theme.text; font.pixelSize: 13 }
-                            Text { text: "42s"; color: Theme.dim; font.pixelSize: 10; font.family: Theme.mono }
+                        Text {
+                            text: modelData.durationSec > 0
+                                  ? Math.round(modelData.durationSec) + "s"
+                                  : "interval"
+                            color: Theme.dim
+                            font.pixelSize: 10
+                            font.family: Theme.mono
                         }
-                        Item { Layout.fillWidth: true }
-                        Text { text: "ALT+\u2191/\u2193 reorder"; color: Theme.dim; font.pixelSize: 10 }
+                        Button {
+                            text: "✕"
+                            onClicked: Playlist.removeAt(index)
+                        }
                     }
                 }
             }
@@ -120,15 +154,24 @@ Item {
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 18
-                Text { text: "SEQUENTIAL"; color: Theme.accent; font.pixelSize: 10; font.letterSpacing: 2 }
-                Text { text: "every 60s"; color: Theme.muted; font.pixelSize: 11 }
-                Text { text: "loop on"; color: Theme.muted; font.pixelSize: 11 }
+                spacing: 8
+                Button {
+                    text: "▶ Play"
+                    onClicked: Playlist.play()
+                }
+                Button {
+                    text: "⏸ Pause"
+                    onClicked: Playlist.pause()
+                }
+                Button {
+                    text: "⏹ Stop"
+                    onClicked: Playlist.stop()
+                }
                 Item { Layout.fillWidth: true }
                 Text {
-                    text: "\u25B6 play    \u23F8 pause    \u23F9 stop    \u23EE prev    \u23ED next"
-                    color: Theme.muted
-                    font.pixelSize: 12
+                    text: "space play/pause   ·   esc back"
+                    color: Theme.dim
+                    font.pixelSize: 10
                 }
             }
         }

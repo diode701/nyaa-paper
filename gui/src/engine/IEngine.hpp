@@ -10,7 +10,7 @@
 /// This is the whole "how to play" instruction: the daemon spawns exactly this
 /// and never interprets it. Java equivalent: the argument list that
 /// WallpaperInstance used to build internally.
-struct EngineCommand
+struct EngineRequest
 {
     QString wallpaperId;
     QStringList argv;
@@ -44,7 +44,7 @@ public:
     Q_INVOKABLE virtual void refreshRunning() = 0;
 
 public Q_SLOTS:
-    virtual void apply(const QString &monitor, const EngineCommand &command) = 0;
+    virtual void apply(const QString &monitor, const EngineRequest &command) = 0;
     virtual void stop(const QString &monitor) = 0;
     virtual void stopAll() = 0;
 

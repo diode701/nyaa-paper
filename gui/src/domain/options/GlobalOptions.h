@@ -128,6 +128,8 @@ public:
     std::vector<std::string> arguments(bool prePropertyFlags) const;
     std::map<std::string, std::string> serialize() const;
     void restore(const std::map<std::string, std::string> &saved);
+    /// Enables a flag by its CLI name (without --). Unknown names are ignored.
+    void setFlag(const std::string &name, bool enabled);
 
 private:
     VolumeOption volume_;

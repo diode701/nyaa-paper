@@ -19,7 +19,7 @@ public:
     void refreshRunning() override;
 
 public Q_SLOTS:
-    void apply(const QString &monitor, const EngineCommand &command) override;
+    void apply(const QString &monitor, const EngineRequest &command) override;
     void stop(const QString &monitor) override;
     void stopAll() override;
 

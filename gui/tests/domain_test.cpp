@@ -73,9 +73,15 @@ int main()
 
     nyaa::domain::options::GlobalOptions globals;   // volume 70 default, no flags
     globals.restore({{"volume", "70"}});
-    const EngineCommand command = nyaa::domain::Renderer::render("eDP-1", wallpaper, list, globals, gpu, {});
+    nyaa::domain::EngineOptions options;
+    options.workshopRoot = "/tmp";             // basePath /tmp/1234 is under it -> id
+    options.assetsDir = "/opt/assets";
+    options.layer = "bottom";
+    const EngineCommand command = nyaa::domain::Renderer::render("eDP-1", wallpaper, list, globals, gpu, {}, options);
     const std::vector<std::string> expected{
         "--screen-root", "eDP-1", "--bg", "1234",
+        "--assets-dir", "/opt/assets",
+        "--layer", "bottom",
         "--volume", "70",
         "--set-property", "bloom=1",
         "--set-property", "fov=0.42",
@@ -83,6 +89,11 @@ int main()
     assert(command.argv == expected);
     assert(command.env == std::vector<std::string>{"DRI_PRIME=1", "__GL_THREADED_OPTIMIZATIONS=0"});
     assert(command.wallpaperId == "1234");
+
+    // a wallpaper outside the workshop root is passed by path, not by id
+    nyaa::domain::Wallpaper odd{"9999", "Odd", "scene", "x.pkg", "/elsewhere/9999"};
+    const EngineCommand byPath = nyaa::domain::Renderer::render("eDP-1", odd, list, globals, gpu, {}, options);
+    assert(byPath.argv[3] == "/elsewhere/9999");
 
     std::puts("domain tests passed");
     return 0;

@@ -1,23 +1,35 @@
 #!/bin/sh
-# Entry point inside the sandbox.
+# Entry point inside the sandbox: one app, two processes.
 #
-# Model B: the daemon owns the wallpaper children and is the long-lived process.
-# It does not spawn the GUI yet (gui.rs is parked), so for now the wrapper starts
-# both and the daemon outlives the window on purpose.
+# The daemon owns the wallpaper engines and must outlive the window, so when
+# none is running it becomes the sandbox's main process (exec) and the GUI is
+# started next to it. Flatpak keeps a sandbox alive as long as its main process
+# runs: closing the window (q) leaves the daemon and the wallpapers running.
+# A later launch finds the daemon on the bus and only opens the window.
 set -e
 
 export NYAA_GUI="${NYAA_GUI:-/app/bin/nyaa-paper-qt}"
 export NYAA_ENGINE="${NYAA_ENGINE:-/app/bin/linux-wallpaperengine}"
 
-if ! busctl --user --no-pager call org.nyaa.Paper /org/nyaa/Paper \
-        org.nyaa.Paper.Engine Info >/dev/null 2>&1; then
-    /app/bin/nyaa-paperd &
-    # give the daemon a moment to own the name
-    for _ in 1 2 3 4 5 6 7 8 9 10; do
-        busctl --user --no-pager call org.nyaa.Paper /org/nyaa/Paper \
-            org.nyaa.Paper.Engine Info >/dev/null 2>&1 && break
-        sleep 0.1
-    done
+daemon_running() {
+    # busctl is not in the runtime; gdbus is
+    gdbus call --session --dest org.freedesktop.DBus \
+        --object-path /org/freedesktop/DBus \
+        --method org.freedesktop.DBus.NameHasOwner org.nyaa.Paper 2>/dev/null \
+        | grep -q true
+}
+
+if daemon_running; then
+    exec "$NYAA_GUI" "$@"
 fi
 
-exec /app/bin/nyaa-paper-qt "$@"
+# the GUI reads library/engine state once at startup, so open it only after
+# the daemon owns its name (it scans the workshop first; give it 5 s)
+(
+    for _ in $(seq 50); do
+        daemon_running && break
+        sleep 0.1
+    done
+    exec "$NYAA_GUI" "$@"
+) &
+exec /app/bin/nyaa-paperd

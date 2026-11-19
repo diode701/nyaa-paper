@@ -4,7 +4,6 @@ import QtQuick.Controls.Material
 import QtQuick.Layouts
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
-import NyaaPaper.Backend 1.0
 import "views"
 import "components"
 
@@ -39,6 +38,7 @@ ApplicationWindow {
     readonly property bool keysEnabled: app.view !== 0 || !browser.searchOpen
 
     Shortcut { sequence: "Ctrl+Q"; onActivated: Qt.quit() }
+    Shortcut { sequence: "Q";       enabled: app.keysEnabled; onActivated: Qt.quit() }
 
     Shortcut { sequence: "Left";   enabled: app.keysEnabled && app.view === 0; onActivated: browser.move(-1, 0) }
     Shortcut { sequence: "Right";  enabled: app.keysEnabled && app.view === 0; onActivated: browser.move(1, 0) }
@@ -49,6 +49,8 @@ ApplicationWindow {
     Shortcut { sequence: "Return"; enabled: app.keysEnabled && app.view === 0; onActivated: browser.openCurrent() }
     Shortcut { sequence: "Enter";  enabled: app.keysEnabled && app.view === 0; onActivated: browser.openCurrent() }
     Shortcut { sequence: "/";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.openSearch() }
+    Shortcut { sequence: "N";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.goTo(browser.page + 1, 0) }
+    Shortcut { sequence: "P";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.goTo(browser.page - 1, 0) }
     Shortcut { sequence: "M";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.playlists() }
     Shortcut { sequence: "G";      enabled: app.keysEnabled && app.view === 0; onActivated: Settings.cycle() }
     Shortcut { sequence: "S";      enabled: app.keysEnabled && app.view === 0; onActivated: app.settingsOpen = true }
@@ -56,7 +58,51 @@ ApplicationWindow {
     Shortcut {
         sequence: "Ctrl+Return"
         enabled: app.view === 1
-        onActivated: Engine.applyWallpaper(properties.targetMonitor, properties.wallpaperId, properties.wallpaperBasePath)
+        onActivated: properties.applyCurrent()
+    }
+    Shortcut {
+        sequence: "Ctrl+Up"
+        enabled: app.view === 1
+        onActivated: properties.cycleMonitor(-1)
+    }
+    Shortcut {
+        sequence: "Ctrl+Down"
+        enabled: app.view === 1
+        onActivated: properties.cycleMonitor(1)
+    }
+    Shortcut {
+        sequence: "L"
+        enabled: app.view === 1
+        onActivated: properties.loadLast()
+    }
+    Shortcut {
+        sequence: "B"
+        enabled: app.view === 2
+        onActivated: { app.view = 0; root.forceActiveFocus() }
+    }
+    Shortcut {
+        sequence: "Up"
+        enabled: app.view === 2
+        onActivated: playlistView.select(-1)
+    }
+    Shortcut {
+        sequence: "Down"
+        enabled: app.view === 2
+        onActivated: playlistView.select(1)
+    }
+    Shortcut {
+        sequence: "Delete"
+        enabled: app.view === 2
+        onActivated: playlistView.removeSelected()
+    }
+    Repeater {
+        model: 10
+        Shortcut {
+            required property int index
+            sequence: index === 9 ? "0" : String(index + 1)
+            enabled: app.view === 1
+            onActivated: properties.selectMonitorByIndex(index === 9 ? 9 : index)
+        }
     }
     Shortcut {
         sequence: "S"
@@ -71,7 +117,7 @@ ApplicationWindow {
     Shortcut {
         sequence: "A"
         enabled: app.view === 1 && app.keysEnabled
-        onActivated: Playlist.add(Engine.playlistEntry(properties.targetMonitor, properties.wallpaperId, properties.wallpaperBasePath))
+        onActivated: properties.addCurrent()
     }
     Shortcut {
         sequence: "Space"
@@ -120,7 +166,7 @@ ApplicationWindow {
                     onBack: { app.view = 0; root.forceActiveFocus() }
                 }
                 PlaylistView {
-                    id: playlist
+                    id: playlistView
                     anchors.fill: parent
                     visible: app.view === 2
                     onBack: { app.view = 0; root.forceActiveFocus() }

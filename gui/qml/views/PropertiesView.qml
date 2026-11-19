@@ -22,6 +22,36 @@ Item {
 
     readonly property int leftWidth: Math.min(540, Math.max(320, view.width * 0.26))
 
+    function applyCurrent() {
+        Engine.applyWallpaper(targetMonitor, wallpaperId, wallpaperBasePath)
+        Config.saveApplied(targetMonitor, wallpaperId, Properties.values())
+    }
+
+    function addCurrent() {
+        Playlist.add(Engine.playlistEntry(targetMonitor, wallpaperId, wallpaperBasePath))
+    }
+
+    function loadLast() {
+        const saved = Config.loadApplied(targetMonitor)
+        if (saved.__wallpaperId === wallpaperId)
+            Properties.applyValues(saved)
+    }
+
+    function cycleMonitor(delta) {
+        const monitors = Engine.monitors
+        if (monitors.length === 0) return
+        const current = monitors.indexOf(targetMonitor)
+        const next = (current < 0 ? 0 : (current + delta + monitors.length) % monitors.length)
+        targetMonitor = monitors[next]
+    }
+
+    /// 1-based, like the Java app: 1..9 then 0 for the tenth.
+    function selectMonitorByIndex(index) {
+        const monitors = Engine.monitors
+        if (index >= 0 && index < monitors.length)
+            targetMonitor = monitors[index]
+    }
+
     function handleKey(event) {
         if (event.key === Qt.Key_Escape) {
             back()
@@ -50,7 +80,7 @@ Item {
 
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: Math.round(view.leftWidth * 0.56)
+                Layout.preferredHeight: view.leftWidth
                 radius: Theme.radius
                 border.color: Theme.line
                 clip: true
@@ -227,6 +257,7 @@ Item {
 
                     CheckBox {
                         visible: !isGroup && kind === 0
+                        font.pixelSize: 12
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.right: parent.right
                         anchors.rightMargin: 12
@@ -260,6 +291,9 @@ Item {
 
                     ComboBox {
                         visible: !isGroup && kind === 3
+                        implicitHeight: 38
+                        font.pixelSize: 12
+                        leftPadding: 10
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.right: parent.right
                         anchors.rightMargin: 12
@@ -372,6 +406,9 @@ Item {
 
                     ComboBox {
                         visible: kind >= 2 && kind <= 4
+                        implicitHeight: 38
+                        font.pixelSize: 12
+                        leftPadding: 10
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.right: parent.right
                         anchors.rightMargin: 12
@@ -383,6 +420,7 @@ Item {
 
                     CheckBox {
                         visible: kind === 5
+                        font.pixelSize: 12
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.right: parent.right
                         anchors.rightMargin: 12
@@ -392,30 +430,39 @@ Item {
                 }
             }
 
-            RowLayout {
+            Rectangle {
                 Layout.fillWidth: true
-                Layout.topMargin: 6
-                spacing: 12
+                Layout.topMargin: 8
+                height: 54
+                radius: 8
+                color: Theme.panelAlt
+                border.color: Theme.line
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 8
+                spacing: 10
+
+                Text {
+                    Layout.preferredWidth: 300
+                    text: "CTRL+ENTER apply · A add · S stop · L last · 1-0 monitor"
+                    color: Theme.dim
+                    font.pixelSize: 10
+                    wrapMode: Text.WordWrap
+                }
 
                 ActionButton {
                     primary: true
                     text: "Apply"
-                    onClicked: {
-                        Engine.applyWallpaper(view.targetMonitor, view.wallpaperId, view.wallpaperBasePath)
-                        Config.saveApplied(view.targetMonitor, view.wallpaperId, Properties.values())
-                    }
+                    onClicked: view.applyCurrent()
                 }
                 ActionButton {
                     text: "Load last"
-                    onClicked: {
-                        const saved = Config.loadApplied(view.targetMonitor)
-                        if (saved.__wallpaperId === view.wallpaperId)
-                            Properties.applyValues(saved)
-                    }
+                    onClicked: view.loadLast()
                 }
                 ActionButton {
                     text: "Add to playlist"
-                    onClicked: Playlist.add(Engine.playlistEntry(view.targetMonitor, view.wallpaperId, view.wallpaperBasePath))
+                    onClicked: view.addCurrent()
                 }
                 ActionButton {
                     text: "Stop"
@@ -427,10 +474,11 @@ Item {
                 }
                 Item { Layout.fillWidth: true }
                 Text {
-                    text: "CTRL+ENTER apply   ·   A add   ·   S stop   ·   ESC back"
+                    text: "ESC back"
                     color: Theme.dim
                     font.pixelSize: 11
                 }
+            }
             }
         }
     }

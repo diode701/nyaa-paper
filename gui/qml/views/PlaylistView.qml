@@ -10,6 +10,20 @@ Item {
 
     signal back
 
+    property int selected: 0
+
+    function select(delta) {
+        const count = Playlist.entries.length
+        if (count === 0)
+            return
+        selected = Math.max(0, Math.min(count - 1, selected + delta))
+    }
+
+    function removeSelected() {
+        if (Playlist.entries.length > 0)
+            Playlist.removeAt(selected)
+    }
+
     function handleKey(event) {
         if (event.key === Qt.Key_Escape) {
             back()
@@ -116,8 +130,8 @@ Item {
                     Layout.fillWidth: true
                     height: 52
                     radius: 8
-                    color: Playlist.index === index ? Theme.panelAlt : "transparent"
-                    border.color: Playlist.index === index ? Theme.accent : Theme.line
+                    color: Playlist.index === index || view.selected === index ? Theme.panelAlt : "transparent"
+                    border.color: Playlist.index === index ? Theme.accent : (view.selected === index ? Theme.line : "#101418")
 
                     RowLayout {
                         anchors.fill: parent

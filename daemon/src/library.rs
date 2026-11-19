@@ -3,6 +3,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, UNIX_EPOCH};
 
+use notify::event::{AccessKind, EventKind};
 use notify::{RecursiveMode, Watcher};
 use serde_json::json;
 use tracing::{info, warn};
@@ -63,7 +64,15 @@ impl Library {
         let dirty = self.inner.dirty.clone();
         let mut watcher = match notify::recommended_watcher(move |result: notify::Result<notify::Event>| {
             match result {
-                Ok(_) => dirty.store(true, Ordering::SeqCst),
+                // Reading project.json during a scan produces Access events on
+                // the same directory, which would rescan forever.
+                Ok(event) => {
+                    if !matches!(event.kind, EventKind::Access(_))
+                        && !matches!(event.kind, EventKind::Access(AccessKind::Close(_)))
+                    {
+                        dirty.store(true, Ordering::SeqCst);
+                    }
+                }
                 Err(e) => warn!(%e, "watch error"),
             }
         }) {
@@ -96,7 +105,15 @@ impl Library {
                 let root = inner.root.lock().unwrap().clone();
                 let entries = scan(&root);
                 let total = entries.len() as u32;
+                let ids: Vec<String> = entries.iter().map(|e| e.id.clone()).collect();
+                let previous: Vec<String> = {
+                    let current = inner.entries.lock().unwrap();
+                    current.iter().map(|e| e.id.clone()).collect()
+                };
                 *inner.entries.lock().unwrap() = entries;
+                if ids == previous {
+                    continue; // the event was noise, say nothing
+                }
                 info!(total, "library changed");
 
                 let conn = inner.conn.lock().unwrap().clone();

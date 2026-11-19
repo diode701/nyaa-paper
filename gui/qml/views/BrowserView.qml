@@ -15,10 +15,11 @@ Item {
 
     // The original app's geometry, unchanged: fixed 180px thumbs, 15px gaps,
     // 20px margins, and the status bar taken out of the usable height.
-    readonly property int gap: 15
+    readonly property int gap: 18
     readonly property int thumb: 180
-    readonly property int cols: Math.max(1, Math.floor((width - 40 + gap) / (thumb + gap)))
-    readonly property int rows: Math.max(1, Math.floor((height - 40 + gap) / (thumb + gap)))
+    readonly property int pad: 36
+    readonly property int cols: Math.max(1, Math.floor((width - 2 * pad + gap) / (thumb + gap)))
+    readonly property int rows: Math.max(1, Math.floor((height - 2 * pad + gap) / (thumb + gap)))
     readonly property int pageSize: cols * rows
     readonly property int cellSize: thumb
     readonly property string cursorTitle: (cursor >= 0 && cursor < pageItems.length)

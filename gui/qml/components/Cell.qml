@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
 
@@ -13,36 +12,52 @@ Item {
     property bool selected: false
     property bool hovered: mouse.containsMouse
 
-    // Animated 0..1 levels so selection and hover ease instead of snapping.
     property real sel: selected ? 1 : 0
     property real hot: hovered ? 1 : 0
 
     readonly property bool animate: Settings.animationMode === 2
                                     || (Settings.animationMode === 1 && (hovered || selected))
+    readonly property int radius: 6
 
     signal clicked
 
-    scale: 1.0 + 0.02 * hot
+    transform: Scale {
+        origin.x: cell.width / 2
+        origin.y: cell.height / 2
+        xScale: 1.0 + 0.02 * cell.hot
+        yScale: 1.0 + 0.02 * cell.hot
+        Behavior on xScale { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+        Behavior on yScale { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+    }
     Behavior on sel { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
     Behavior on hot { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
-    Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+
+    // Shader-free shadow: two offset slabs behind the card.
+    Rectangle {
+        anchors.fill: parent
+        anchors.topMargin: 5 + 2 * cell.hot
+        anchors.bottomMargin: -3
+        anchors.leftMargin: -2
+        anchors.rightMargin: -2
+        radius: cell.radius + 2
+        color: "#000000"
+        opacity: 0.28 + 0.12 * cell.hot
+    }
+    Rectangle {
+        anchors.fill: parent
+        anchors.topMargin: 2
+        anchors.bottomMargin: -1
+        radius: cell.radius + 1
+        color: "#000000"
+        opacity: 0.22
+    }
 
     Rectangle {
         id: body
         anchors.fill: parent
-        radius: Theme.radius
+        radius: cell.radius
         color: "#151A21"
         clip: true
-
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0.35 * cell.sel, 0.16 + 0.66 * cell.sel, 0.20 + 0.80 * cell.sel, 1.0)
-            shadowOpacity: 0.45 + 0.15 * cell.hot + 0.30 * cell.sel
-            shadowBlur: 0.4 + 0.5 * cell.hot + 0.6 * cell.sel
-            shadowVerticalOffset: 4 * (1.0 - cell.sel)
-            shadowHorizontalOffset: 0
-        }
 
         Rectangle {
             anchors.fill: parent
@@ -55,6 +70,7 @@ Item {
 
         AnimatedImage {
             anchors.fill: parent
+            anchors.margins: 4
             source: cell.preview
             visible: cell.preview !== ""
             fillMode: Image.PreserveAspectFit
@@ -68,29 +84,28 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: Theme.radius
-        color: "transparent"
-        border.width: 1
-        border.color: "#2A323D"
+        anchors.margins: 1
+        radius: cell.radius - 1
+        height: 1
+        color: "#14ffffff"
     }
 
     Rectangle {
         anchors.fill: parent
-        radius: Theme.radius
+        radius: cell.radius
         color: "transparent"
-        border.width: 3
-        border.color: Theme.accent
-        opacity: cell.sel
+        border.width: 1
+        border.color: cell.selected ? Theme.accent : "#2A323D"
     }
 
     Rectangle {
         anchors.fill: parent
-        anchors.margins: -1
-        radius: Theme.radius + 1
+        anchors.margins: -2
+        radius: cell.radius + 2
         color: "transparent"
-        border.width: 1
+        border.width: 2
         border.color: Theme.accent
-        opacity: 0.35 * cell.sel
+        opacity: 0.85 * cell.sel
     }
 
     MouseArea {

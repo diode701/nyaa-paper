@@ -25,10 +25,10 @@ class Theme : public QObject
 public:
     explicit Theme(QObject *parent = nullptr) : QObject(parent) {}
 
-    QColor bg() const { return QColor("#0B0D10"); }
-    QColor panel() const { return QColor("#11151B"); }
-    QColor panelAlt() const { return QColor("#171C24"); }
-    QColor line() const { return QColor("#232A34"); }
+    QColor bg() const { return QColor("#12151A"); }
+    QColor panel() const { return QColor("#171B22"); }
+    QColor panelAlt() const { return QColor("#1C2129"); }
+    QColor line() const { return QColor("#2A323D"); }
     QColor text() const { return QColor("#E8EDF2"); }
     QColor muted() const { return QColor("#9AA6B2"); }
     QColor dim() const { return QColor("#5C6673"); }

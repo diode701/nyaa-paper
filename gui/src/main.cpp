@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QFontDatabase>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 
@@ -17,16 +18,24 @@
 #include "models/PropertyModel.hpp"
 #include "models/MockLibrary.hpp"
 #include "models/WallpaperModel.hpp"
+#include "io/ConfigStore.h"
 #include "ui/PreviewSettings.hpp"
 #include "ui/Theme.hpp"
 
 int main(int argc, char *argv[])
 {
-    // Vulkan by default: it drives the shader effects (card shadows, selection
-    // glow) more reliably than the GL path on NVIDIA/Wayland. Override with
-    // QSG_RHI_BACKEND=opengl (or =software) when diagnosing.
-    if (qEnvironmentVariableIsEmpty("QSG_RHI_BACKEND"))
-        qputenv("QSG_RHI_BACKEND", "vulkan");
+    // Renderer and UI scale must be known before Qt starts. Settings stores
+    // them; an environment variable set by the user still wins.
+    {
+        const nyaa::io::AppConfig early = nyaa::io::ConfigStore().load();
+        if (qEnvironmentVariableIsEmpty("QSG_RHI_BACKEND")) {
+            // Vulkan by default (hardware accelerated, best on NVIDIA/Wayland)
+            const std::string r = early.ui.renderer;
+            qputenv("QSG_RHI_BACKEND", r == "opengl" ? "opengl" : r == "software" ? "software" : "vulkan");
+        }
+        if (qEnvironmentVariableIsEmpty("QT_SCALE_FACTOR") && early.ui.scale != 1.0)
+            qputenv("QT_SCALE_FACTOR", QByteArray::number(early.ui.scale, 'f', 2));
+    }
 
     QQuickStyle::setStyle(QStringLiteral("Material"));
 
@@ -36,9 +45,14 @@ int main(int argc, char *argv[])
     app.setApplicationName(QStringLiteral("nyaa-paper"));
     app.setOrganizationName(QStringLiteral("diode701"));
     app.setDesktopFileName(QStringLiteral("io.github.diode701.NyaaPaper"));
+    // JetBrains Mono ships with the app (OFL), so the look does not depend on
+    // what the system has installed.
+    for (const char *weight : {"Regular", "Medium", "SemiBold", "Bold", "ExtraBold"})
+        QFontDatabase::addApplicationFont(QStringLiteral(":/fonts/JetBrainsMono-%1.ttf").arg(QLatin1String(weight)));
+    app.setFont(QFont(QStringLiteral("JetBrains Mono"), 10));
 
-    Theme theme;
     ConfigBridge config;
+    Theme theme(config);
     PreviewSettings settings(config);
     EngineBridge engine;
     WallpaperModel library;

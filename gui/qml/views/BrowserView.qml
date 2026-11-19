@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Effects
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
 import "../components"
@@ -184,21 +185,81 @@ Item {
         }
     }
 
+    // ---- the room: the selected wallpaper, blurred and dark, behind the grid
+    Item {
+        id: backdrop
+        anchors.fill: parent
+        visible: Config.backdrop && !view.suspended
+        z: -1
+        property int front: 0
+        property string current: ""
+        function show(url) {
+            if (url === current) return
+            current = url
+            front = 1 - front
+            if (front === 0) { a.source = url } else { b.source = url }
+        }
+        Item {
+            id: layers
+            anchors.fill: parent
+            // decoded at 64 px: the blur needs no detail, and it costs nothing
+            Image { id: a; anchors.fill: parent; fillMode: Image.PreserveAspectCrop; sourceSize: Qt.size(64, 64); asynchronous: true
+                    opacity: backdrop.front === 0 ? 1 : 0; Behavior on opacity { NumberAnimation { duration: 450 } } }
+            Image { id: b; anchors.fill: parent; fillMode: Image.PreserveAspectCrop; sourceSize: Qt.size(64, 64); asynchronous: true
+                    opacity: backdrop.front === 1 ? 1 : 0; Behavior on opacity { NumberAnimation { duration: 450 } } }
+        }
+        // the images render into one texture, the blur reads that texture
+        ShaderEffectSource {
+            id: texture
+            anchors.fill: parent
+            sourceItem: layers
+            hideSource: true
+            visible: false
+        }
+        MultiEffect {
+            anchors.fill: parent
+            source: texture
+            blurEnabled: true
+            blur: 1.0
+            blurMax: 48
+            saturation: 0.15
+            autoPaddingEnabled: false
+            opacity: 0.30
+        }
+    }
+    Timer {
+        // follow the cursor after it settles, so fast scrolling stays cheap
+        id: follow
+        interval: 120
+        onTriggered: {
+            const item = view.current()
+            const url = item ? item.preview : ""
+            backdrop.show(url)
+            Theme.followWallpaper(url)
+        }
+    }
+    onCursorChanged: follow.restart()
+    onPageItemsChanged: follow.restart()
+
     Item {
         id: deck
         anchors.fill: parent
 
         Grid {
+            id: grid
             anchors.centerIn: parent
+            anchors.verticalCenterOffset: -8
             columns: view.cols
             spacing: view.gap
 
+            // a fixed pool of cards: a page flip swaps their data, not the objects
             Repeater {
-                model: view.pageItems
+                model: view.pageSize
                 delegate: Cell {
+                    required property int index
                     width: view.thumb
                     height: view.thumb
-                    pageStart: view.page * view.pageSize
+                    item: index < view.pageItems.length ? view.pageItems[index] : null
                     selected: index === view.cursor
                     onClicked: {
                         view.setCursor(index)
@@ -208,15 +269,40 @@ Item {
             }
         }
 
+        // the cursor: corner brackets that glide to the selected card
+        Item {
+            id: reticle
+            visible: Config.selectionStyle === "brackets" && view.pageItems.length > 0
+            readonly property int col: view.cursor % view.cols
+            readonly property int row: Math.floor(view.cursor / view.cols)
+            x: grid.x + col * (view.thumb + view.gap) - 8
+            y: grid.y + row * (view.thumb + view.gap) - 10
+            width: view.thumb + 16
+            height: view.thumb + 16
+            Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+            Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+            readonly property int arm: 18
+            readonly property int w: 2
+            Repeater {
+                model: 4
+                delegate: Item {
+                    required property int index
+                    id: corner
+                    readonly property bool atRight: index % 2 === 1
+                    readonly property bool atBottom: index >= 2
+                    x: atRight ? reticle.width - reticle.arm : 0
+                    y: atBottom ? reticle.height - reticle.arm : 0
+                    width: reticle.arm
+                    height: reticle.arm
+                    Rectangle { color: Theme.accent; width: reticle.arm; height: reticle.w; y: corner.atBottom ? reticle.arm - reticle.w : 0 }
+                    Rectangle { color: Theme.accent; width: reticle.w; height: reticle.arm; x: corner.atRight ? reticle.arm - reticle.w : 0 }
+                }
+            }
+        }
+
         ParallelAnimation {
             id: deckAnim
-            NumberAnimation {
-                target: deck
-                property: "x"
-                to: 0
-                duration: 170
-                easing.type: Easing.OutCubic
-            }
+            NumberAnimation { target: deck; property: "x"; to: 0; duration: 170; easing.type: Easing.OutCubic }
             NumberAnimation { target: deck; property: "opacity"; to: 1; duration: 170 }
         }
     }
@@ -224,51 +310,49 @@ Item {
     Text {
         anchors.centerIn: parent
         visible: Library.count === 0
-        text: "nothing here\nadd wallpapers in Steam"
+        text: Library.filter !== "" ? "nothing matches \"" + Library.filter + "\"" : "nothing here\nsubscribe to wallpapers in Steam"
         color: Theme.dim
-        font.pixelSize: 14
+        font.family: Theme.font
+        font.pixelSize: 13
         horizontalAlignment: Text.AlignHCenter
         lineHeight: 1.4
     }
 
-    Rectangle {
-        id: dimmer
-        anchors.fill: parent
-        color: "#B3000000"
-        opacity: view.searchOpen ? 1 : 0
-        visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 140 } }
-        MouseArea {
-            anchors.fill: parent
-            onClicked: view.closeSearch(true)
-        }
-    }
-
+    // ---- search: hidden until "/" -----------------------------------------
     Rectangle {
         id: searchPanel
-        width: Math.min(560, view.width - 80)
-        height: 44
-        radius: 22
+        width: Math.min(520, view.width - 80)
+        height: 36
+        radius: Theme.radius
         color: Theme.panel
         border.width: 1
         border.color: Theme.accent
         anchors.horizontalCenter: parent.horizontalCenter
-        y: view.searchOpen ? 26 : -60
+        y: view.searchOpen ? 14 : -50
         opacity: view.searchOpen ? 1 : 0
         visible: opacity > 0
+        z: 5
         Behavior on y { NumberAnimation { duration: 170; easing.type: Easing.OutCubic } }
         Behavior on opacity { NumberAnimation { duration: 120 } }
 
-        TextField {
+        Row {
+            anchors.verticalCenter: parent.verticalCenter
+            x: 12
+            spacing: 10
+            KeyCap { text: "/"; anchors.verticalCenter: parent.verticalCenter }
+        }
+        // a plain input: the control style's floating label does not belong here
+        TextInput {
             id: search
             anchors.fill: parent
-            anchors.leftMargin: 20
-            anchors.rightMargin: 14
-            background: Item {}
+            anchors.leftMargin: 44
+            anchors.rightMargin: 12
+            verticalAlignment: TextInput.AlignVCenter
             color: Theme.text
-            font.pixelSize: 14
-            placeholderText: "search wallpapers"
-            placeholderTextColor: Theme.dim
+            selectionColor: Theme.accent
+            font.family: Theme.font
+            font.pixelSize: 12
+            clip: true
             onTextChanged: Library.filter = text
             Keys.onEscapePressed: view.closeSearch(true)
             Keys.onReturnPressed: {
@@ -278,6 +362,13 @@ Item {
                 }
             }
             Keys.onDownPressed: view.closeSearch(false)
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: search.text === ""
+                text: "filter " + Library.count + " wallpapers · esc closes"
+                color: Theme.dim
+                font: search.font
+            }
         }
     }
 }

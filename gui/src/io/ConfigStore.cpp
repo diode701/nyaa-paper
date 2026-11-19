@@ -42,6 +42,15 @@ QJsonObject toJson(const AppConfig &config)
     for (const auto &name : config.ui.customMonitors)
         custom.append(QString::fromStdString(name));
     ui["customMonitors"] = custom;
+    ui["palette"] = QString::fromStdString(config.ui.palette);
+    ui["themeSource"] = QString::fromStdString(config.ui.themeSource);
+    ui["hoverStyle"] = QString::fromStdString(config.ui.hoverStyle);
+    ui["selectionStyle"] = QString::fromStdString(config.ui.selectionStyle);
+    ui["backdrop"] = config.ui.backdrop;
+    ui["tint"] = config.ui.tint;
+    ui["scale"] = config.ui.scale;
+    ui["renderer"] = QString::fromStdString(config.ui.renderer);
+    ui["titleScreen"] = config.ui.titleScreen;
 
     QJsonObject startup;
     startup["persistOnStart"] = config.startup.persistOnStart;
@@ -100,6 +109,17 @@ AppConfig fromJson(const QJsonObject &root)
     for (const QJsonValue &name : ui.value("customMonitors").toArray())
         if (!name.toString().trimmed().isEmpty())
             config.ui.customMonitors.push_back(name.toString().trimmed().toStdString());
+
+    config.ui.palette = stringOr(ui, "palette", config.ui.palette);
+    config.ui.themeSource = stringOr(ui, "themeSource", config.ui.themeSource);
+    config.ui.hoverStyle = stringOr(ui, "hoverStyle", config.ui.hoverStyle);
+    config.ui.selectionStyle = stringOr(ui, "selectionStyle", config.ui.selectionStyle);
+    config.ui.backdrop = boolOr(ui, "backdrop", config.ui.backdrop);
+    config.ui.tint = boolOr(ui, "tint", config.ui.tint);
+    if (ui.value("scale").isDouble())
+        config.ui.scale = qBound(0.75, ui.value("scale").toDouble(), 2.0);
+    config.ui.renderer = stringOr(ui, "renderer", config.ui.renderer);
+    config.ui.titleScreen = boolOr(ui, "titleScreen", config.ui.titleScreen);
 
     const QJsonObject startup = root.value("startup").toObject();
     config.startup.persistOnStart = boolOr(startup, "persistOnStart", config.startup.persistOnStart);

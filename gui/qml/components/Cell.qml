@@ -1,165 +1,172 @@
 import QtQuick
-import QtQuick.Effects
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
 
 /// One grid cell. Java: WallpaperBrowser.createEmptyCell + loadPage/setCellImage.
-/// While the thumbnail loads it shows the short title (Java's placeholder
-/// label), then the image fades in over 300 ms. The static thumbnail goes
-/// through Qt's pixmap cache, so pages that were prefetched appear at once;
-/// GIFs only start an animated decoder when they are allowed to play.
+///
+/// The browser keeps a fixed pool of these and only swaps `item`, so a page
+/// flip moves data, not objects. The shadow is one pre-rendered image shared
+/// by every card (no per-card blur pass). While the thumbnail loads the short
+/// title shows (Java's placeholder), then the image fades in over 300 ms.
 Item {
     id: cell
 
-    required property string preview
-    required property string title
-    required property int index
-
-    property int pageStart: 0
+    property var item: null            // {id, title, kind, preview, basePath}
     property bool selected: false
-    property bool hovered: mouse.containsMouse
+    property string hoverStyle: Config.hoverStyle          // java | lift | off
+    property string selectionStyle: Config.selectionStyle  // brackets | outline | quiet
 
-    property real sel: selected ? 1 : 0
-    property real hot: hovered ? 1 : 0
-
+    readonly property bool hovered: mouse.containsMouse
+    readonly property string preview: item ? item.preview : ""
+    readonly property string title: item ? item.title : ""
     readonly property bool animate: Settings.animationMode === 2
                                     || (Settings.animationMode === 1 && (hovered || selected))
     readonly property bool isGif: preview.toLowerCase().endsWith(".gif")
-    readonly property int radius: Look.cardRadius
-    readonly property bool imageReady: previewImage.status === Image.Ready
+    readonly property bool imageReady: still.status === Image.Ready
 
     signal clicked
+
+    visible: item !== null
 
     /// WallpaperBrowser.shortTitle
     function shortTitle(text) { return text.length > 20 ? text.substring(0, 18) + "…" : text }
 
-    Behavior on sel { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+    // hover: Java = 2 % zoom and a light accent border; lift = rise 3 px
+    property real hot: hovered && hoverStyle !== "off" ? 1 : 0
     Behavior on hot { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+    property real sel: selected ? 1 : 0
+    Behavior on sel { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
 
-    transform: Scale {
-        origin.x: cell.width / 2
-        origin.y: cell.height / 2
-        xScale: 1.0 + Look.hoverScale * cell.hot
-        yScale: 1.0 + Look.hoverScale * cell.hot
+    opacity: selectionStyle === "quiet" && !selected ? 0.62 : 1
+    Behavior on opacity { NumberAnimation { duration: 200 } }
+
+    transform: [
+        Scale {
+            origin.x: cell.width / 2
+            origin.y: cell.height / 2
+            xScale: 1 + (cell.hoverStyle === "java" ? 0.02 : 0) * cell.hot
+            yScale: xScale
+        },
+        Translate {
+            y: -3 * (cell.hoverStyle === "lift" ? cell.hot : 0)
+               - 2 * (cell.selectionStyle !== "quiet" ? cell.sel : 0)
+        }
+    ]
+
+    // shared shadow texture, 20 px of soft edge around the card
+    BorderImage {
+        anchors.fill: parent
+        anchors.margins: -20
+        anchors.topMargin: -16
+        anchors.bottomMargin: -24
+        source: "qrc:/card-shadow.png"
+        border { left: 40; top: 40; right: 40; bottom: 40 }
+        opacity: 0.85 + 0.15 * cell.sel
     }
 
-    // ---- card body ---------------------------------------------------------
     Rectangle {
         id: body
         anchors.fill: parent
-        anchors.topMargin: -2 * cell.hot
-        radius: cell.radius
+        radius: Theme.radius
+        color: Theme.card
         clip: true
 
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#252E3A" }
-            GradientStop { position: 1.0; color: "#191E26" }
+        // placeholder: the short title while the thumbnail loads
+        Text {
+            anchors.centerIn: parent
+            width: parent.width - 16
+            visible: !cell.imageReady
+            text: cell.shortTitle(cell.title)
+            color: Theme.muted
+            font.family: Theme.font
+            font.pixelSize: 11
+            wrapMode: Text.WordWrap
+            horizontalAlignment: Text.AlignHCenter
         }
-    }
 
-    // Shadow + glow come from the body, so the preview is not part of the shape.
-    MultiEffect {
-        source: body
-        anchors.fill: body
-        autoPaddingEnabled: true
-        blurMax: cell.selected ? Look.blurMaxSelected : Look.blurMax
-        shadowEnabled: true
-        shadowColor: Qt.rgba(0.35 * cell.sel, 0.10 + 0.72 * cell.sel, 0.14 + 0.86 * cell.sel, 1.0)
-        shadowOpacity: Look.shadowOpacity + Look.shadowOpacityHover * cell.hot
-                        + (Look.shadowOpacitySelected - Look.shadowOpacity) * cell.sel
-        shadowBlur: cell.selected ? Look.shadowBlurSelected : Look.shadowBlur
-        shadowVerticalOffset: Look.shadowOffset * (1.0 - cell.sel)
-        shadowHorizontalOffset: 0
-    }
-
-    // ---- placeholder: the short title while the thumbnail loads -------------
-    Text {
-        anchors.centerIn: parent
-        width: parent.width - 10
-        visible: !cell.imageReady
-        text: cell.shortTitle(cell.title)
-        color: "#d3d3d3"                    // Color.LIGHTGRAY
-        wrapMode: Text.WordWrap
-        horizontalAlignment: Text.AlignHCenter
-        font.pixelSize: 12
-    }
-
-    // ---- thumbnail: static, cached, fades in ---------------------------------
-    Image {
-        id: previewImage
-        anchors.fill: parent
-        anchors.margins: Look.imageInset
-        source: cell.preview
-        visible: cell.preview !== "" && !Look.roundPreviews && !animatedLoader.showing
-        fillMode: Image.PreserveAspectFit
-        asynchronous: true
-        cache: true
-        sourceSize.width: 360
-        sourceSize.height: 360
-        opacity: cell.imageReady ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 300 } }
-    }
-
-    // ---- animated GIF, only while it may play ---------------------------------
-    Loader {
-        id: animatedLoader
-        anchors.fill: previewImage
-        active: cell.isGif && cell.animate
-        readonly property bool showing: status === Loader.Ready && item && item.status === AnimatedImage.Ready
-        sourceComponent: AnimatedImage {
+        // still thumbnail through the pixmap cache (prefetched pages hit it)
+        Image {
+            id: still
+            anchors.fill: parent
+            anchors.margins: 1
             source: cell.preview
-            fillMode: Image.PreserveAspectFit
+            fillMode: Image.PreserveAspectCrop
             asynchronous: true
-            cache: false
-            playing: true
+            cache: true
             sourceSize.width: 360
             sourceSize.height: 360
+            visible: !animated.showing
+            opacity: cell.imageReady ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 300 } }
+        }
+
+        // the GIF decoder runs only while it may play
+        Loader {
+            id: animated
+            anchors.fill: still
+            active: cell.isGif && cell.animate && cell.visible
+            readonly property bool showing: status === Loader.Ready && item && item.status === AnimatedImage.Ready
+            sourceComponent: AnimatedImage {
+                source: cell.preview
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                cache: false
+                playing: true
+                sourceSize.width: 360
+                sourceSize.height: 360
+            }
+        }
+
+        // title and type, on the selected card only
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            height: caption.implicitHeight + 30
+            opacity: cell.sel
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 1.0; color: "#d0000000" }
+            }
+            Column {
+                id: caption
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 9
+                spacing: 2
+                Text {
+                    width: parent.width
+                    text: cell.title
+                    color: "#ffffff"
+                    font.family: Theme.font
+                    font.pixelSize: 11
+                    font.weight: Font.Bold
+                    wrapMode: Text.WordWrap
+                    maximumLineCount: 2
+                    elide: Text.ElideRight
+                }
+                Text {
+                    text: (cell.item ? (cell.item.kind || "") : "").toUpperCase()
+                    color: "#b0ffffff"
+                    font.family: Theme.font
+                    font.pixelSize: 9
+                    font.letterSpacing: 1
+                }
+            }
         }
     }
 
-    Rectangle {
-        id: maskShape
-        anchors.fill: parent
-        anchors.margins: Look.imageInset
-        radius: Math.max(0, cell.radius - Look.imageInset)
-        color: "black"
-        visible: false
-    }
-
-    MultiEffect {
-        anchors.fill: previewImage
-        source: previewImage
-        visible: Look.roundPreviews && cell.preview !== ""
-        maskEnabled: Look.roundPreviews
-        maskSource: maskShape
-    }
-
-    // top bevel
-    Rectangle {
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.margins: 1
-        height: 1
-        color: "#1fffffff"
-    }
-
+    // border: hover accent (Java), selection outline
     Rectangle {
         anchors.fill: parent
-        radius: cell.radius
+        radius: Theme.radius
         color: "transparent"
-        border.width: cell.selected ? Look.borderWidthSelected : Look.borderWidth
-        border.color: cell.selected ? Theme.sleekAccent : (cell.hot > 0.2 ? "#46525F" : "#333C49")
-    }
-
-    Rectangle {
-        anchors.fill: parent
-        anchors.margins: 3
-        radius: cell.radius
-        color: "transparent"
-        border.width: 1
-        border.color: "#66ffffff"
-        opacity: 0.35 * cell.sel
+        border.width: cell.selected && cell.selectionStyle === "outline" ? 2 : 1
+        border.color: cell.selected
+                      ? (cell.selectionStyle === "quiet" ? Qt.lighter(Theme.line, 1.9) : Theme.accent)
+                      : (cell.hot > 0.5 && cell.hoverStyle === "java" ? Theme.accent2 : Theme.line)
+        Behavior on border.color { ColorAnimation { duration: 120 } }
     }
 
     MouseArea {

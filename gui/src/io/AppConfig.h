@@ -37,6 +37,17 @@ struct UiConfig
     /// Output names Qt does not report, added by hand (Java: custom monitors
     /// in the launcher). Shown after the detected screens.
     std::vector<std::string> customMonitors;
+
+    // ---- look (Settings → Appearance) ----
+    std::string palette = "nyaa";          // a key of Theme's palettes
+    std::string themeSource = "palette";   // palette | wallpaper | pywal | system
+    std::string hoverStyle = "java";       // java (scale + border) | lift | off
+    std::string selectionStyle = "brackets"; // brackets | outline | quiet
+    bool backdrop = true;                  // blurred selected wallpaper behind the grid
+    bool tint = false;                     // recolour the window from the selected wallpaper
+    double scale = 1.0;                    // QT_SCALE_FACTOR, applied at start
+    std::string renderer = "vulkan";       // vulkan | opengl | software, applied at start
+    bool titleScreen = true;               // start on the title screen
 };
 
 /// Java Settings.persistOnStart / autoStartOnBoot

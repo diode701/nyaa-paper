@@ -63,6 +63,7 @@ qt_add_executable(nyaa-paper-qt
     src/models/DbusLibrary.hpp
     src/models/DbusLibrary.cpp
     src/ui/Theme.hpp
+    src/ui/Theme.cpp
     src/ui/PreviewSettings.hpp
     src/ui/PreviewSettings.cpp
     ${GUI_DBUS_SOURCES}
@@ -94,6 +95,7 @@ qt_add_qml_module(nyaa-paper-qt
         qml/components/KeyCap.qml
         qml/components/MonitorPill.qml
         qml/components/Toast.qml
+        qml/components/KeysOverlay.qml
         qml/controls/SettingCard.qml
         qml/controls/BoolControl.qml
         qml/controls/SliderControl.qml
@@ -122,7 +124,14 @@ target_link_libraries(nyaa-paper-qt PRIVATE
 qt_add_resources(nyaa-paper-qt "icons"
     PREFIX "/"
     BASE resources
-    FILES resources/icon-128.png
+    FILES
+        resources/icon-128.png
+        resources/card-shadow.png
+        resources/fonts/JetBrainsMono-Regular.ttf
+        resources/fonts/JetBrainsMono-Medium.ttf
+        resources/fonts/JetBrainsMono-SemiBold.ttf
+        resources/fonts/JetBrainsMono-Bold.ttf
+        resources/fonts/JetBrainsMono-ExtraBold.ttf
 )
 
 install(TARGETS nyaa-paper-qt
@@ -225,3 +234,9 @@ add_executable(autostart_test tests/autostart_test.cpp src/app/Autostart.cpp)
 target_include_directories(autostart_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(autostart_test PRIVATE Qt6::Core Qt6::DBus)
 add_test(NAME autostart_test COMMAND autostart_test)
+
+qt_add_executable(theme_test tests/theme_test.cpp src/ui/Theme.cpp src/bridge/ConfigBridge.cpp src/app/Autostart.cpp
+    src/io/ConfigStore.cpp)
+target_include_directories(theme_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(theme_test PRIVATE Qt6::Core Qt6::Gui Qt6::DBus)
+add_test(NAME theme_test COMMAND theme_test)

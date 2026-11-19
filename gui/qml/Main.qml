@@ -16,14 +16,17 @@ ApplicationWindow {
     visible: true
     title: "Nyaa Paper"
     color: Theme.bg
+    font.family: Theme.font
 
     Material.theme: Material.Dark
     Material.accent: Theme.accent
     Material.background: Theme.panel
     Material.foreground: Theme.text
+    Material.roundedScale: Material.NotRounded
 
     property int view: 0
     property bool settingsOpen: false
+    property bool keysOpen: false
     /// Hidden in the tray: the grid lets go of its thumbnails (suspendToTray)
     property bool suspended: false
 
@@ -81,6 +84,7 @@ ApplicationWindow {
     Shortcut { sequence: "P";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.goTo(browser.page + 1) }
     Shortcut { sequence: "M";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.playlists() }
     Shortcut { sequence: "G";      enabled: app.keysEnabled && app.view === 0; onActivated: Settings.cycle() }
+    Shortcut { sequences: ["?", "H"]; enabled: app.keysEnabled && app.view === 0; onActivated: app.keysOpen = !app.keysOpen }
     Shortcut { sequence: "S";      enabled: app.keysEnabled && app.view === 0; onActivated: app.settingsOpen = true }
     Shortcut { sequence: "Escape"; enabled: app.view !== 0; onActivated: { app.view = 0; root.forceActiveFocus() } }
     Shortcut {
@@ -277,14 +281,23 @@ ApplicationWindow {
 
         }
 
-        HintBar {
+        StatusBar {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             visible: app.view === 0
-            mode: 0
             pageLabel: browser.pageLabel
             selection: browser.cursorTitle
+            cols: browser.cols
+            rows: browser.rows
+        }
+        KeysOverlay {
+            id: keysOverlay
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.margins: 14
+            anchors.bottomMargin: 38
+            open: app.view === 0 && app.keysOpen
         }
 
         SettingsView {

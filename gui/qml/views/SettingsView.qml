@@ -132,6 +132,60 @@ Item {
                     PathRow { label: "Screenshots"; value: Config.screenshotsPath; onEdited: Config.screenshotsPath = text }
                     PathRow { label: "PyWAL cache"; value: Config.pywalPath; onEdited: Config.pywalPath = text }
 
+                    Section { text: "LOOK" }
+                    OptionRow {
+                        label: "Palette"
+                        options: Theme.palettes.map(p => p.key)
+                        value: Config.palette
+                        onPicked: Config.palette = value
+                    }
+                    OptionRow {
+                        label: "Theme source"
+                        options: ["palette", "wallpaper", "pywal", "system"]
+                        value: Config.themeSource
+                        onPicked: Config.themeSource = value
+                    }
+                    OptionRow {
+                        label: "Hover"
+                        options: ["java", "lift", "off"]
+                        value: Config.hoverStyle
+                        onPicked: Config.hoverStyle = value
+                    }
+                    OptionRow {
+                        label: "Selection"
+                        options: ["brackets", "outline", "quiet"]
+                        value: Config.selectionStyle
+                        onPicked: Config.selectionStyle = value
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+                        Text { text: "Wallpaper"; color: Theme.muted; font.pixelSize: 11; Layout.preferredWidth: 130 }
+                        CheckBox { text: "backdrop"; checked: Config.backdrop; onToggled: Config.backdrop = checked }
+                        CheckBox { text: "tint the window"; checked: Config.tint; onToggled: Config.tint = checked }
+                        Item { Layout.fillWidth: true }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+                        Text { text: "UI scale"; color: Theme.muted; font.pixelSize: 11; Layout.preferredWidth: 130 }
+                        Slider {
+                            id: scaleSlider
+                            Layout.preferredWidth: 260
+                            from: 0.75; to: 2.0; stepSize: 0.05
+                            value: Config.uiScale
+                            onMoved: Config.uiScale = Math.round(value * 20) / 20
+                        }
+                        Text { text: Math.round(Config.uiScale * 100) + " % · on restart"; color: Theme.dim; font.pixelSize: 11 }
+                        Item { Layout.fillWidth: true }
+                    }
+                    OptionRow {
+                        label: "Renderer (restart)"
+                        options: ["vulkan", "opengl", "software"]
+                        value: Config.renderer
+                        onPicked: Config.renderer = value
+                    }
+
                     Section { text: "MONITORS" }
                     PathRow {
                         label: "Extra monitors"

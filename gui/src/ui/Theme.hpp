@@ -2,53 +2,102 @@
 
 #include <QColor>
 #include <QObject>
+#include <QVariantList>
+#include <QVector>
 
-/// Colours taken from the Java app's dark-theme.css, value for value.
+class ConfigBridge;
+
+/// The app's colours. One palette is active at a time; it comes from one of
+/// four sources (Settings → Appearance):
+///   palette    one of the built-in palettes (Nyaa = Java's colours, darker,
+///              plus the eight existentialTracker themes)
+///   wallpaper  derived from the selected / applied wallpaper's preview
+///   pywal      read from <pywal cache>/colors.json
+///   system     the Qt / KDE colour scheme
+/// "Tint from wallpaper" makes any source follow the selected wallpaper.
 class Theme : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QColor bg READ bg CONSTANT)              // #1e1e1e root
-    Q_PROPERTY(QColor panel READ panel CONSTANT)        // #2d2d2d bars
-    Q_PROPERTY(QColor panelAlt READ panelAlt CONSTANT)  // #2a2a2a cards / entries
-    Q_PROPERTY(QColor line READ line CONSTANT)          // #3a3a3a borders
-    Q_PROPERTY(QColor text READ text CONSTANT)          // #ffffff
-    Q_PROPERTY(QColor muted READ muted CONSTANT)        // #cccccc status bar
-    Q_PROPERTY(QColor dim READ dim CONSTANT)            // #aaaaaa labels / gray
-    Q_PROPERTY(QColor accent READ accent CONSTANT)      // #4a90e2
-    Q_PROPERTY(QColor accentHover READ accentHover CONSTANT) // #6aa9ff
-    Q_PROPERTY(QColor accentDim READ accentDim CONSTANT)
-    Q_PROPERTY(QColor success READ success CONSTANT)    // #3a7d44 add to playlist
-    Q_PROPERTY(QColor warning READ warning CONSTANT)    // #f0ad4e pause
-    Q_PROPERTY(QColor danger READ danger CONSTANT)      // #d9534f stop
-    Q_PROPERTY(QColor control READ control CONSTANT)    // #444 buttons
-    Q_PROPERTY(QColor controlHover READ controlHover CONSTANT) // #555
-    Q_PROPERTY(QColor sleekAccent READ sleekAccent CONSTANT)    // deck accent
+    // tokens
+    Q_PROPERTY(QColor bg READ bg NOTIFY changed)
+    Q_PROPERTY(QColor panel READ panel NOTIFY changed)
+    Q_PROPERTY(QColor card READ card NOTIFY changed)
+    Q_PROPERTY(QColor raise READ raise NOTIFY changed)
+    Q_PROPERTY(QColor line READ line NOTIFY changed)
+    Q_PROPERTY(QColor text READ text NOTIFY changed)
+    Q_PROPERTY(QColor muted READ muted NOTIFY changed)
+    Q_PROPERTY(QColor dim READ dim NOTIFY changed)
+    Q_PROPERTY(QColor accent READ accent NOTIFY changed)
+    Q_PROPERTY(QColor accent2 READ accent2 NOTIFY changed)
+    Q_PROPERTY(QColor ok READ ok NOTIFY changed)
+    Q_PROPERTY(QColor warn READ warn NOTIFY changed)
+    Q_PROPERTY(QColor danger READ danger NOTIFY changed)
+    // names the older QML still uses
+    Q_PROPERTY(QColor panelAlt READ card NOTIFY changed)
+    Q_PROPERTY(QColor accentHover READ accent2 NOTIFY changed)
+    Q_PROPERTY(QColor accentDim READ accentDim NOTIFY changed)
+    Q_PROPERTY(QColor sleekAccent READ accent NOTIFY changed)
+    Q_PROPERTY(QColor success READ ok NOTIFY changed)
+    Q_PROPERTY(QColor warning READ warn NOTIFY changed)
+    Q_PROPERTY(QColor control READ raise NOTIFY changed)
+    Q_PROPERTY(QColor controlHover READ line NOTIFY changed)
+    // type and shape
+    Q_PROPERTY(QString font READ font CONSTANT)
+    Q_PROPERTY(QString mono READ font CONSTANT)
     Q_PROPERTY(int radius READ radius CONSTANT)
     Q_PROPERTY(int fast READ fast CONSTANT)
     Q_PROPERTY(int med READ med CONSTANT)
-    Q_PROPERTY(QString mono READ mono CONSTANT)
+    // for Settings
+    Q_PROPERTY(QVariantList palettes READ palettes CONSTANT)
 
 public:
-    explicit Theme(QObject *parent = nullptr) : QObject(parent) {}
+    struct Palette {
+        QString key, name, subtitle;
+        QColor bg, panel, card, raise, line, text, muted, dim, accent, accent2, ok, warn, danger;
+    };
 
-    QColor bg() const { return QColor("#1e1e1e"); }
-    QColor panel() const { return QColor("#2d2d2d"); }
-    QColor panelAlt() const { return QColor("#2a2a2a"); }
-    QColor line() const { return QColor("#3a3a3a"); }
-    QColor text() const { return QColor("#ffffff"); }
-    QColor muted() const { return QColor("#cccccc"); }
-    QColor dim() const { return QColor("#aaaaaa"); }
-    QColor accent() const { return QColor("#4a90e2"); }
-    QColor accentHover() const { return QColor("#6aa9ff"); }
-    QColor accentDim() const { return QColor("#2f4f73"); }
-    QColor success() const { return QColor("#3a7d44"); }
-    QColor warning() const { return QColor("#f0ad4e"); }
-    QColor danger() const { return QColor("#d9534f"); }
-    QColor control() const { return QColor("#444444"); }
-    QColor controlHover() const { return QColor("#555555"); }
-    QColor sleekAccent() const { return QColor("#5AD2FF"); }
-    int radius() const { return 8; }
+    explicit Theme(const ConfigBridge &config, QObject *parent = nullptr);
+
+    QColor bg() const { return m_p.bg; }
+    QColor panel() const { return m_p.panel; }
+    QColor card() const { return m_p.card; }
+    QColor raise() const { return m_p.raise; }
+    QColor line() const { return m_p.line; }
+    QColor text() const { return m_p.text; }
+    QColor muted() const { return m_p.muted; }
+    QColor dim() const { return m_p.dim; }
+    QColor accent() const { return m_p.accent; }
+    QColor accent2() const { return m_p.accent2; }
+    QColor ok() const { return m_p.ok; }
+    QColor warn() const { return m_p.warn; }
+    QColor danger() const { return m_p.danger; }
+    QColor accentDim() const;
+    QString font() const { return QStringLiteral("JetBrains Mono"); }
+    int radius() const { return 2; }
     int fast() const { return 140; }
     int med() const { return 220; }
-    QString mono() const { return QStringLiteral("monospace"); }
+    QVariantList palettes() const;
+
+    /// The wallpaper the window should take its colours from (selected in
+    /// the browser, open in Properties). Used when the source is "wallpaper"
+    /// or tint is on.
+    Q_INVOKABLE void followWallpaper(const QString &previewUrl);
+
+    static const QVector<Palette> &builtIn();
+    /// Colours derived from an image: background hue from where most of the
+    /// picture is, accent from its most vivid colour. Empty key on failure.
+    static Palette fromImage(const QString &path);
+    static Palette fromPywal(const QString &cacheDir);
+    static Palette fromSystem();
+
+Q_SIGNALS:
+    void changed();
+
+private:
+    void rebuild();
+
+    const ConfigBridge &m_config;
+    Palette m_p;
+    QString m_wallpaper;
+    Palette m_fromWallpaper;
 };

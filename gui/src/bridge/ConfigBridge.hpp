@@ -26,6 +26,15 @@ class ConfigBridge : public QObject
     Q_PROPERTY(bool autoStartOnBoot READ autoStartOnBoot WRITE setAutoStartOnBoot NOTIFY changed)
     /// Comma separated, as typed in Settings
     Q_PROPERTY(QString customMonitors READ customMonitors WRITE setCustomMonitors NOTIFY changed)
+    Q_PROPERTY(QString palette READ palette WRITE setPalette NOTIFY changed)
+    Q_PROPERTY(QString themeSource READ themeSource WRITE setThemeSource NOTIFY changed)
+    Q_PROPERTY(QString hoverStyle READ hoverStyle WRITE setHoverStyle NOTIFY changed)
+    Q_PROPERTY(QString selectionStyle READ selectionStyle WRITE setSelectionStyle NOTIFY changed)
+    Q_PROPERTY(bool backdrop READ backdrop WRITE setBackdrop NOTIFY changed)
+    Q_PROPERTY(bool tint READ tint WRITE setTint NOTIFY changed)
+    Q_PROPERTY(double uiScale READ uiScale WRITE setUiScale NOTIFY changed)
+    Q_PROPERTY(QString renderer READ renderer WRITE setRenderer NOTIFY changed)
+    Q_PROPERTY(bool titleScreen READ titleScreen WRITE setTitleScreen NOTIFY changed)
 
 public:
     explicit ConfigBridge(QObject *parent = nullptr);
@@ -46,6 +55,25 @@ public:
     void setPersistOnStart(bool on);
     void setAutoStartOnBoot(bool on);
     void setCustomMonitors(const QString &commaList);
+
+    QString palette() const { return QString::fromStdString(m_config.ui.palette); }
+    QString themeSource() const { return QString::fromStdString(m_config.ui.themeSource); }
+    QString hoverStyle() const { return QString::fromStdString(m_config.ui.hoverStyle); }
+    QString selectionStyle() const { return QString::fromStdString(m_config.ui.selectionStyle); }
+    bool backdrop() const { return m_config.ui.backdrop; }
+    bool tint() const { return m_config.ui.tint; }
+    double uiScale() const { return m_config.ui.scale; }
+    QString renderer() const { return QString::fromStdString(m_config.ui.renderer); }
+    bool titleScreen() const { return m_config.ui.titleScreen; }
+    void setPalette(const QString &v) { m_config.ui.palette = v.toStdString(); emit changed(); }
+    void setThemeSource(const QString &v) { m_config.ui.themeSource = v.toStdString(); emit changed(); }
+    void setHoverStyle(const QString &v) { m_config.ui.hoverStyle = v.toStdString(); emit changed(); }
+    void setSelectionStyle(const QString &v) { m_config.ui.selectionStyle = v.toStdString(); emit changed(); }
+    void setBackdrop(bool v) { m_config.ui.backdrop = v; emit changed(); }
+    void setTint(bool v) { m_config.ui.tint = v; emit changed(); }
+    void setUiScale(double v) { m_config.ui.scale = qBound(0.75, v, 2.0); emit changed(); }
+    void setRenderer(const QString &v) { m_config.ui.renderer = v.toStdString(); emit changed(); }
+    void setTitleScreen(bool v) { m_config.ui.titleScreen = v; emit changed(); }
 
     void setWorkshopPath(const QString &value);
     void setEnginePath(const QString &value);

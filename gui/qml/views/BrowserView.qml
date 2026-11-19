@@ -13,12 +13,13 @@ Item {
 
     property string pageLabel: "1/1"
 
-    readonly property int gap: 16
-    readonly property int target: 190
+    readonly property int gap: 12
+    readonly property int target: 160
     readonly property int cols: Math.max(1, Math.floor((width - gap) / (target + gap)))
     readonly property int rows: Math.max(1, Math.floor((height - gap) / (target + gap)))
     readonly property int pageSize: cols * rows
-    readonly property int cellSize: Math.floor((width - gap * (cols + 1)) / cols)
+    readonly property int cellSize: Math.floor(Math.min((width - gap * (cols + 1)) / cols,
+                                                        (height - gap * (rows + 1)) / rows))
 
     readonly property int pageCount: Math.max(1, Math.ceil(Library.count / pageSize))
     property int page: 0

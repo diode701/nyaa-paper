@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
 
@@ -18,19 +19,28 @@ Item {
 
     signal clicked
 
-    scale: hovered && !selected ? 1.015 : 1.0
-    Behavior on scale {
-        NumberAnimation { duration: Theme.fast; easing.type: Easing.OutCubic }
-    }
-
     Rectangle {
         id: card
         anchors.fill: parent
         radius: Theme.radius
-        color: Theme.panel
         border.width: cell.selected ? 2 : 1
-        border.color: cell.selected ? Theme.accent : (cell.hovered ? Theme.dim : Theme.line)
+        border.color: cell.selected ? Theme.accent : "#2B333F"
         clip: true
+
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#171C24" }
+            GradientStop { position: 1.0; color: "#0E1218" }
+        }
+
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: "#000000"
+            shadowOpacity: cell.selected ? 0.75 : 0.55
+            shadowBlur: cell.selected ? 0.7 : 0.5
+            shadowVerticalOffset: cell.selected ? 8 : 5
+            shadowHorizontalOffset: 0
+        }
 
         Rectangle {
             anchors.fill: parent
@@ -63,6 +73,15 @@ Item {
                 GradientStop { position: 0.0; color: "#00000000" }
                 GradientStop { position: 1.0; color: "#e6070809" }
             }
+        }
+
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.margins: 1
+            height: 1
+            color: "#1Affffff"
         }
 
         Text {

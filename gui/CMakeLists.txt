@@ -39,6 +39,8 @@ qt_add_executable(nyaa-paper-qt
     src/models/WallpaperModel.cpp
     src/models/MockLibrary.hpp
     src/models/MockLibrary.cpp
+    src/models/GlobalOptionsModel.hpp
+    src/models/GlobalOptionsModel.cpp
     src/models/PropertyModel.hpp
     src/models/PropertyModel.cpp
     src/models/DbusLibrary.hpp
@@ -68,6 +70,7 @@ qt_add_qml_module(nyaa-paper-qt
         qml/views/PropertiesView.qml
         qml/views/PlaylistView.qml
         qml/views/SettingsView.qml
+        qml/components/ActionButton.qml
         qml/components/Cell.qml
         qml/components/HintBar.qml
         qml/components/KeyCap.qml

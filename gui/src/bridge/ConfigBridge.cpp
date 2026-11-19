@@ -3,6 +3,8 @@
 #include <QDBusConnection>
 #include <QDBusMessage>
 
+#include <algorithm>
+
 namespace {
 QString toQ(const std::string &value) { return QString::fromStdString(value); }
 std::string toS(const QString &value) { return value.toStdString(); }
@@ -116,6 +118,28 @@ void ConfigBridge::reload()
 QString ConfigBridge::filePath() const
 {
     return QString::fromStdString(m_store.path());
+}
+
+bool ConfigBridge::flagEnabled(const QString &name) const
+{
+    const std::string key = name.toStdString();
+    for (const auto &flag : m_config.engine.flags) {
+        if (flag == key)
+            return true;
+    }
+    return false;
+}
+
+void ConfigBridge::setFlag(const QString &name, bool enabled)
+{
+    const std::string key = name.toStdString();
+    auto &flags = m_config.engine.flags;
+    const auto it = std::find(flags.begin(), flags.end(), key);
+    if (enabled && it == flags.end())
+        flags.push_back(key);
+    else if (!enabled && it != flags.end())
+        flags.erase(it);
+    emit changed();
 }
 
 void ConfigBridge::rescanLibrary()

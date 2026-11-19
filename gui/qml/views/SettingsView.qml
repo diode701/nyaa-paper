@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../components"
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
 
@@ -205,14 +206,14 @@ Item {
                     font.pixelSize: 10
                 }
                 Item { Layout.fillWidth: true }
-                Button {
+                ActionButton {
                     text: "Revert"
                     onClicked: {
                         Config.reload()
                         view.close()
                     }
                 }
-                Button {
+                ActionButton {
                     text: "Save"
                     onClicked: {
                         Config.save()

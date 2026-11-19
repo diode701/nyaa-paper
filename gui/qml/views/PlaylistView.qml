@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../components"
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
 
@@ -142,7 +143,7 @@ Item {
                             font.pixelSize: 10
                             font.family: Theme.mono
                         }
-                        Button {
+                        ActionButton {
                             text: "✕"
                             onClicked: Playlist.removeAt(index)
                         }
@@ -155,15 +156,15 @@ Item {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 8
-                Button {
+                ActionButton {
                     text: "▶ Play"
                     onClicked: Playlist.play()
                 }
-                Button {
+                ActionButton {
                     text: "⏸ Pause"
                     onClicked: Playlist.pause()
                 }
-                Button {
+                ActionButton {
                     text: "⏹ Stop"
                     onClicked: Playlist.stop()
                 }

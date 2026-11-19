@@ -1,5 +1,6 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQuickStyle>
 #include <cstdio>
 
 #include <QKeyEvent>
@@ -14,6 +15,7 @@
 #include "bridge/PlaylistBridge.hpp"
 #include "io/ConfigStore.h"
 #include "models/DbusLibrary.hpp"
+#include "models/GlobalOptionsModel.hpp"
 #include "models/PropertyModel.hpp"
 #include "models/MockLibrary.hpp"
 #include "models/WallpaperModel.hpp"
@@ -27,6 +29,8 @@ int main(int argc, char *argv[])
     // QSG_RHI_BACKEND=opengl (or =software) when diagnosing.
     if (qEnvironmentVariableIsEmpty("QSG_RHI_BACKEND"))
         qputenv("QSG_RHI_BACKEND", "vulkan");
+
+    QQuickStyle::setStyle(QStringLiteral("Material"));
 
     QGuiApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("nyaa-paper"));
@@ -42,6 +46,7 @@ int main(int argc, char *argv[])
     EngineBridge engine(config.config());
     PlaylistBridge playlist;
     PropertyModel properties;
+    GlobalOptionsModel globalOptions(&config);
     WallpaperModel library;
     if (qEnvironmentVariableIsSet("NYAA_MOCK")) {
         library.setAll(MockLibrary::load());
@@ -62,6 +67,7 @@ int main(int argc, char *argv[])
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Config", &config);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Playlist", &playlist);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Properties", &properties);
+    qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "GlobalOptions", &globalOptions);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Engine", &engine);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Library", &library);
 
@@ -69,6 +75,10 @@ int main(int argc, char *argv[])
     qml.loadFromModule("NyaaPaper", "Main");
     if (qml.rootObjects().isEmpty())
         return 1;
+
+    // Dev aid: NYAA_GLOBAL=1 opens the properties view on the GLOBAL tab.
+    if (qEnvironmentVariableIsSet("NYAA_GLOBAL"))
+        qml.rootObjects().first()->setProperty("startGlobal", true);
 
     // Dev aid: NYAA_KEYS="Right,Right,Down" injects keys after startup.
     if (qEnvironmentVariableIsSet("NYAA_KEYS")) {

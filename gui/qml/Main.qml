@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Material
 import QtQuick.Layouts
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
@@ -17,8 +18,14 @@ ApplicationWindow {
     title: "Nyaa Paper"
     color: Theme.bg
 
+    Material.theme: Material.Dark
+    Material.accent: Theme.accent
+    Material.background: Theme.panel
+    Material.foreground: Theme.text
+
     property int view: 0
     property bool settingsOpen: false
+    property bool startGlobal: false
     property string currentId: ""
     property string currentTitle: ""
     property string currentPreview: ""
@@ -107,6 +114,7 @@ ApplicationWindow {
                     wallpaperTitle: app.currentTitle
                     wallpaperPreview: app.currentPreview
                     wallpaperBasePath: app.currentBasePath
+                    startGlobal: app.startGlobal
                     anchors.fill: parent
                     visible: app.view === 1
                     onBack: { app.view = 0; root.forceActiveFocus() }

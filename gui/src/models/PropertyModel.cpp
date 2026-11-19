@@ -80,7 +80,7 @@ QVariant PropertyModel::data(const QModelIndex &index, int role) const
 QHash<int, QByteArray> PropertyModel::roleNames() const
 {
     return {{NameRole, "name"},      {LabelRole, "label"},     {KindRole, "kind"},
-            {DisplayRole, "display"}, {ValueRole, "value"},     {MinimumRole, "minimum"},
+            {DisplayRole, "display"}, {ValueRole, "settingValue"},     {MinimumRole, "minimum"},
             {MaximumRole, "maximum"}, {StepRole, "step"},       {OptionsRole, "options"},
             {IsGroupRole, "isGroup"}};
 }

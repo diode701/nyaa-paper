@@ -75,6 +75,10 @@ public:
                                  const QVariantMap &values);
     Q_INVOKABLE QVariantMap loadApplied(const QString &monitor);
 
+    /// Engine flag list (the --disable-* family), by CLI name.
+    Q_INVOKABLE bool flagEnabled(const QString &name) const;
+    Q_INVOKABLE void setFlag(const QString &name, bool enabled);
+
 Q_SIGNALS:
     void changed();
     void saved(bool ok);

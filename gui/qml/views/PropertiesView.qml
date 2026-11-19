@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../components"
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
 import "../components"
@@ -16,6 +17,10 @@ Item {
     property string wallpaperBasePath: ""
     property string targetMonitor: Engine.monitors.length > 0 ? Engine.monitors[0] : ""
     property bool showGlobal: false
+    property bool startGlobal: false
+    onStartGlobalChanged: if (startGlobal) showGlobal = true
+
+    readonly property int leftWidth: Math.min(540, Math.max(320, view.width * 0.26))
 
     function handleKey(event) {
         if (event.key === Qt.Key_Escape) {
@@ -39,13 +44,13 @@ Item {
 
         // ---- left: what is selected -------------------------------------
         ColumnLayout {
-            Layout.preferredWidth: 380
+            Layout.preferredWidth: view.leftWidth
             Layout.fillHeight: true
             spacing: 14
 
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 214
+                Layout.preferredHeight: Math.round(view.leftWidth * 0.56)
                 radius: Theme.radius
                 border.color: Theme.line
                 clip: true
@@ -75,7 +80,7 @@ Item {
             Text {
                 text: view.wallpaperTitle !== "" ? view.wallpaperTitle : "no selection"
                 color: Theme.text
-                font.pixelSize: 20
+                font.pixelSize: Math.max(18, Math.round(view.height * 0.026))
                 font.bold: true
                 font.letterSpacing: 1
                 elide: Text.ElideRight
@@ -184,7 +189,7 @@ Item {
                     required property string name
                     required property string label
                     required property var display
-                    required property var value
+                    required property var settingValue
                     required property var minimum
                     required property var maximum
                     required property var step
@@ -241,7 +246,7 @@ Item {
                             from: minimum
                             to: maximum
                             stepSize: step
-                            value: typeof value === "number" ? value : 0
+                            value: typeof settingValue === "number" ? settingValue : 0
                             onMoved: Properties.setValue(name, value)
                         }
                         Text {
@@ -292,14 +297,99 @@ Item {
                 }
             }
 
-            Text {
-                visible: view.showGlobal
+            ListView {
+                id: globalList
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                text: "Volume, FPS, scaling, clamp and the engine flags live in the shared config.\nPress S in the library to edit them."
-                color: Theme.dim
-                font.pixelSize: 12
-                wrapMode: Text.WordWrap
+                visible: view.showGlobal
+                clip: true
+                model: GlobalOptions
+                spacing: 2
+
+                delegate: Rectangle {
+                    required property int index
+                    required property string name
+                    required property string label
+                    required property int kind
+                    required property var settingValue
+                    required property var boolValue
+                    required property var options
+
+                    width: globalList.width
+                    height: kind === 5 ? 42 : 50
+                    radius: 6
+                    color: "transparent"
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14
+                        width: 250
+                        text: label
+                        color: Theme.text
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                    }
+
+                    Row {
+                        visible: kind === 0
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.right: parent.right
+                        anchors.rightMargin: 12
+                        spacing: 12
+                        Slider {
+                            width: 220
+                            from: 0
+                            to: 100
+                            value: typeof settingValue === "number" ? settingValue : 70
+                            onMoved: GlobalOptions.setValue(name, Math.round(value))
+                        }
+                        CheckBox {
+                            text: "mute"
+                            checked: boolValue === true
+                            onToggled: GlobalOptions.setValue(name, checked)
+                        }
+                    }
+
+                    Row {
+                        visible: kind === 1
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.right: parent.right
+                        anchors.rightMargin: 12
+                        spacing: 12
+                        CheckBox {
+                            text: "limit"
+                            checked: boolValue === true
+                            onToggled: GlobalOptions.setValue(name, checked)
+                        }
+                        SpinBox {
+                            from: 0
+                            to: 240
+                            value: typeof settingValue === "number" ? settingValue : 30
+                            onValueModified: GlobalOptions.setValue(name, value)
+                        }
+                    }
+
+                    ComboBox {
+                        visible: kind >= 2 && kind <= 4
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.right: parent.right
+                        anchors.rightMargin: 12
+                        width: 220
+                        model: options
+                        currentIndex: Math.max(0, options.indexOf(String(settingValue)))
+                        onActivated: GlobalOptions.setValue(name, currentText)
+                    }
+
+                    CheckBox {
+                        visible: kind === 5
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.right: parent.right
+                        anchors.rightMargin: 12
+                        checked: boolValue === true
+                        onToggled: GlobalOptions.setValue(name, checked)
+                    }
+                }
             }
 
             RowLayout {
@@ -307,14 +397,15 @@ Item {
                 Layout.topMargin: 6
                 spacing: 12
 
-                Button {
+                ActionButton {
+                    primary: true
                     text: "Apply"
                     onClicked: {
                         Engine.applyWallpaper(view.targetMonitor, view.wallpaperId, view.wallpaperBasePath)
                         Config.saveApplied(view.targetMonitor, view.wallpaperId, Properties.values())
                     }
                 }
-                Button {
+                ActionButton {
                     text: "Load last"
                     onClicked: {
                         const saved = Config.loadApplied(view.targetMonitor)
@@ -322,15 +413,15 @@ Item {
                             Properties.applyValues(saved)
                     }
                 }
-                Button {
+                ActionButton {
                     text: "Add to playlist"
                     onClicked: Playlist.add(Engine.playlistEntry(view.targetMonitor, view.wallpaperId, view.wallpaperBasePath))
                 }
-                Button {
+                ActionButton {
                     text: "Stop"
                     onClicked: Engine.stop(view.targetMonitor)
                 }
-                Button {
+                ActionButton {
                     text: "Back"
                     onClicked: view.back()
                 }

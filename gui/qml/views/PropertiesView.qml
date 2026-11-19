@@ -10,6 +10,13 @@ Item {
 
     signal back
 
+    function handleKey(event) {
+        if (event.key === Qt.Key_Escape) {
+            back()
+            event.accepted = true
+        }
+    }
+
     property var rows: [
         { label: "Camera field of view", kind: "slider", value: 0.42 },
         { label: "Bloom", kind: "bool", value: true },

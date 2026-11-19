@@ -6,15 +6,16 @@ import "../components"
 
 Item {
     id: view
-    focus: true
 
     signal open
     signal playlists
+    signal requestFocus
 
     property string pageLabel: "1/1"
 
-    readonly property int gap: 12
-    readonly property int target: 160
+    readonly property real density: Math.sqrt((width * height) / (1280.0 * 800.0))
+    readonly property int target: Math.round(190 * Math.min(2.2, Math.max(0.9, density)))
+    readonly property int gap: Math.round(target / 13.5)
     readonly property int cols: Math.max(1, Math.floor((width - gap) / (target + gap)))
     readonly property int rows: Math.max(1, Math.floor((height - gap) / (target + gap)))
     readonly property int pageSize: cols * rows
@@ -81,19 +82,11 @@ Item {
             search.text = ""
             Library.filter = ""
         }
-        view.forceActiveFocus()
+        requestFocus()
     }
 
-    Component.onCompleted: {
-        rebuild()
-        forceActiveFocus()
-    }
-    onVisibleChanged: {
-        if (visible) {
-            rebuild()
-            forceActiveFocus()
-        }
-    }
+    Component.onCompleted: rebuild()
+    onVisibleChanged: if (visible) rebuild()
     onPageSizeChanged: {
         page = 0
         cursor = 0
@@ -108,24 +101,6 @@ Item {
             view.rebuild()
         }
         function onCountChanged() { view.rebuild() }
-    }
-
-    Keys.onPressed: (event) => {
-        if (view.searchOpen || !view.visible)
-            return
-        switch (event.key) {
-        case Qt.Key_Left:    view.move(-1, 0); event.accepted = true; break
-        case Qt.Key_Right:   view.move(1, 0);  event.accepted = true; break
-        case Qt.Key_Up:      view.move(0, -1); event.accepted = true; break
-        case Qt.Key_Down:    view.move(0, 1);  event.accepted = true; break
-        case Qt.Key_PageUp:   view.goTo(view.page - 1, 0); event.accepted = true; break
-        case Qt.Key_PageDown: view.goTo(view.page + 1, 0); event.accepted = true; break
-        case Qt.Key_Return:
-        case Qt.Key_Enter:   view.open(); event.accepted = true; break
-        case Qt.Key_Slash:   view.openSearch(); event.accepted = true; break
-        case Qt.Key_M:       view.playlists(); event.accepted = true; break
-        case Qt.Key_G:       Settings.cycle(); event.accepted = true; break
-        }
     }
 
     Item {

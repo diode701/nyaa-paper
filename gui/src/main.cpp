@@ -1,5 +1,10 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <cstdio>
+
+#include <QKeyEvent>
+#include <QKeySequence>
+#include <QQuickItem>
 #include <QQuickWindow>
 #include <QTimer>
 #include <QtQml>
@@ -32,6 +37,39 @@ int main(int argc, char *argv[])
     qml.loadFromModule("NyaaPaper", "Main");
     if (qml.rootObjects().isEmpty())
         return 1;
+
+    // Dev aid: NYAA_KEYS="Right,Right,Down" injects keys after startup.
+    if (qEnvironmentVariableIsSet("NYAA_KEYS")) {
+        const QStringList keys = qEnvironmentVariable("NYAA_KEYS").split(QLatin1Char(','));
+        QTimer::singleShot(250, &app, [&qml] {
+            if (auto *window = qobject_cast<QWindow *>(qml.rootObjects().value(0))) {
+                window->requestActivate();
+                window->setKeyboardGrabEnabled(true);
+            }
+        });
+        QTimer::singleShot(700, &app, [&app, &qml, keys] {
+            auto *window = qobject_cast<QWindow *>(qml.rootObjects().value(0));
+            if (!window)
+                return;
+            for (const QString &name : keys) {
+                const QKeySequence seq(name);
+                if (seq.isEmpty())
+                    continue;
+                QKeyEvent press(QEvent::KeyPress, seq[0].key(), Qt::NoModifier);
+                QCoreApplication::sendEvent(window, &press);
+            }
+            QTimer::singleShot(120, &app, [&app, &qml, window] {
+                auto *root = qml.rootObjects().value(0);
+                auto *quick = qobject_cast<QQuickWindow *>(window);
+                auto *focus = quick ? quick->activeFocusItem() : nullptr;
+                std::fprintf(stderr, "focus=%s cursor=%d page=%d\n",
+                             focus ? focus->metaObject()->className() : "none",
+                             root->property("debugCursor").toInt(),
+                             root->property("debugPage").toInt());
+                QCoreApplication::quit();
+            });
+        });
+    }
 
     // Dev aid: NYAA_VIEW=1|2 opens properties or playlist for screenshots.
     if (qEnvironmentVariableIsSet("NYAA_VIEW"))

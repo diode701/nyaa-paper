@@ -18,13 +18,32 @@ ApplicationWindow {
 
     property int view: 0
 
-    Shortcut {
-        sequence: "Ctrl+Q"
-        onActivated: Qt.quit()
-    }
+    // read by the NYAA_KEYS dev hook; no effect on behaviour
+    readonly property int debugCursor: browser.cursor
+    readonly property int debugPage: browser.page
+
+    // Window-scoped shortcuts: they do not care which item holds focus.
+    readonly property bool keysEnabled: app.view !== 0 || !browser.searchOpen
+
+    Shortcut { sequence: "Ctrl+Q"; onActivated: Qt.quit() }
+
+    Shortcut { sequence: "Left";   enabled: app.keysEnabled && app.view === 0; onActivated: browser.move(-1, 0) }
+    Shortcut { sequence: "Right";  enabled: app.keysEnabled && app.view === 0; onActivated: browser.move(1, 0) }
+    Shortcut { sequence: "Up";     enabled: app.keysEnabled && app.view === 0; onActivated: browser.move(0, -1) }
+    Shortcut { sequence: "Down";   enabled: app.keysEnabled && app.view === 0; onActivated: browser.move(0, 1) }
+    Shortcut { sequence: "PgUp";   enabled: app.keysEnabled && app.view === 0; onActivated: browser.goTo(browser.page - 1, 0) }
+    Shortcut { sequence: "PgDown"; enabled: app.keysEnabled && app.view === 0; onActivated: browser.goTo(browser.page + 1, 0) }
+    Shortcut { sequence: "Return"; enabled: app.keysEnabled && app.view === 0; onActivated: browser.open() }
+    Shortcut { sequence: "Enter";  enabled: app.keysEnabled && app.view === 0; onActivated: browser.open() }
+    Shortcut { sequence: "/";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.openSearch() }
+    Shortcut { sequence: "M";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.playlists() }
+    Shortcut { sequence: "G";      enabled: app.keysEnabled && app.view === 0; onActivated: Settings.cycle() }
+    Shortcut { sequence: "Escape"; enabled: app.view !== 0; onActivated: app.view = 0 }
 
     Item {
+        id: root
         anchors.fill: parent
+        focus: true
 
         ColumnLayout {
             anchors.fill: parent
@@ -39,18 +58,21 @@ ApplicationWindow {
                     id: browser
                     anchors.fill: parent
                     visible: app.view === 0
-                    onOpen: app.view = 1
-                    onPlaylists: app.view = 2
+                    onOpen: { app.view = 1; root.forceActiveFocus() }
+                    onPlaylists: { app.view = 2; root.forceActiveFocus() }
+                    onRequestFocus: root.forceActiveFocus()
                 }
                 PropertiesView {
+                    id: properties
                     anchors.fill: parent
                     visible: app.view === 1
-                    onBack: app.view = 0
+                    onBack: { app.view = 0; root.forceActiveFocus() }
                 }
                 PlaylistView {
+                    id: playlist
                     anchors.fill: parent
                     visible: app.view === 2
-                    onBack: app.view = 0
+                    onBack: { app.view = 0; root.forceActiveFocus() }
                 }
             }
 
@@ -78,5 +100,10 @@ ApplicationWindow {
         }
     }
 
-    Component.onCompleted: Engine.refreshRunning()
+    onActiveChanged: if (active) root.forceActiveFocus()
+
+    Component.onCompleted: {
+        root.forceActiveFocus()
+        Engine.refreshRunning()
+    }
 }

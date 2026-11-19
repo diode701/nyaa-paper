@@ -8,6 +8,13 @@ Item {
 
     signal back
 
+    function handleKey(event) {
+        if (event.key === Qt.Key_Escape) {
+            back()
+            event.accepted = true
+        }
+    }
+
     RowLayout {
         anchors.fill: parent
         anchors.margins: 24

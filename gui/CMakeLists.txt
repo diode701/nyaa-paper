@@ -33,10 +33,13 @@ qt_add_executable(nyaa-paper-qt
 
 qt_policy(SET QTP0004 NEW)
 
+set_source_files_properties(qml/Look.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+
 qt_add_qml_module(nyaa-paper-qt
     URI NyaaPaper
     VERSION 1.0
     QML_FILES
+        qml/Look.qml
         qml/Main.qml
         qml/views/BrowserView.qml
         qml/views/PropertiesView.qml

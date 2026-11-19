@@ -18,7 +18,7 @@ Item {
 
     readonly property bool animate: Settings.animationMode === 2
                                     || (Settings.animationMode === 1 && (hovered || selected))
-    readonly property int radius: 3
+    readonly property int radius: Look.cardRadius
 
     signal clicked
 
@@ -28,8 +28,8 @@ Item {
     transform: Scale {
         origin.x: cell.width / 2
         origin.y: cell.height / 2
-        xScale: 1.0 + 0.025 * cell.hot
-        yScale: 1.0 + 0.025 * cell.hot
+        xScale: 1.0 + Look.hoverScale * cell.hot
+        yScale: 1.0 + Look.hoverScale * cell.hot
     }
 
     Rectangle {
@@ -55,6 +55,7 @@ Item {
 
         AnimatedImage {
             anchors.fill: parent
+            anchors.margins: Look.imageInset
             source: cell.preview
             visible: cell.preview !== ""
             fillMode: Image.PreserveAspectFit
@@ -80,12 +81,12 @@ Item {
         source: body
         anchors.fill: body
         autoPaddingEnabled: true
-        blurMax: cell.selected ? 18 : 14
+        blurMax: cell.selected ? Look.blurMaxSelected : Look.blurMax
         shadowEnabled: true
         shadowColor: Qt.rgba(0.30 * cell.sel, 0.10 + 0.72 * cell.sel, 0.14 + 0.86 * cell.sel, 1.0)
-        shadowOpacity: 0.40 + 0.10 * cell.hot + 0.22 * cell.sel
-        shadowBlur: 0.45 + 0.28 * cell.sel
-        shadowVerticalOffset: 3.0 * (1.0 - cell.sel)
+        shadowOpacity: Look.shadowOpacity + Look.shadowOpacityHover * cell.hot + (Look.shadowOpacitySelected - Look.shadowOpacity) * cell.sel
+        shadowBlur: cell.selected ? Look.shadowBlurSelected : Look.shadowBlur
+        shadowVerticalOffset: Look.shadowOffset * (1.0 - cell.sel)
         shadowHorizontalOffset: 0
     }
 
@@ -93,7 +94,7 @@ Item {
         anchors.fill: parent
         radius: cell.radius
         color: "transparent"
-        border.width: cell.selected ? 3 : 1
+        border.width: cell.selected ? Look.borderWidthSelected : Look.borderWidth
         border.color: cell.selected ? Theme.accent : (cell.hot > 0.2 ? "#46525F" : "#333C49")
     }
 

@@ -6,8 +6,6 @@ import NyaaPaper.Theme 1.0
 Item {
     id: cell
 
-    required property string title
-    required property string kind
     required property string preview
     required property int seed
 
@@ -20,26 +18,19 @@ Item {
     signal clicked
 
     Rectangle {
-        id: card
+        id: body
         anchors.fill: parent
         radius: Theme.radius
-        border.width: cell.selected ? 2 : 1
-        border.color: cell.selected ? Theme.accent : "#2B333F"
+        color: "#151A21"
         clip: true
-
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#171C24" }
-            GradientStop { position: 1.0; color: "#0E1218" }
-        }
 
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
-            shadowColor: "#000000"
-            shadowOpacity: cell.selected ? 0.75 : 0.55
-            shadowBlur: cell.selected ? 0.7 : 0.5
-            shadowVerticalOffset: cell.selected ? 8 : 5
-            shadowHorizontalOffset: 0
+            shadowColor: cell.selected ? Theme.accent : "#000000"
+            shadowOpacity: cell.selected ? 0.55 : 0.45
+            shadowBlur: cell.selected ? 1.0 : 0.4
+            shadowVerticalOffset: cell.selected ? 0 : 4
         }
 
         Rectangle {
@@ -53,68 +44,23 @@ Item {
 
         AnimatedImage {
             anchors.fill: parent
-            anchors.margins: 1
             source: cell.preview
             visible: cell.preview !== ""
             fillMode: Image.PreserveAspectFit
             asynchronous: true
             cache: false
             playing: cell.animate
-            sourceSize.width: 400
-            sourceSize.height: 400
+            sourceSize.width: 360
+            sourceSize.height: 360
         }
+    }
 
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            height: 52
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "#00000000" }
-                GradientStop { position: 1.0; color: "#e6070809" }
-            }
-        }
-
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.margins: 1
-            height: 1
-            color: "#1Affffff"
-        }
-
-        Text {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            anchors.leftMargin: 12
-            anchors.rightMargin: 12
-            anchors.bottomMargin: 9
-            text: cell.title
-            color: Theme.text
-            font.pixelSize: 12
-            elide: Text.ElideRight
-        }
-
-        Rectangle {
-            visible: cell.kind !== ""
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.margins: 9
-            implicitWidth: kindLabel.implicitWidth + 12
-            implicitHeight: 18
-            radius: 4
-            color: "#99070809"
-            Text {
-                id: kindLabel
-                anchors.centerIn: parent
-                text: cell.kind.toUpperCase()
-                color: Theme.muted
-                font.pixelSize: 8
-                font.letterSpacing: 1.4
-            }
-        }
+    Rectangle {
+        anchors.fill: parent
+        radius: Theme.radius
+        color: "transparent"
+        border.width: cell.selected ? 3 : 1
+        border.color: cell.selected ? Theme.accent : "#2A323D"
     }
 
     MouseArea {

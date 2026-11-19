@@ -13,14 +13,16 @@ Item {
 
     property string pageLabel: "1/1"
 
-    readonly property real density: Math.sqrt((width * height) / (1280.0 * 800.0))
-    readonly property int target: Math.round(190 * Math.min(2.2, Math.max(0.9, density)))
-    readonly property int gap: Math.round(target / 13.5)
-    readonly property int cols: Math.max(1, Math.floor((width - gap) / (target + gap)))
-    readonly property int rows: Math.max(1, Math.floor((height - gap) / (target + gap)))
+    // The original app's geometry, unchanged: fixed 180px thumbs, 15px gaps,
+    // 20px margins, and the status bar taken out of the usable height.
+    readonly property int gap: 15
+    readonly property int thumb: 180
+    readonly property int cols: Math.max(1, Math.floor((width - 40 + gap) / (thumb + gap)))
+    readonly property int rows: Math.max(1, Math.floor((height - 40 + gap) / (thumb + gap)))
     readonly property int pageSize: cols * rows
-    readonly property int cellSize: Math.floor(Math.min((width - gap * (cols + 1)) / cols,
-                                                        (height - gap * (rows + 1)) / rows))
+    readonly property int cellSize: thumb
+    readonly property string cursorTitle: (cursor >= 0 && cursor < pageItems.length)
+                                          ? pageItems[cursor].title : ""
 
     readonly property int pageCount: Math.max(1, Math.ceil(Library.count / pageSize))
     property int page: 0
@@ -115,8 +117,8 @@ Item {
             Repeater {
                 model: view.pageItems
                 delegate: Cell {
-                    width: view.cellSize
-                    height: view.cellSize
+                    width: view.thumb
+                    height: view.thumb
                     seed: view.page * view.pageSize + index
                     selected: index === view.cursor
                     onClicked: {
@@ -148,26 +150,6 @@ Item {
         font.pixelSize: 14
         horizontalAlignment: Text.AlignHCenter
         lineHeight: 1.4
-    }
-
-    Rectangle {
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.margins: 18
-        visible: Library.count > 0
-        implicitWidth: pageText.implicitWidth + 18
-        implicitHeight: 24
-        radius: 12
-        color: "#99070809"
-        border.color: Theme.line
-        Text {
-            id: pageText
-            anchors.centerIn: parent
-            text: view.pageLabel
-            color: Theme.dim
-            font.pixelSize: 10
-            font.family: Theme.mono
-        }
     }
 
     Rectangle {

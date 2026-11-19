@@ -7,6 +7,7 @@ Rectangle {
     id: root
     property int mode: 0
     property string pageLabel: ""
+    property string selection: ""
     implicitHeight: 34
     color: Theme.panel
 
@@ -74,6 +75,14 @@ Rectangle {
                 color: Theme.muted
                 font.pixelSize: 10
             }
+        }
+        Text {
+            visible: root.selection !== ""
+            text: root.selection
+            color: Theme.text
+            font.pixelSize: 10
+            elide: Text.ElideRight
+            Layout.maximumWidth: 320
         }
         Text {
             text: Library.count + " wallpapers" + (root.pageLabel !== "" ? "  " + root.pageLabel : "")

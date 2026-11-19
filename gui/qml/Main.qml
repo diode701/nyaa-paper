@@ -80,6 +80,7 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 mode: app.view
                 pageLabel: app.view === 0 ? browser.pageLabel : ""
+                selection: app.view === 0 ? browser.cursorTitle : ""
             }
         }
 

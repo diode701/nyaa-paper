@@ -116,12 +116,13 @@ Item {
             Rectangle { Layout.fillWidth: true; height: 1; color: Theme.line }
 
             ScrollView {
+                id: scroll0
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
 
                 ColumnLayout {
-                    width: parent.width
+                    width: scroll0.availableWidth
                     spacing: 10
 
                     Section { text: "PATHS" }

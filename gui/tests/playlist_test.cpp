@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 
     // Two wallpapers in the library, each with a project.json.
     QTemporaryDir dir;
-    QVector<WallpaperItem> items;
+    QVector<nyaa::domain::Wallpaper> items;
     for (const QString &id : {QStringLiteral("777"), QStringLiteral("888")}) {
         const QString base = dir.filePath(id);
         QDir().mkpath(base);
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
         assert(project.open(QIODevice::WriteOnly));
         project.write(R"({ "title": "t", "type": "scene", "general": { "properties": {
             "fov": { "type": "slider", "value": 0.5, "min": 0, "max": 1, "step": 0.1 } } } })");
-        items.push_back({id, "title " + id, "scene", {}, base});
+        items.push_back(WallpaperModel::make(id, "title " + id, "scene", {}, base));
     }
     WallpaperModel library;
     library.setAll(items);

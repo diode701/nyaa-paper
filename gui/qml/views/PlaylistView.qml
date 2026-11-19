@@ -119,13 +119,14 @@ Item {
             }
 
             ScrollView {
+                id: scroll0
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
                 ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                 ColumnLayout {
-                    width: parent.width
+                    width: scroll0.availableWidth
                     spacing: 5
 
                     Repeater {

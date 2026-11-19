@@ -30,6 +30,8 @@ std::unique_ptr<Setting> makeSetting(const SettingDesc &desc)
         return std::make_unique<DirectorySetting>(desc.key, desc.label, desc.text);
     case Kind::Texture:
         return std::make_unique<TextureSetting>(desc.key, desc.label, desc.text);
+    default:
+        break;   // global options are made by GlobalOptionsFactory
     }
     return nullptr; // unknown type: the parser already logged it
 }

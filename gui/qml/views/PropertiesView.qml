@@ -4,7 +4,9 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
+import Qt.labs.qmlmodels
 import "../components"
+import "../controls"
 
 /// A 1:1 port of WallpaperPropertiesView: top bar, tab pane with one card per
 /// setting, GPU section, Screenshot section, bottom bar with status + buttons.
@@ -172,6 +174,7 @@ Item {
 
         // ---- custom properties -------------------------------------------
         ScrollView {
+            id: scroll0
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: !view.showGlobal
@@ -179,156 +182,27 @@ Item {
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
             ColumnLayout {
-                width: parent.width
+                width: scroll0.availableWidth
                 spacing: 15
                 Layout.margins: 20
 
+                // Java: for each Setting, box.add(setting.createControl(...)).
+                // Each Setting class has one control; the chooser creates only
+                // that one for each row (Kind is the class's tag).
                 Repeater {
                     model: Properties
-                    delegate: Rectangle {
-                        required property int index
-                        required property int kind
-                        required property string name
-                        required property string label
-                        required property var display
-                        required property var settingValue
-                        required property var minimum
-                        required property var maximum
-                        required property var step
-                        required property var options
-                        required property bool isGroup
-
-                        Layout.fillWidth: true
-                        Layout.leftMargin: 20
-                        Layout.rightMargin: 20
-                        implicitHeight: inner.implicitHeight + 20
-                        radius: 5
-                        color: isGroup ? "#333333" : "#2a2a2a"
-
-                        ColumnLayout {
-                            id: inner
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.margins: 10
-                            spacing: 5
-
-                            // bool: checkbox carries its own label
-                            CheckBox {
-                                visible: kind === 0
-                                text: label
-                                checked: settingValue === true
-                                font.pixelSize: 12
-                                onToggled: Properties.setValue(name, checked)
-                            }
-
-                            // slider: label + slider + value
-                            RowLayout {
-                                visible: kind === 1
-                                spacing: 10
-                                Text { text: label; color: "#d3d3d3"; font.pixelSize: 12 }
-                                Slider {
-                                    Layout.preferredWidth: 220
-                                    from: minimum
-                                    to: maximum
-                                    stepSize: step
-                                    value: typeof settingValue === "number" ? settingValue : 0
-                                    onMoved: Properties.setValue(name, value)
-                                }
-                                Text {
-                                    text: Number(settingValue).toFixed(2)
-                                    color: "#d3d3d3"
-                                    font.pixelSize: 12
-                                    Layout.preferredWidth: 44
-                                }
-                                Item { Layout.fillWidth: true }
-                            }
-
-                            // color: label + swatch/hex field
-                            RowLayout {
-                                visible: kind === 2
-                                spacing: 10
-                                Text { text: label; color: "#d3d3d3"; font.pixelSize: 12 }
-                                Rectangle {
-                                    width: 24; height: 24; radius: 3
-                                    border.color: "#555555"
-                                    color: String(display).match(/^#[0-9a-fA-F]{6}$/) ? String(display) : "#000000"
-                                }
-                                TextField {
-                                    Layout.preferredWidth: 140
-                                    text: String(display)
-                                    color: "#ffffff"
-                                    font.pixelSize: 12
-                                    onEditingFinished: Properties.setValue(name, text)
-                                }
-                                Item { Layout.fillWidth: true }
-                            }
-
-                            // combo: label above, box below
-                            Text { visible: kind === 3; text: label; color: "#d3d3d3"; font.pixelSize: 12 }
-                            ComboBox {
-                                visible: kind === 3
-                                Layout.preferredWidth: 240
-                                implicitHeight: 30
-                                font.pixelSize: 12
-                                model: options
-                                currentIndex: Math.max(0, options.indexOf(String(display)))
-                                onActivated: Properties.setValue(name, currentText)
-                                background: Rectangle { color: "#444444"; radius: 3; border.color: "#555555" }
-                            }
-
-                            // text: a wrapped grey label
-                            Text {
-                                visible: kind === 4
-                                text: label
-                                color: "#aaaaaa"
-                                font.pixelSize: 13
-                                wrapMode: Text.WordWrap
-                                Layout.fillWidth: true
-                            }
-
-                            // group: bold header
-                            Text {
-                                visible: isGroup
-                                text: label
-                                color: "#e0e0e0"
-                                font.pixelSize: 14
-                                font.bold: true
-                                wrapMode: Text.WordWrap
-                                Layout.fillWidth: true
-                            }
-
-                            // textinput / file / directory / texture
-                            Text {
-                                visible: kind === 6 || kind === 7 || kind === 8 || kind === 9
-                                text: label
-                                color: "#d3d3d3"
-                                font.pixelSize: 12
-                            }
-                            RowLayout {
-                                visible: kind === 6 || kind === 7 || kind === 8 || kind === 9
-                                spacing: 8
-                                TextField {
-                                    Layout.preferredWidth: 350
-                                    text: String(display)
-                                    color: "#ffffff"
-                                    font.pixelSize: 12
-                                    selectByMouse: true
-                                    onEditingFinished: Properties.setValue(name, text)
-                                }
-                                ActionButton {
-                                    visible: kind === 7 || kind === 8 || kind === 9
-                                    text: "Browse..."
-                                    onClicked: {
-                                        browse.kind = kind
-                                        browse.name = name
-                                        if (kind === 8) folderDialog.open()
-                                        else fileDialog.open()
-                                    }
-                                }
-                                Item { Layout.fillWidth: true }
-                            }
-                        }
+                    delegate: DelegateChooser {
+                        role: "kind"
+                        DelegateChoice { roleValue: 0; BoolControl {} }
+                        DelegateChoice { roleValue: 1; SliderControl {} }
+                        DelegateChoice { roleValue: 2; ColorControl {} }
+                        DelegateChoice { roleValue: 3; ComboControl {} }
+                        DelegateChoice { roleValue: 4; TextControl {} }
+                        DelegateChoice { roleValue: 5; GroupControl {} }
+                        DelegateChoice { roleValue: 6; TextInputControl {} }
+                        DelegateChoice { roleValue: 7; FileControl {} }
+                        DelegateChoice { roleValue: 8; DirectoryControl {} }
+                        DelegateChoice { roleValue: 9; TextureControl {} }
                     }
                 }
 
@@ -344,6 +218,7 @@ Item {
 
         // ---- global options ----------------------------------------------
         ScrollView {
+            id: scroll1
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: view.showGlobal
@@ -351,124 +226,19 @@ Item {
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
             ColumnLayout {
-                width: parent.width
+                width: scroll1.availableWidth
                 spacing: 15
 
+                // populateGlobalSettings: the same, for the GlobalOption classes
                 Repeater {
                     model: GlobalOptions
-                    delegate: Rectangle {
-                        required property string name
-                        required property string label
-                        required property int kind
-                        required property var settingValue
-                        required property var boolValue
-                        required property var options
-
-                        Layout.fillWidth: true
-                        Layout.leftMargin: 20
-                        Layout.rightMargin: 20
-                        implicitHeight: inner.implicitHeight + 20
-                        radius: 5
-                        color: "#2a2a2a"
-
-                        ColumnLayout {
-                            id: inner
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.margins: 10
-                            spacing: 5
-
-                            Text {
-                                text: label
-                                color: "#e0e0e0"
-                                font.bold: true
-                                font.pixelSize: 12
-                                visible: kind !== 5
-                            }
-
-                            RowLayout {
-                                visible: kind === 0
-                                spacing: 10
-                                CheckBox {
-                                    text: "Mute"
-                                    checked: boolValue === true
-                                    onToggled: GlobalOptions.setValue(name, checked)
-                                }
-                                Slider {
-                                    Layout.preferredWidth: 220
-                                    from: 0
-                                    to: 100
-                                    stepSize: 5
-                                    value: typeof settingValue === "number" ? settingValue : 70
-                                    enabled: !boolValue
-                                    onMoved: GlobalOptions.setValue(name, Math.round(value))
-                                }
-                                Text {
-                                    text: String(settingValue)
-                                    color: "#d3d3d3"
-                                    font.pixelSize: 12
-                                    Layout.preferredWidth: 34
-                                }
-                                Item { Layout.fillWidth: true }
-                            }
-
-                            RowLayout {
-                                visible: kind === 1
-                                spacing: 10
-                                CheckBox {
-                                    text: "Limit FPS"
-                                    checked: boolValue === true
-                                    onToggled: GlobalOptions.setValue(name, checked)
-                                }
-                                SpinBox {
-                                    from: 0
-                                    to: 240
-                                    value: typeof settingValue === "number" ? settingValue : 30
-                                    enabled: boolValue === true
-                                    onValueModified: GlobalOptions.setValue(name, value)
-                                }
-                                Item { Layout.fillWidth: true }
-                            }
-
-                            ComboBox {
-                                visible: kind === 2
-                                Layout.preferredWidth: 240
-                                implicitHeight: 30
-                                font.pixelSize: 12
-                                model: ["stretch", "fit", "fill", "default"]
-                                currentIndex: Math.max(0, model.indexOf(String(settingValue)))
-                                onActivated: GlobalOptions.setValue(name, currentText)
-                            }
-
-                            RowLayout {
-                                visible: kind === 3
-                                spacing: 10
-                                CheckBox {
-                                    text: "Enable clamping"
-                                    checked: boolValue === true
-                                    onToggled: GlobalOptions.setValue(name, checked)
-                                }
-                                ComboBox {
-                                    Layout.preferredWidth: 160
-                                    implicitHeight: 30
-                                    font.pixelSize: 12
-                                    model: ["clamp", "border", "repeat"]
-                                    currentIndex: Math.max(0, model.indexOf(String(settingValue)))
-                                    enabled: boolValue === true
-                                    onActivated: GlobalOptions.setValue(name, currentText)
-                                }
-                                Item { Layout.fillWidth: true }
-                            }
-
-                            CheckBox {
-                                visible: kind === 5
-                                text: label
-                                checked: boolValue === true
-                                font.pixelSize: 12
-                                onToggled: GlobalOptions.setValue(name, checked)
-                            }
-                        }
+                    delegate: DelegateChooser {
+                        role: "kind"
+                        DelegateChoice { roleValue: 10; VolumeControl {} }
+                        DelegateChoice { roleValue: 11; FpsControl {} }
+                        DelegateChoice { roleValue: 12; ScalingControl {} }
+                        DelegateChoice { roleValue: 13; ClampControl {} }
+                        DelegateChoice { roleValue: 14; FlagControl {} }
                     }
                 }
             }
@@ -762,19 +532,4 @@ Item {
         }
     }
 
-    FileDialog {
-        id: fileDialog
-        title: "Select file"
-        onAccepted: Properties.setValue(browse.name, selectedFile.toString().replace("file://", ""))
-    }
-    FolderDialog {
-        id: folderDialog
-        title: "Select directory"
-        onAccepted: Properties.setValue(browse.name, selectedFolder.toString().replace("file://", ""))
-    }
-    QtObject {
-        id: browse
-        property int kind: 7
-        property string name: ""
-    }
 }

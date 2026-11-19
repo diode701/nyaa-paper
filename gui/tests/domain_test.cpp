@@ -65,7 +65,7 @@ int main()
     list.add(std::make_unique<SliderSetting>("fov", "FOV", 0.42, SliderRange{0.0, 1.0, 0.01}));
     list.add(std::make_unique<TextSetting>("caption", "A label"));
 
-    Wallpaper wallpaper{"1234", "Test", "scene", "scene.pkg", "/tmp/1234"};
+    Wallpaper wallpaper{"1234", "Test", "scene", "scene.pkg", "/tmp/1234", ""};
     GpuConfig gpu;
     gpu.mode = GpuConfig::Mode::DriPrime;
     gpu.driPrimeNumber = 1;
@@ -91,9 +91,33 @@ int main()
     assert(command.wallpaperId == "1234");
 
     // a wallpaper outside the workshop root is passed by path, not by id
-    nyaa::domain::Wallpaper odd{"9999", "Odd", "scene", "x.pkg", "/elsewhere/9999"};
+    nyaa::domain::Wallpaper odd{"9999", "Odd", "scene", "x.pkg", "/elsewhere/9999", ""};
     const EngineCommand byPath = nyaa::domain::Renderer::render("eDP-1", odd, list, globals, gpu, {}, options);
     assert(byPath.argv[3] == "/elsewhere/9999");
+
+    // K2: a GlobalOption IS a Setting (Java: GlobalOption extends Setting), so
+    // one list of Setting* renders exactly like the two containers.
+    {
+        nyaa::domain::options::GlobalOptions g;
+        g.volume().setMuted(true);
+        g.setFlag("disable-mouse", true);
+        g.clamp().setEnabled(true);
+        std::vector<const Setting *> all;
+        for (const auto *option : g.all())
+            all.push_back(option);                 // upcast: no adapter needed
+        for (const auto &setting : list.all())
+            all.push_back(setting.get());
+        assert(all.front()->getKind() == Kind::Volume);
+        assert(all.front()->getDescription() == "Audio");
+        const auto one = nyaa::domain::Renderer::render("eDP-1", wallpaper, all, gpu, {}, options);
+        const auto two = nyaa::domain::Renderer::render("eDP-1", wallpaper, list, g, gpu, {}, options);
+        assert(one.argv == two.argv);
+        const std::vector<std::string> tail(one.argv.begin() + 8, one.argv.end());
+        assert((tail == std::vector<std::string>{"--silent", "--disable-mouse", "--clamp", "border",
+                                                  "--set-property", "bloom=1", "--set-property", "fov=0.42"}));
+        g.reset();
+        assert(!g.volume().isMuted() && g.arguments(true) == std::vector<std::string>({"--volume", "70"}));
+    }
 
     std::puts("domain tests passed");
     return 0;

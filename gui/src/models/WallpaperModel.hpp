@@ -6,15 +6,8 @@
 #include <QVariantMap>
 #include <QVector>
 
-/// One row of the library, as the daemon reports it.
-struct WallpaperItem
-{
-    QString id;
-    QString title;
-    QString type;
-    QString preview;
-    QString basePath;
-};
+#include "domain/Types.hpp"
+
 
 /// The grid's data source. Filtering lives here so the view stays dumb.
 class WallpaperModel : public QAbstractListModel
@@ -32,7 +25,13 @@ public:
     QVariant data(const QModelIndex &index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
 
-    void setAll(QVector<WallpaperItem> items);
+    void setAll(QVector<nyaa::domain::Wallpaper> items);
+    /// Build one from Qt strings (D-Bus JSON, the workshop scan, tests).
+    static nyaa::domain::Wallpaper make(const QString &id, const QString &title, const QString &type,
+                                        const QString &preview, const QString &basePath,
+                                        const QString &file = {});
+    /// The wallpaper with this id; nullptr when it is not in the library.
+    const nyaa::domain::Wallpaper *find(const QString &id) const;
 
     QString filter() const { return m_filter; }
     void setFilter(const QString &filter);
@@ -58,7 +57,7 @@ Q_SIGNALS:
 private:
     void rebuild();
 
-    QVector<WallpaperItem> m_all;
+    QVector<nyaa::domain::Wallpaper> m_all;
     QVector<int> m_visible;
     QHash<QString, int> m_byId;        // id -> index in m_all (Java: WpprLib.idMap)
     QHash<QString, int> m_visibleRow;  // id -> row in m_visible

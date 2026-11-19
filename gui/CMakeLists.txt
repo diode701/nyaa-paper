@@ -41,6 +41,8 @@ qt_add_executable(nyaa-paper-qt
     src/bridge/ConfigRenderer.cpp
     src/app/Autostart.hpp
     src/app/Autostart.cpp
+    src/app/DevHooks.hpp
+    src/app/DevHooks.cpp
     src/app/StartupRestore.hpp
     src/app/StartupRestore.cpp
     src/app/Tray.hpp
@@ -92,6 +94,23 @@ qt_add_qml_module(nyaa-paper-qt
         qml/components/KeyCap.qml
         qml/components/MonitorPill.qml
         qml/components/Toast.qml
+        qml/controls/SettingCard.qml
+        qml/controls/BoolControl.qml
+        qml/controls/SliderControl.qml
+        qml/controls/ColorControl.qml
+        qml/controls/ComboControl.qml
+        qml/controls/TextControl.qml
+        qml/controls/GroupControl.qml
+        qml/controls/TextInputControl.qml
+        qml/controls/PathControl.qml
+        qml/controls/FileControl.qml
+        qml/controls/DirectoryControl.qml
+        qml/controls/TextureControl.qml
+        qml/controls/VolumeControl.qml
+        qml/controls/FpsControl.qml
+        qml/controls/ScalingControl.qml
+        qml/controls/ClampControl.qml
+        qml/controls/FlagControl.qml
 )
 
 target_include_directories(nyaa-paper-qt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
@@ -152,6 +171,7 @@ qt_add_executable(controller_test
     src/app/StartupRestore.cpp
     src/bridge/ConfigRenderer.cpp
     src/io/WallpaperConfigJson.cpp
+    src/models/WallpaperModel.cpp
     src/bridge/EngineBridge.cpp
     src/bridge/PlaylistBridge.cpp
     src/bridge/ConfigRenderer.cpp

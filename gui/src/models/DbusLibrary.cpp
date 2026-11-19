@@ -70,17 +70,17 @@ void DbusLibrary::refresh()
 void DbusLibrary::onJson(const QString &json)
 {
     const QJsonArray array = QJsonDocument::fromJson(json.toUtf8()).array();
-    QVector<WallpaperItem> items;
+    QVector<nyaa::domain::Wallpaper> items;
     items.reserve(array.size());
 
     for (const QJsonValue &value : array) {
         const QJsonObject obj = value.toObject();
         const QString basePath = obj.value(QStringLiteral("basePath")).toString();
-        items.push_back({obj.value(QStringLiteral("id")).toString(),
-                         obj.value(QStringLiteral("title")).toString(),
-                         obj.value(QStringLiteral("type")).toString(),
-                         previewFor(basePath),
-                         basePath});
+        items.push_back(WallpaperModel::make(obj.value(QStringLiteral("id")).toString(),
+                                             obj.value(QStringLiteral("title")).toString(),
+                                             obj.value(QStringLiteral("type")).toString(),
+                                             previewFor(basePath), basePath,
+                                             obj.value(QStringLiteral("file")).toString()));
     }
 
     emit wallpapersLoaded(items);

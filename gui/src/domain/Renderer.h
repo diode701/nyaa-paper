@@ -15,6 +15,17 @@ namespace nyaa::domain {
 class Renderer
 {
 public:
+    /// Java WallpaperInstance.start(): every setting's pre-property flags,
+    /// then every setting's other arguments, both in list order. The list is
+    /// Java's allSettings: global options first, then the wallpaper's own.
+    static EngineCommand render(const std::string &monitor,
+                                const Wallpaper &wallpaper,
+                                const std::vector<const settings::Setting *> &allSettings,
+                                const GpuConfig &gpu,
+                                const Screenshot &screenshot,
+                                const EngineOptions &options);
+
+    /// The same, from the two containers (globals first, like Java).
     static EngineCommand render(const std::string &monitor,
                                 const Wallpaper &wallpaper,
                                 const settings::SettingList &settings,

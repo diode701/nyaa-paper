@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     PlaylistBridge playlist(library, config);
     PropertyModel properties;
     GlobalOptionsModel globals;
-    PropertiesController controller(properties, globals, engine, playlist, config);
+    PropertiesController controller(properties, globals, engine, playlist, config, library);
 
     // ---- open: project.json defaults, fresh global options, default GPU ----
     assert(controller.open("777", wallpaperDir.path()) == 3);
@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
 
     // ---- J1: autoRestoreWallpapers ------------------------------------------
     {
-        library.setAll({{"777", "test", "scene", {}, wallpaperDir.path()}});
+        library.setAll({WallpaperModel::make("777", "test", "scene", {}, wallpaperDir.path())});
         engine.setCustomMonitors({"TEST-R", "TEST-SKIP"});
 
         auto saved = controller.capture("TEST-R");

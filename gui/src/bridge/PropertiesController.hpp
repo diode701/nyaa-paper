@@ -6,7 +6,10 @@
 #include <QStringList>
 #include <QVariantMap>
 
+#include <vector>
+
 #include "domain/WallpaperConfig.h"
+#include "domain/settings/Setting.h"
 #include "engine/IEngine.hpp"
 #include "io/WallpaperStore.h"
 
@@ -15,6 +18,7 @@ class EngineBridge;
 class GlobalOptionsModel;
 class PlaylistBridge;
 class PropertyModel;
+class WallpaperModel;
 
 /// The logic half of Java's WallpaperPropertiesView: everything that view did
 /// besides drawing. One wallpaper is open at a time; its custom settings live
@@ -38,7 +42,8 @@ class PropertiesController : public QObject
 
 public:
     PropertiesController(PropertyModel &properties, GlobalOptionsModel &globals, EngineBridge &engine,
-                         PlaylistBridge &playlist, const ConfigBridge &config, QObject *parent = nullptr);
+                         PlaylistBridge &playlist, const ConfigBridge &config,
+                         const WallpaperModel &library, QObject *parent = nullptr);
 
     QString gpuMode() const;
     int driPrimeNumber() const { return m_gpu.driPrimeNumber; }
@@ -82,14 +87,22 @@ Q_SIGNALS:
 
 private:
     void onApplyFinished(const QString &monitor, bool ok, const QString &message);
+    /// Java's allSettings: the global options, then the wallpaper's own
+    /// properties, as one list of Settings.
+    std::vector<nyaa::domain::settings::Setting *> allSettings();
+    std::vector<const nyaa::domain::settings::Setting *> allSettings() const;
 
     PropertyModel &m_properties;
     GlobalOptionsModel &m_globals;
     EngineBridge &m_engine;
     PlaylistBridge &m_playlist;
     const ConfigBridge &m_config;
+    const WallpaperModel &m_library;
     nyaa::io::WallpaperStore m_store;
 
+    /// The open wallpaper (Java: the view's Wppr). From the library when it is
+    /// there, so type and file need no second read of project.json.
+    nyaa::domain::Wallpaper m_wallpaper;
     QString m_wallpaperId;
     QString m_basePath;
     nyaa::domain::GpuConfig m_gpu;

@@ -23,7 +23,7 @@ public:
     void refresh();
 
 Q_SIGNALS:
-    void wallpapersLoaded(const QVector<WallpaperItem> &items);
+    void wallpapersLoaded(const QVector<nyaa::domain::Wallpaper> &items);
     void failed(const QString &message);
 
 private:

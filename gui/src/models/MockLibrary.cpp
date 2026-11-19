@@ -20,9 +20,9 @@ QString previewFor(const QDir &dir)
 
 } // namespace
 
-QVector<WallpaperItem> MockLibrary::fromWorkshop(const QString &root)
+QVector<nyaa::domain::Wallpaper> MockLibrary::fromWorkshop(const QString &root)
 {
-    QVector<WallpaperItem> items;
+    QVector<nyaa::domain::Wallpaper> items;
     const QDir dir(root);
     if (!dir.exists())
         return items;
@@ -32,50 +32,52 @@ QVector<WallpaperItem> MockLibrary::fromWorkshop(const QString &root)
         const QDir wallpaperDir(dir.filePath(id));
         QString title = id;
         QString kind;
+        QString file;
 
         QFile project(wallpaperDir.filePath("project.json"));
         if (project.open(QIODevice::ReadOnly)) {
             const QJsonObject obj = QJsonDocument::fromJson(project.readAll()).object();
             title = obj.value("title").toString(title);
             kind = obj.value("type").toString();
+            file = obj.value("file").toString();
         }
 
         const QString preview = previewFor(wallpaperDir);
         if (preview.isEmpty() && kind.isEmpty())
             continue; // not a wallpaper folder
 
-        items.push_back({id, title, kind, preview, wallpaperDir.absolutePath()});
+        items.push_back(WallpaperModel::make(id, title, kind, preview, wallpaperDir.absolutePath(), file));
     }
     return items;
 }
 
-QVector<WallpaperItem> MockLibrary::sample()
+QVector<nyaa::domain::Wallpaper> MockLibrary::sample()
 {
     const QStringList titles{
         "neon alley", "kitsune dream", "orbital drift", "rain on glass", "paper crane",
         "deep water", "signal lost", "midnight diner", "static garden", "train window",
         "lantern street", "soft fog", "cassette sky", "hollow pines"};
-    QVector<WallpaperItem> items;
+    QVector<nyaa::domain::Wallpaper> items;
     items.reserve(titles.size());
     for (int i = 0; i < titles.size(); ++i) {
         const QString kind = (i % 3 == 0) ? QStringLiteral("video")
                             : (i % 3 == 1) ? QStringLiteral("scene")
                                            : QStringLiteral("web");
-        items.push_back({QStringLiteral("sample-%1").arg(i + 1), titles[i], kind, {}, {}});
+        items.push_back(WallpaperModel::make(QStringLiteral("sample-%1").arg(i + 1), titles[i], kind, {}, {}));
     }
     return items;
 }
 
-QVector<WallpaperItem> MockLibrary::load()
+QVector<nyaa::domain::Wallpaper> MockLibrary::load()
 {
     const QString root = qEnvironmentVariable(
         "NYAA_WORKSHOP",
         QDir::homePath() + QStringLiteral("/.local/share/Steam/steamapps/workshop/content/431960"));
-    QVector<WallpaperItem> items = fromWorkshop(root);
+    QVector<nyaa::domain::Wallpaper> items = fromWorkshop(root);
     if (qEnvironmentVariableIsSet("NYAA_TEST_GIFS")) {
-        QVector<WallpaperItem> gifs;
+        QVector<nyaa::domain::Wallpaper> gifs;
         for (const auto &item : items) {
-            if (item.preview.endsWith(QLatin1String(".gif")))
+            if (QString::fromStdString(item.preview).endsWith(QLatin1String(".gif")))
                 gifs.push_back(item);
         }
         items = gifs;

@@ -1,15 +1,10 @@
 #include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
-#include <cstdio>
 
-#include <QKeyEvent>
-#include <QKeySequence>
-#include <QQuickItem>
-#include <QQuickWindow>
-#include <QTimer>
 #include <QtQml>
 
+#include "app/DevHooks.hpp"
 #include "app/StartupRestore.hpp"
 #include "app/Tray.hpp"
 #include "bridge/ConfigBridge.hpp"
@@ -59,7 +54,7 @@ int main(int argc, char *argv[])
     StartupRestore restore(config, engine, library);
     PropertyModel properties;
     GlobalOptionsModel globalOptions;
-    PropertiesController controller(properties, globalOptions, engine, playlist, config);
+    PropertiesController controller(properties, globalOptions, engine, playlist, config, library);
     if (qEnvironmentVariableIsSet("NYAA_MOCK")) {
         library.setAll(MockLibrary::load());
         restore.libraryLoaded();
@@ -69,7 +64,7 @@ int main(int argc, char *argv[])
                          &library, &WallpaperModel::setAll);
         // autoRestoreWallpapers runs once the library is known
         QObject::connect(dbusLibrary, &DbusLibrary::wallpapersLoaded, &restore,
-                         [&restore](const QVector<WallpaperItem> &items) {
+                         [&restore](const QVector<nyaa::domain::Wallpaper> &items) {
                              if (!items.isEmpty())
                                  restore.libraryLoaded();
                          });
@@ -77,13 +72,13 @@ int main(int argc, char *argv[])
         // that are no longer subscribed.
         auto cleaned = std::make_shared<bool>(false);
         QObject::connect(dbusLibrary, &DbusLibrary::wallpapersLoaded, &controller,
-                         [&controller, cleaned](const QVector<WallpaperItem> &items) {
+                         [&controller, cleaned](const QVector<nyaa::domain::Wallpaper> &items) {
                              if (*cleaned || items.isEmpty())
                                  return;
                              *cleaned = true;
                              QStringList ids;
                              for (const auto &item : items)
-                                 ids << item.id;
+                                 ids << QString::fromStdString(item.id);
                              controller.forgetUnsubscribed(ids);
                          });
         // No daemon yet? Show the sample deck rather than an empty window.
@@ -113,76 +108,8 @@ int main(int argc, char *argv[])
     if (trayStart && tray.available())
         QMetaObject::invokeMethod(qml.rootObjects().first(), "hideToTray");
 
-    // Dev aid: NYAA_WINDOW=2540x1422 renders at the user's real window size.
-    if (qEnvironmentVariableIsSet("NYAA_WINDOW")) {
-        const QString size = qEnvironmentVariable("NYAA_WINDOW");
-        const QStringList parts = size.split(QLatin1Char('x'));
-        if (parts.size() == 2) {
-            qml.rootObjects().first()->setProperty("width", parts[0].toInt());
-            qml.rootObjects().first()->setProperty("height", parts[1].toInt());
-        }
-    }
-
-    // Dev aid: NYAA_GLOBAL=1 opens the properties view on the GLOBAL tab.
-    if (qEnvironmentVariableIsSet("NYAA_MINI"))
-        qml.rootObjects().first()->setProperty("startMini", true);
-
-    if (qEnvironmentVariableIsSet("NYAA_GLOBAL"))
-        qml.rootObjects().first()->setProperty("startGlobal", true);
-
-    // Dev aid: NYAA_KEYS="Right,Right,Down" injects keys after startup.
-    if (qEnvironmentVariableIsSet("NYAA_KEYS")) {
-        const QStringList keys = qEnvironmentVariable("NYAA_KEYS").split(QLatin1Char(','));
-        QTimer::singleShot(250, &app, [&qml] {
-            if (auto *window = qobject_cast<QWindow *>(qml.rootObjects().value(0))) {
-                window->requestActivate();
-                window->setKeyboardGrabEnabled(true);
-            }
-        });
-        QTimer::singleShot(700, &app, [&app, &qml, keys] {
-            auto *window = qobject_cast<QWindow *>(qml.rootObjects().value(0));
-            if (!window)
-                return;
-            for (const QString &name : keys) {
-                const QKeySequence seq(name);
-                if (seq.isEmpty())
-                    continue;
-                QKeyEvent press(QEvent::KeyPress, seq[0].key(), Qt::NoModifier);
-                QCoreApplication::sendEvent(window, &press);
-            }
-            QTimer::singleShot(120, &app, [&app, &qml, window] {
-                auto *root = qml.rootObjects().value(0);
-                auto *quick = qobject_cast<QQuickWindow *>(window);
-                auto *focus = quick ? quick->activeFocusItem() : nullptr;
-                std::fprintf(stderr, "focus=%s cursor=%d page=%d\n",
-                             focus ? focus->metaObject()->className() : "none",
-                             root->property("debugCursor").toInt(),
-                             root->property("debugPage").toInt());
-                if (!qEnvironmentVariableIsSet("NYAA_SHOT"))
-                    QCoreApplication::quit();
-            });
-        });
-    }
-
-    // Dev aid: NYAA_VIEW=1|2 opens properties or playlist for screenshots.
-    if (qEnvironmentVariableIsSet("NYAA_VIEW")) {
-        const int requested = qEnvironmentVariableIntValue("NYAA_VIEW");
-        if (requested == 3)
-            qml.rootObjects().first()->setProperty("settingsOpen", true);
-        else
-            qml.rootObjects().first()->setProperty("view", requested);
-    }
-
-    // Dev aid: NYAA_SHOT=/path/frame.png renders one frame and exits.
-    if (qEnvironmentVariableIsSet("NYAA_SHOT")) {
-        const QString path = qEnvironmentVariable("NYAA_SHOT");
-        const int delay = qEnvironmentVariableIntValue("NYAA_SHOT_DELAY");
-        QTimer::singleShot(delay > 0 ? delay : 1200, &app, [&qml, path] {
-            if (auto *window = qobject_cast<QQuickWindow *>(qml.rootObjects().value(0)))
-                window->grabWindow().save(path);
-            QCoreApplication::quit();
-        });
-    }
+    // NYAA_WINDOW / NYAA_KEYS / NYAA_SHOT / ... for screenshots and smoke tests
+    installDevHooks(app, qml);
 
     return app.exec();
 }

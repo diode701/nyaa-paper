@@ -18,8 +18,14 @@ class GlobalOptionsModel : public QAbstractListModel
     Q_PROPERTY(int count READ rowCount CONSTANT)
 
 public:
-    /// Which control the view draws. Matches the delegate choice in QML.
-    enum OptionKind { Volume = 0, Fps = 1, Scaling = 2, Clamp = 3, Flag = 5 };
+    /// Which control the view draws: the Setting's own Kind.
+    enum OptionKind {
+        Volume = int(nyaa::domain::settings::Kind::Volume),
+        Fps = int(nyaa::domain::settings::Kind::Fps),
+        Scaling = int(nyaa::domain::settings::Kind::Scaling),
+        Clamp = int(nyaa::domain::settings::Kind::Clamp),
+        Flag = int(nyaa::domain::settings::Kind::Flag)
+    };
     enum Role {
         NameRole = Qt::UserRole + 1,
         LabelRole,
@@ -39,6 +45,9 @@ public:
     Q_INVOKABLE void setValue(const QString &name, const QVariant &value);
 
     const nyaa::domain::options::GlobalOptions &options() const { return m_options; }
+    nyaa::domain::options::GlobalOptions &options() { return m_options; }
+    /// Tell the view every row changed (after a restore through the list).
+    void refresh() { refreshAll(); }
 
     /// Fresh defaults (a new wallpaper was opened).
     void reset();

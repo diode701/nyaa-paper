@@ -5,15 +5,18 @@
 
 namespace nyaa::domain {
 
-/// A library entry, as facts only. The daemon reports these; nothing here is
-/// derived from project.json's property block.
+/// One subscribed wallpaper. Java: Wppr. The daemon reports these facts;
+/// the property block of project.json is read separately when it is opened.
 struct Wallpaper
 {
     std::string id;
     std::string title;
-    std::string type;
-    std::string file;
-    std::string basePath;
+    std::string type;       // "scene", "video", "web", ...
+    std::string file;       // project.json "file" (the video for video wallpapers)
+    std::string basePath;   // the wallpaper's folder
+    std::string preview;    // preview.jpg / .gif / .png, empty if none
+
+    bool isVideo() const { return type == "video" || type == "Video"; }
 };
 
 struct GpuConfig

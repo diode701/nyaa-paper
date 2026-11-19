@@ -6,9 +6,13 @@
 
 namespace nyaa::domain::settings {
 
-/// What a property is, stripped of everything the daemon or the engine cares
-/// about. The UI switches on this to pick a delegate.
-enum class Kind { Bool, Slider, Color, Combo, Text, Group, TextInput, File, Directory, Texture };
+/// Which concrete Setting class an object is. The UI maps each kind to the
+/// one control component that draws that class (Java: createControl()).
+/// The first ten come from project.json; the last five are the global options.
+enum class Kind {
+    Bool, Slider, Color, Combo, Text, Group, TextInput, File, Directory, Texture,
+    Volume, Fps, Scaling, Clamp, Flag
+};
 
 struct Rgb {
     double r = 0.0;

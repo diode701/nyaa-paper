@@ -57,6 +57,19 @@ EngineCommand Renderer::render(const std::string &monitor, const Wallpaper &wall
                                const options::GlobalOptions &globals, const GpuConfig &gpu,
                                const Screenshot &screenshot, const EngineOptions &options)
 {
+    std::vector<const settings::Setting *> all;
+    for (const auto *option : globals.all())
+        all.push_back(option);
+    for (const auto &setting : settings.all())
+        all.push_back(setting.get());
+    return render(monitor, wallpaper, all, gpu, screenshot, options);
+}
+
+EngineCommand Renderer::render(const std::string &monitor, const Wallpaper &wallpaper,
+                               const std::vector<const settings::Setting *> &allSettings,
+                               const GpuConfig &gpu, const Screenshot &screenshot,
+                               const EngineOptions &options)
+{
     EngineCommand command;
     command.wallpaperId = wallpaper.id;
 
@@ -73,16 +86,16 @@ EngineCommand Renderer::render(const std::string &monitor, const Wallpaper &wall
 
     appendScreenshot(command.argv, monitor, screenshot);
 
-    // engine-wide flags first (volume, fps, boolean flags), then the flags that
-    // must follow them (scaling, clamp), then the --set-property block.
-    for (const auto &arg : globals.arguments(true))
-        command.argv.push_back(arg);
-    for (const auto &arg : settings.arguments(true))
-        command.argv.push_back(arg);
-    for (const auto &arg : globals.arguments(false))
-        command.argv.push_back(arg);
-    for (const auto &arg : settings.arguments(false))
-        command.argv.push_back(arg);
+    // 1. pre-property flags (volume, fps, boolean flags)
+    // 2. the rest (scaling, clamp, then every --set-property)
+    for (const bool pre : {true, false}) {
+        for (const settings::Setting *setting : allSettings) {
+            if (setting->isPrePropertyFlag() != pre)
+                continue;
+            for (const auto &arg : setting->toCommandArgs())
+                command.argv.push_back(arg);
+        }
+    }
 
     appendEnvironment(command.env, gpu);
     return command;

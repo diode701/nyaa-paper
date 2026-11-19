@@ -3,10 +3,7 @@
 #include <set>
 
 #include <QDateTime>
-#include <QFile>
 #include <QFileInfo>
-#include <QJsonDocument>
-#include <QJsonObject>
 
 #include "bridge/ConfigBridge.hpp"
 #include "bridge/EngineBridge.hpp"
@@ -15,6 +12,7 @@
 #include "io/WallpaperConfigJson.h"
 #include "models/GlobalOptionsModel.hpp"
 #include "models/PropertyModel.hpp"
+#include "models/WallpaperModel.hpp"
 #include "util/Gpu.h"
 #include "util/VideoDuration.h"
 
@@ -23,13 +21,15 @@ using nyaa::domain::WallpaperConfig;
 
 PropertiesController::PropertiesController(PropertyModel &properties, GlobalOptionsModel &globals,
                                            EngineBridge &engine, PlaylistBridge &playlist,
-                                           const ConfigBridge &config, QObject *parent)
+                                           const ConfigBridge &config, const WallpaperModel &library,
+                                           QObject *parent)
     : QObject(parent)
     , m_properties(properties)
     , m_globals(globals)
     , m_engine(engine)
     , m_playlist(playlist)
     , m_config(config)
+    , m_library(library)
 {
     connect(&m_engine, &EngineBridge::applyFinished, this, &PropertiesController::onApplyFinished);
     m_nvidia = nyaa::util::detectNvidia();   // once, like the Java launcher
@@ -86,7 +86,11 @@ int PropertiesController::open(const QString &wallpaperId, const QString &basePa
     // started from its default. Same here.
     m_wallpaperId = wallpaperId;
     m_basePath = basePath;
-    m_properties.loadWallpaper(basePath);
+    if (const nyaa::domain::Wallpaper *known = m_library.find(wallpaperId))
+        m_wallpaper = *known;
+    else
+        m_wallpaper = WallpaperModel::make(wallpaperId, wallpaperId, {}, {}, basePath);
+    m_properties.loadWallpaper(basePath);   // the one read of project.json
     m_globals.reset();
 
     m_gpu = GpuConfig{};   // Default (auto), GPU index 1, GL threading off
@@ -102,11 +106,29 @@ int PropertiesController::open(const QString &wallpaperId, const QString &basePa
 
 // ---- render / capture ------------------------------------------------------
 
+std::vector<nyaa::domain::settings::Setting *> PropertiesController::allSettings()
+{
+    std::vector<nyaa::domain::settings::Setting *> all;
+    for (const auto *option : m_globals.options().all())
+        all.push_back(const_cast<nyaa::domain::options::GlobalOption *>(option));
+    for (const auto &setting : m_properties.settings().all())
+        all.push_back(setting.get());
+    return all;
+}
+
+std::vector<const nyaa::domain::settings::Setting *> PropertiesController::allSettings() const
+{
+    std::vector<const nyaa::domain::settings::Setting *> all;
+    for (const auto *option : m_globals.options().all())
+        all.push_back(option);
+    for (const auto &setting : m_properties.settings().all())
+        all.push_back(setting.get());
+    return all;
+}
+
 EngineRequest PropertiesController::render(const QString &monitor, bool withScreenshot) const
 {
-    nyaa::domain::Wallpaper wallpaper;
-    wallpaper.id = m_wallpaperId.toStdString();
-    wallpaper.basePath = m_basePath.toStdString();
+    const nyaa::domain::Wallpaper &wallpaper = m_wallpaper;
 
     nyaa::domain::Screenshot screenshot;
     if (withScreenshot && m_screenshotEnabled) {
@@ -120,8 +142,7 @@ EngineRequest PropertiesController::render(const QString &monitor, bool withScre
     options.layer = m_config.config().engine.layer;
 
     const nyaa::domain::EngineCommand command = nyaa::domain::Renderer::render(
-        monitor.toStdString(), wallpaper, m_properties.settings(), m_globals.options(), m_gpu,
-        screenshot, options);
+        monitor.toStdString(), wallpaper, allSettings(), m_gpu, screenshot, options);
 
     EngineRequest request;
     request.wallpaperId = m_wallpaperId;
@@ -141,10 +162,14 @@ WallpaperConfig PropertiesController::capture(const QString &monitor) const
     const QFileInfo project(m_basePath + QStringLiteral("/project.json"));
     config.projectJsonModified = project.exists() ? project.lastModified().toMSecsSinceEpoch() : 0;
     config.gpu = m_gpu;
-    // Java: one loop over allSettings (custom + global)
-    config.settings = m_properties.settings().serialize();
-    for (const auto &[name, value] : m_globals.options().serialize())
-        config.settings[name] = value;
+    // captureConfig: one loop over allSettings; labels and group headers
+    // carry no value (Java's getValueString() returned null for them)
+    using nyaa::domain::settings::Kind;
+    for (const auto *setting : allSettings()) {
+        if (setting->getKind() == Kind::Text || setting->getKind() == Kind::Group)
+            continue;
+        config.settings[setting->getName()] = setting->getValueString();
+    }
     return config;
 }
 
@@ -204,21 +229,22 @@ void PropertiesController::loadLast(const QString &monitorName)
         return;
     }
 
-    // Java counts every setting (custom or global) whose name is in the file.
+    // loadSavedSettings: one loop over allSettings, counting what matched
     int applied = 0;
-    for (const auto &setting : m_properties.settings().all())
-        applied += saved.settings.count(setting->getName()) ? 1 : 0;
-    for (const auto *option : m_globals.options().all())
-        applied += saved.settings.count(option->getName()) ? 1 : 0;
+    for (auto *setting : allSettings()) {
+        const auto it = saved.settings.find(setting->getName());
+        if (it == saved.settings.end())
+            continue;
+        setting->setValueFromString(it->second);
+        ++applied;
+    }
 
     if (applied == 0) {
         emit status(tr("Saved config found but no matching settings."));
         return;
     }
-
-    m_properties.settings().restore(saved.settings);
     m_properties.refreshAll();
-    m_globals.restore(saved.settings);
+    m_globals.refresh();   // rebuildUI()
     // Java's loadSavedSettings leaves the GPU radios alone; so does this.
     emit status(tr("Loaded %1 saved settings for %2").arg(applied).arg(monitor));
 }
@@ -240,17 +266,11 @@ QVariantMap PropertiesController::playlistEntry(const QString &monitorName)
     // Java's playlist applies with no screenshot (apply(..., null, 0)).
     const EngineRequest request = render(monitor, false);
 
-    // Video wallpapers play to the end before the playlist moves on.
+    // PlaylistRunner.getDuration: a video plays to its end before the
+    // playlist moves on. Type and file come from the library, not a re-read.
     double duration = 0.0;
-    QFile project(m_basePath + QStringLiteral("/project.json"));
-    if (project.open(QIODevice::ReadOnly)) {
-        const QJsonObject root = QJsonDocument::fromJson(project.readAll()).object();
-        if (root.value(QStringLiteral("type")).toString().compare(QStringLiteral("video"), Qt::CaseInsensitive) == 0) {
-            const QString file = root.value(QStringLiteral("file")).toString();
-            if (!file.isEmpty())
-                duration = nyaa::util::videoDuration((m_basePath + QLatin1Char('/') + file).toStdString());
-        }
-    }
+    if (m_wallpaper.isVideo() && !m_wallpaper.file.empty() && m_wallpaper.file != "unknown file")
+        duration = nyaa::util::videoDuration(m_wallpaper.basePath + "/" + m_wallpaper.file);
 
     QVariantMap entry;
     // Java: the entry IS the captured WallpaperConfig. The playlist bridge

@@ -5,8 +5,13 @@
 using namespace nyaa::domain::options;
 
 namespace {
-// Row order is GlobalOptions::all(): volume, fps, scaling, clamp, then flags.
-constexpr int kFixedRows = 4;
+QStringList toList(const std::vector<std::string> &values)
+{
+    QStringList out;
+    for (const auto &value : values)
+        out << QString::fromStdString(value);
+    return out;
+}
 } // namespace
 
 GlobalOptionsModel::GlobalOptionsModel(QObject *parent)
@@ -31,14 +36,13 @@ QVariant GlobalOptionsModel::data(const QModelIndex &index, int role) const
     if (!index.isValid() || !option)
         return {};
 
-    const int row = index.row();
-    const int kind = row < kFixedRows ? row : Flag;
+    const int kind = int(option->getKind());
 
     switch (role) {
     case NameRole:
         return QString::fromStdString(option->getName());
     case LabelRole:
-        return QString::fromStdString(option->getLabel());
+        return QString::fromStdString(option->getDescription());
     case KindRole:
         return kind;
     case ValueRole:
@@ -54,14 +58,14 @@ QVariant GlobalOptionsModel::data(const QModelIndex &index, int role) const
         case Volume: return m_options.volume().isMuted();
         case Fps: return m_options.fps().isLimited();
         case Clamp: return m_options.clamp().isEnabled();
-        case Flag: return m_options.flags()[size_t(row - kFixedRows)].isEnabled();
+        case Flag: return static_cast<const FlagOption *>(option)->isEnabled();
         default: return false;
         }
     case OptionsRole:
         // ScalingSetting.OPTIONS and ClampSetting.OPTIONS, in Java's order
         switch (kind) {
-        case Scaling: return QStringList{"stretch", "fit", "fill", "default"};
-        case Clamp: return QStringList{"clamp", "border", "repeat"};
+        case Scaling: return toList(ScalingOption::options());
+        case Clamp: return toList(ClampOption::options());
         default: return QStringList{};
         }
     default:

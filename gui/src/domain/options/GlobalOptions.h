@@ -1,35 +1,33 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "domain/settings/Setting.h"
+
 namespace nyaa::domain::options {
 
-/// An engine-wide flag. It has no project.json key, so it is NOT a Setting:
-/// no name/description, just a value and the argv it produces.
-class GlobalOption
+using settings::Kind;
+using settings::Setting;
+
+/// An engine-wide option. Java: `abstract class GlobalOption extends Setting`.
+/// It is a Setting like any wallpaper property, so one list holds both and
+/// one loop captures, restores and renders them (Java's allSettings).
+/// What sets it apart: it has no project.json key, and its flags travel
+/// before the --set-property block unless it says otherwise.
+class GlobalOption : public Setting
 {
 public:
-    virtual ~GlobalOption() = default;
-
-    virtual std::string getName() const = 0;
-    /// The heading the view shows (Java: Setting.description).
-    virtual std::string getLabel() const = 0;
-    virtual std::vector<std::string> toCommandArgs() const = 0;
-    virtual std::string getValueString() const = 0;
-    virtual void setValueFromString(const std::string &value) = 0;
-
-    /// true: before --set-property (volume, fps, boolean flags)
-    /// false: after it (scaling, clamp)
-    virtual bool isPrePropertyFlag() const { return true; }
+    using Setting::Setting;
 };
 
 class VolumeOption final : public GlobalOption
 {
 public:
-    std::string getName() const override { return "volume"; }
-    std::string getLabel() const override { return "Audio"; }
+    VolumeOption() : GlobalOption("volume", "Audio") {}
+    Kind getKind() const override { return Kind::Volume; }
     std::vector<std::string> toCommandArgs() const override;
     std::string getValueString() const override;
     void setValueFromString(const std::string &value) override;
@@ -47,8 +45,8 @@ private:
 class FpsOption final : public GlobalOption
 {
 public:
-    std::string getName() const override { return "fps"; }
-    std::string getLabel() const override { return "Frame Rate Limit (0 = unlimited)"; }
+    FpsOption() : GlobalOption("fps", "Frame Rate Limit (0 = unlimited)") {}
+    Kind getKind() const override { return Kind::Fps; }
     std::vector<std::string> toCommandArgs() const override;
     std::string getValueString() const override;
     void setValueFromString(const std::string &value) override;
@@ -59,22 +57,22 @@ public:
     void setLimited(bool limited) { limited_ = limited; }
 
 private:
-    int fps_ = 30;
+    int fps_ = 30;   // LWE default
     bool limited_ = false;
 };
 
 class ScalingOption final : public GlobalOption
 {
 public:
-    std::string getName() const override { return "scaling"; }
-    std::string getLabel() const override { return "Wallpaper Scaling"; }
+    ScalingOption() : GlobalOption("scaling", "Wallpaper Scaling") {}
+    Kind getKind() const override { return Kind::Scaling; }
     std::vector<std::string> toCommandArgs() const override;
     std::string getValueString() const override;
     void setValueFromString(const std::string &value) override;
     bool isPrePropertyFlag() const override { return false; }
 
     const std::string &getScaling() const { return scaling_; }
-    void setScaling(const std::string &scaling) { scaling_ = scaling; }
+    static const std::vector<std::string> &options();
 
 private:
     std::string scaling_ = "default";
@@ -83,8 +81,8 @@ private:
 class ClampOption final : public GlobalOption
 {
 public:
-    std::string getName() const override { return "clamp"; }
-    std::string getLabel() const override { return "Texture Clamping"; }
+    ClampOption() : GlobalOption("clamp", "Texture Clamping") {}
+    Kind getKind() const override { return Kind::Clamp; }
     std::vector<std::string> toCommandArgs() const override;
     std::string getValueString() const override;
     void setValueFromString(const std::string &value) override;
@@ -93,24 +91,20 @@ public:
     bool isEnabled() const { return enabled_; }
     void setEnabled(bool enabled) { enabled_ = enabled; }
     const std::string &getMode() const { return mode_; }
-    void setMode(const std::string &mode) { mode_ = mode; }
+    void setMode(const std::string &mode);
+    static const std::vector<std::string> &options();
 
 private:
     bool enabled_ = false;
-    std::string mode_ = "border";
+    std::string mode_ = "border";   // default mode when enabled
 };
 
+/// Java: BooleanFlagSetting. The flag's CLI name is its setting name.
 class FlagOption final : public GlobalOption
 {
 public:
-    explicit FlagOption(std::string flag, std::string label)
-        : flag_(std::move(flag))
-        , label_(std::move(label))
-    {
-    }
-
-    std::string getName() const override { return flag_; }
-    std::string getLabel() const override { return label_; }
+    FlagOption(const std::string &flag, const std::string &label) : GlobalOption(flag, label) {}
+    Kind getKind() const override { return Kind::Flag; }
     std::vector<std::string> toCommandArgs() const override;
     std::string getValueString() const override { return enabled_ ? "true" : "false"; }
     void setValueFromString(const std::string &value) override;
@@ -119,46 +113,45 @@ public:
     void setEnabled(bool enabled) { enabled_ = enabled; }
 
 private:
-    std::string flag_;
-    std::string label_;
     bool enabled_ = false;
 };
 
-/// All of the above, with the save/restore loops they need.
+/// Java: GlobalOptionsFactory.createAll(), same eleven, same order.
+namespace GlobalOptionsFactory {
+std::vector<std::unique_ptr<GlobalOption>> createAll();
+}
+
+/// The global options of one apply. Owns the factory's objects and gives
+/// typed access to them for the view.
 class GlobalOptions
 {
 public:
     GlobalOptions();
 
+    /// In GlobalOptionsFactory order.
     std::vector<const GlobalOption *> all() const;
     std::vector<std::string> arguments(bool prePropertyFlags) const;
     std::map<std::string, std::string> serialize() const;
     void restore(const std::map<std::string, std::string> &saved);
     /// Enables a flag by its CLI name (without --). Unknown names are ignored.
     void setFlag(const std::string &name, bool enabled);
+    /// Back to factory defaults (Java built fresh options per properties view).
+    void reset();
 
-    /// Back to GlobalOptionsFactory.createAll() defaults. Java builds fresh
-    /// options every time a properties view opens.
-    void reset() { *this = GlobalOptions(); }
-
-    // Typed access for the view, which edits these objects directly.
-    VolumeOption &volume() { return volume_; }
-    FpsOption &fps() { return fps_; }
-    ScalingOption &scaling() { return scaling_; }
-    ClampOption &clamp() { return clamp_; }
-    std::vector<FlagOption> &flags() { return flags_; }
-    const VolumeOption &volume() const { return volume_; }
-    const FpsOption &fps() const { return fps_; }
-    const ScalingOption &scaling() const { return scaling_; }
-    const ClampOption &clamp() const { return clamp_; }
-    const std::vector<FlagOption> &flags() const { return flags_; }
+    VolumeOption &volume();
+    FpsOption &fps();
+    ScalingOption &scaling();
+    ClampOption &clamp();
+    std::vector<FlagOption *> flags();
+    const VolumeOption &volume() const;
+    const FpsOption &fps() const;
+    const ScalingOption &scaling() const;
+    const ClampOption &clamp() const;
 
 private:
-    VolumeOption volume_;
-    FpsOption fps_;
-    ScalingOption scaling_;
-    ClampOption clamp_;
-    std::vector<FlagOption> flags_;
+    template <class T> T &find() const;
+
+    std::vector<std::unique_ptr<GlobalOption>> options_;
 };
 
 } // namespace nyaa::domain::options

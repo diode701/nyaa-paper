@@ -17,47 +17,46 @@ Item {
 
     readonly property bool animate: Settings.animationMode === 2
                                     || (Settings.animationMode === 1 && (hovered || selected))
-    readonly property int radius: 6
+    readonly property int radius: 7
 
     signal clicked
+
+    Behavior on sel { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+    Behavior on hot { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
     transform: Scale {
         origin.x: cell.width / 2
         origin.y: cell.height / 2
-        xScale: 1.0 + 0.02 * cell.hot
-        yScale: 1.0 + 0.02 * cell.hot
-        Behavior on xScale { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
-        Behavior on yScale { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
-    }
-    Behavior on sel { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
-    Behavior on hot { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
-
-    // Shader-free shadow: two offset slabs behind the card.
-    Rectangle {
-        anchors.fill: parent
-        anchors.topMargin: 5 + 2 * cell.hot
-        anchors.bottomMargin: -3
-        anchors.leftMargin: -2
-        anchors.rightMargin: -2
-        radius: cell.radius + 2
-        color: "#000000"
-        opacity: 0.28 + 0.12 * cell.hot
-    }
-    Rectangle {
-        anchors.fill: parent
-        anchors.topMargin: 2
-        anchors.bottomMargin: -1
-        radius: cell.radius + 1
-        color: "#000000"
-        opacity: 0.22
+        xScale: 1.0 + 0.025 * cell.hot
+        yScale: 1.0 + 0.025 * cell.hot
     }
 
+    // ---- contact shadow: stacked rings, widest and faintest first ----------
+    Rectangle { anchors.fill: parent; anchors.margins: -10; anchors.topMargin: 14; radius: cell.radius + 10; color: "#000000"; opacity: 0.06 }
+    Rectangle { anchors.fill: parent; anchors.margins: -7;  anchors.topMargin: 11; radius: cell.radius + 7;  color: "#000000"; opacity: 0.09 }
+    Rectangle { anchors.fill: parent; anchors.margins: -4;  anchors.topMargin: 8;  radius: cell.radius + 4;  color: "#000000"; opacity: 0.13 }
+    Rectangle { anchors.fill: parent; anchors.margins: -2;  anchors.topMargin: 5;  radius: cell.radius + 2;  color: "#000000"; opacity: 0.18 }
+
+    // ---- accent glow, only on the cursor -----------------------------------
+    Rectangle { anchors.fill: parent; anchors.margins: -11; radius: cell.radius + 11; color: "transparent"; border.width: 1; border.color: Theme.accent; opacity: 0.06 * cell.sel }
+    Rectangle { anchors.fill: parent; anchors.margins: -7;  radius: cell.radius + 7;  color: "transparent"; border.width: 1; border.color: Theme.accent; opacity: 0.13 * cell.sel }
+    Rectangle { anchors.fill: parent; anchors.margins: -4;  radius: cell.radius + 4;  color: "transparent"; border.width: 2; border.color: Theme.accent; opacity: 0.26 * cell.sel }
+
+    // ---- the card ----------------------------------------------------------
     Rectangle {
         id: body
         anchors.fill: parent
+        anchors.topMargin: -1 * cell.hot
         radius: cell.radius
-        color: "#151A21"
         clip: true
+
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#2C3542" }
+            GradientStop { position: 1.0; color: "#1C222B" }
+        }
+
+        border.width: cell.selected ? 2 : 1
+        border.color: cell.selected ? Theme.accent : (cell.hot > 0.2 ? "#46525F" : "#3A4553")
 
         Rectangle {
             anchors.fill: parent
@@ -70,7 +69,7 @@ Item {
 
         AnimatedImage {
             anchors.fill: parent
-            anchors.margins: 4
+            anchors.margins: 2
             source: cell.preview
             visible: cell.preview !== ""
             fillMode: Image.PreserveAspectFit
@@ -80,32 +79,24 @@ Item {
             sourceSize.width: 360
             sourceSize.height: 360
         }
-    }
 
-    Rectangle {
-        anchors.fill: parent
-        anchors.margins: 1
-        radius: cell.radius - 1
-        height: 1
-        color: "#14ffffff"
-    }
-
-    Rectangle {
-        anchors.fill: parent
-        radius: cell.radius
-        color: "transparent"
-        border.width: 1
-        border.color: cell.selected ? Theme.accent : "#2A323D"
-    }
-
-    Rectangle {
-        anchors.fill: parent
-        anchors.margins: -2
-        radius: cell.radius + 2
-        color: "transparent"
-        border.width: 2
-        border.color: Theme.accent
-        opacity: 0.85 * cell.sel
+        // top bevel highlight + bottom shade, the cheap "3d" trick
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.margins: 1
+            height: 1
+            color: "#26ffffff"
+        }
+        Rectangle {
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.margins: 1
+            height: 1
+            color: "#40000000"
+        }
     }
 
     MouseArea {

@@ -6,6 +6,7 @@ import NyaaPaper.Theme 1.0
 SettingCard {
     required property string label
     color: "transparent"
+    fill: true
     Text {
         text: label
         color: Theme.dim

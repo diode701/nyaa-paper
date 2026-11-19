@@ -10,6 +10,8 @@ Rectangle {
     default property alias content: slot.data
     property string caption: ""
     property bool group: false
+    /// true: the content takes the whole row (text notes, group headers)
+    property bool fill: group
 
     Layout.fillWidth: true
     Layout.leftMargin: 20
@@ -40,8 +42,10 @@ Rectangle {
         }
         RowLayout {
             id: slot
-            Layout.fillWidth: true
+            Layout.fillWidth: card.fill
             spacing: 10
         }
+        // controls stay next to their caption; the rest of the row is empty
+        Item { Layout.fillWidth: true; visible: !card.fill }
     }
 }

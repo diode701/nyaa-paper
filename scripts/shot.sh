@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Screenshot the real app on the real renderer (Vulkan), without touching the
 # desktop: a hidden virtual KWin session, the GUI in mock mode inside it.
+# SHOT_PLAYLISTS=<dir of monitor.json> also starts a sandboxed daemon.
 #   scripts/shot.sh out.png [WIDTHxHEIGHT] [keys] [extra env...]
 #   scripts/shot.sh /tmp/a.png 1920x1050 "Right,Down" NYAA_VIEW=1
 # The offscreen platform cannot do this: it uses Qt's software renderer,
@@ -24,6 +25,12 @@ XDG_CONFIG_HOME="$sandbox/config" QT_NO_XDG_DESKTOP_PORTAL=1 dbus-run-session --
   kwin_wayland --virtual --no-lockscreen --socket "$SHOT_SOCK" --width "$((SHOT_W + 20))" --height "$((SHOT_H + 60))" >/dev/null 2>&1 &
   kwin=$!
   for _ in $(seq 50); do [ -S "$XDG_RUNTIME_DIR/$SHOT_SOCK" ] && break; sleep 0.1; done
+  # SHOT_PLAYLISTS=dir: run a daemon (fake engine) with those playlist files
+  if [ -n "${SHOT_PLAYLISTS:-}" ]; then
+    state="$(mktemp -d)"; mkdir -p "$state/playlists"; cp "$SHOT_PLAYLISTS"/*.json "$state/playlists/"
+    NYAA_STATE_DIR="$state" NYAA_ENGINE=/bin/sleep "$SHOT_ROOT/daemon/target/debug/nyaa-paperd" >/dev/null 2>&1 &
+    for _ in $(seq 50); do gdbus introspect --session -d org.nyaa.Paper -o /org/nyaa/Paper >/dev/null 2>&1 && break; sleep 0.1; done
+  fi
   env WAYLAND_DISPLAY="$SHOT_SOCK" QT_QPA_PLATFORM=wayland QT_FORCE_STDERR_LOGGING=1 NYAA_MOCK=1 \
       NYAA_WINDOW="$SHOT_SIZE" ${SHOT_KEYS:+NYAA_KEYS="$SHOT_KEYS"} NYAA_SHOT="$SHOT_OUT" \
       NYAA_SHOT_DELAY="${NYAA_SHOT_DELAY:-3000}" "$@" timeout 30 "$SHOT_ROOT/gui/build/nyaa-paper-qt" 2>&1 \

@@ -12,10 +12,19 @@ Item {
     property bool selected: false
     property bool hovered: mouse.containsMouse
 
+    // Animated 0..1 levels so selection and hover ease instead of snapping.
+    property real sel: selected ? 1 : 0
+    property real hot: hovered ? 1 : 0
+
     readonly property bool animate: Settings.animationMode === 2
                                     || (Settings.animationMode === 1 && (hovered || selected))
 
     signal clicked
+
+    scale: 1.0 + 0.02 * hot
+    Behavior on sel { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+    Behavior on hot { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+    Behavior on scale { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
 
     Rectangle {
         id: body
@@ -27,10 +36,11 @@ Item {
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
-            shadowColor: cell.selected ? Theme.accent : "#000000"
-            shadowOpacity: cell.selected ? 0.55 : 0.45
-            shadowBlur: cell.selected ? 1.0 : 0.4
-            shadowVerticalOffset: cell.selected ? 0 : 4
+            shadowColor: Qt.rgba(0.35 * cell.sel, 0.16 + 0.66 * cell.sel, 0.20 + 0.80 * cell.sel, 1.0)
+            shadowOpacity: 0.45 + 0.15 * cell.hot + 0.30 * cell.sel
+            shadowBlur: 0.4 + 0.5 * cell.hot + 0.6 * cell.sel
+            shadowVerticalOffset: 4 * (1.0 - cell.sel)
+            shadowHorizontalOffset: 0
         }
 
         Rectangle {
@@ -59,8 +69,27 @@ Item {
         anchors.fill: parent
         radius: Theme.radius
         color: "transparent"
-        border.width: cell.selected ? 3 : 1
-        border.color: cell.selected ? Theme.accent : "#2A323D"
+        border.width: 1
+        border.color: "#2A323D"
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        radius: Theme.radius
+        color: "transparent"
+        border.width: 3
+        border.color: Theme.accent
+        opacity: cell.sel
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: -1
+        radius: Theme.radius + 1
+        color: "transparent"
+        border.width: 1
+        border.color: Theme.accent
+        opacity: 0.35 * cell.sel
     }
 
     MouseArea {

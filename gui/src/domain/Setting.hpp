@@ -2,7 +2,9 @@
 
 #include <string>
 
-#include "Kind.hpp"
+#include "domain/Kind.hpp"
+
+namespace nyaa::domain {
 
 /// One customizable property of a wallpaper.
 ///
@@ -17,9 +19,9 @@ public:
     {
     }
 
-    virtual ~Setting() = default;          // deleting through Setting* must be safe
+    virtual ~Setting() = default;      // deleting through Setting* must be safe
 
-    Setting(const Setting &) = delete;      // identity, not a value
+    Setting(const Setting &) = delete;  // identity, not a value
     Setting &operator=(const Setting &) = delete;
     Setting(Setting &&) = default;
     Setting &operator=(Setting &&) = default;
@@ -37,7 +39,12 @@ public:
     /// What the UI shows next to the control.
     virtual std::string display() const = 0;
 
+    /// Labels and group headers exist for the UI only; the renderer skips them.
+    virtual bool emitsArgument() const { return true; }
+
 protected:
     std::string m_key;
     std::string m_label;
 };
+
+} // namespace nyaa::domain

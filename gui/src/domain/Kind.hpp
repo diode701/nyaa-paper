@@ -4,6 +4,8 @@
 #include <utility>
 #include <vector>
 
+namespace nyaa::domain {
+
 /// What a property is, stripped of everything the daemon or the engine cares
 /// about. The UI switches on this to pick a delegate.
 enum class Kind { Bool, Slider, Color, Combo, Text, Group, TextInput, File, Directory, Texture };
@@ -26,11 +28,13 @@ struct SettingDesc {
     std::string key;
     std::string label;
     Kind kind = Kind::Text;
-    std::string text;                                        // text-ish value
+    std::string text;
     bool boolean = false;
     double number = 0.0;
     SliderRange range{};
     Rgb color{};
-    std::vector<std::pair<int, std::string>> options;         // combo
+    std::vector<std::pair<int, std::string>> options;
     int order = 0;
 };
+
+} // namespace nyaa::domain

@@ -119,7 +119,7 @@ Item {
                 delegate: Cell {
                     width: view.thumb
                     height: view.thumb
-                    seed: view.page * view.pageSize + index
+                    pageStart: view.page * view.pageSize
                     selected: index === view.cursor
                     onClicked: {
                         view.cursor = index

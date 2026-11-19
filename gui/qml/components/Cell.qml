@@ -7,8 +7,9 @@ Item {
     id: cell
 
     required property string preview
-    required property int seed
+    required property int index
 
+    property int pageStart: 0
     property bool selected: false
     property bool hovered: mouse.containsMouse
 
@@ -47,8 +48,8 @@ Item {
             anchors.fill: parent
             visible: cell.preview === ""
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.hsla((cell.seed * 0.11) % 1.0, 0.55, 0.40, 1.0) }
-                GradientStop { position: 1.0; color: Qt.hsla((cell.seed * 0.11 + 0.1) % 1.0, 0.6, 0.14, 1.0) }
+                GradientStop { position: 0.0; color: Qt.hsla(((cell.pageStart + cell.index) * 0.11) % 1.0, 0.55, 0.40, 1.0) }
+                GradientStop { position: 1.0; color: Qt.hsla(((cell.pageStart + cell.index) * 0.11 + 0.1) % 1.0, 0.6, 0.14, 1.0) }
             }
         }
 

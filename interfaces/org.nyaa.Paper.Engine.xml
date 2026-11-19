@@ -1,21 +1,25 @@
-<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
- "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
 <!--
   org.nyaa.Paper.Engine — process ownership for linux-wallpaperengine.
 
   Deliberately policy-free. The caller renders the complete argument vector
-  (everything after the executable name) and the complete child environment.
+  (everything after the executable name) and the complete child environment, as "KEY=VALUE" strings
+  (a dictionary would need Qt metatype boilerplate for no gain).
   The daemon spawns it, remembers it per monitor, and reports its exit code.
   No property typing, no flag building, no defaults, no knowledge of what a
   wallpaper is.
 
   Contract
-  --------
+  ========
   Apply   Replaces any child already running on that monitor: SIGTERM, 3 s
           grace, then SIGKILL, before the new child is spawned. Returns once
           the new child has been spawned — not once it has drawn a frame.
           An empty monitor or empty argv is an error.
   Stop    Idempotent. Stopping an idle monitor succeeds.
+  ListRunning returns a JSON object mapping monitor -> pid, e.g. {"eDP-1":4242}.
+          (Small structured payloads travel as JSON strings: qdbusxml2cpp cannot
+           marshal QMap<QString,int> without metatype boilerplate, and JSON keeps
+           one convention for Library.List too.)
   StopAll Idempotent.
   Signals EngineExited fires exactly once per child that terminated on its
           own. It does NOT fire for children the daemon killed because of
@@ -31,7 +35,7 @@
       <arg name="monitor" type="s" direction="in"/>
       <arg name="wallpaperId" type="s" direction="in"/>
       <arg name="argv" type="as" direction="in"/>
-      <arg name="env" type="a{ss}" direction="in"/>
+      <arg name="env" type="as" direction="in"/>
       <arg name="pid" type="u" direction="out"/>
     </method>
     <method name="Stop">
@@ -39,7 +43,7 @@
     </method>
     <method name="StopAll"/>
     <method name="ListRunning">
-      <arg name="running" type="a{si}" direction="out"/>
+      <arg name="runningJson" type="s" direction="out"/>
     </method>
     <method name="Info">
       <arg name="version" type="s" direction="out"/>

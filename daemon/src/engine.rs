@@ -92,7 +92,7 @@ impl Engine {
         monitor: String,
         wallpaper_id: String,
         argv: Vec<String>,
-        env: HashMap<String, String>,
+        env: Vec<String>,
     ) -> zbus::fdo::Result<u32> {
         if monitor.trim().is_empty() {
             return Err(zbus::fdo::Error::InvalidArgs(
@@ -110,7 +110,12 @@ impl Engine {
 
         let binary = paths::engine_binary();
         let mut cmd = Command::new(&binary);
-        cmd.args(&argv).envs(&env).stdin(Stdio::null());
+        cmd.args(&argv).stdin(Stdio::null());
+        for pair in &env {
+            if let Some((key, value)) = pair.split_once('=') {
+                cmd.env(key, value);
+            }
+        }
 
         let child = cmd
             .spawn()
@@ -149,14 +154,13 @@ impl Engine {
         self.shutdown_all().await;
     }
 
-    fn list_running(&self) -> HashMap<String, i32> {
-        self.inner
-            .running
-            .lock()
-            .unwrap()
+    fn list_running(&self) -> String {
+        let running = self.inner.running.lock().unwrap();
+        let map: HashMap<&str, u32> = running
             .iter()
-            .map(|(monitor, running)| (monitor.clone(), running.pid as i32))
-            .collect()
+            .map(|(monitor, running)| (monitor.as_str(), running.pid))
+            .collect();
+        serde_json::to_string(&map).unwrap_or_else(|_| "{}".to_string())
     }
 
     fn info(&self) -> (String, String) {

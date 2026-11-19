@@ -118,20 +118,26 @@ ApplicationWindow {
         enabled: app.view === 1 && properties.miniOpen
         onActivated: Playlist.prev()
     }
+    // MiniPlaylistPanel.setupKeyboard, only while the panel is open
     Shortcut {
         sequence: "Up"
         enabled: app.view === 1 && properties.miniOpen
-        onActivated: playlistView.select(-1)
+        onActivated: properties.miniSelect(-1)
     }
     Shortcut {
         sequence: "Down"
         enabled: app.view === 1 && properties.miniOpen
-        onActivated: playlistView.select(1)
+        onActivated: properties.miniSelect(1)
     }
     Shortcut {
         sequence: "Delete"
         enabled: app.view === 1 && properties.miniOpen
-        onActivated: playlistView.removeSelected()
+        onActivated: properties.miniRemove(properties.miniSelected)
+    }
+    Shortcut {
+        sequence: "Space"
+        enabled: app.view === 1 && properties.miniOpen
+        onActivated: Playlist.state === "playing" ? Playlist.pause() : Playlist.play()
     }
     Shortcut {
         sequence: "B"

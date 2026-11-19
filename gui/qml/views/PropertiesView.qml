@@ -26,10 +26,24 @@ Item {
     onStartGlobalChanged: if (startGlobal) showGlobal = true
     onStartMiniChanged: if (startMini) toggleMini()
 
-    function toggleMini() {
-        miniOpen = !miniOpen
-        if (miniOpen)
-            Playlist.load(targetMonitor)
+    function toggleMini() { miniOpen = !miniOpen }
+
+    // MiniPlaylistPanel.show() refreshes, however it was opened (button,
+    // Ctrl+L or the hover strip), and setMonitor() follows the combo.
+    property int miniSelected: -1
+    onMiniOpenChanged: if (miniOpen) { miniSelected = -1; Playlist.load(targetMonitor) }
+    onTargetMonitorChanged: if (miniOpen) { miniSelected = -1; Playlist.load(targetMonitor) }
+
+    /// MiniPlaylistPanel.setupKeyboard: ↑/↓ select, Del remove
+    function miniSelect(delta) {
+        const count = Playlist.entries.length
+        if (count === 0) return
+        miniSelected = Math.max(0, Math.min(count - 1, miniSelected < 0 ? 0 : miniSelected + delta))
+    }
+    function miniRemove(row) {
+        if (row < 0 || row >= Playlist.entries.length) return
+        Playlist.removeAt(row)
+        miniSelected = -1
     }
 
     // The logic lives in PropertiesController (Java: WallpaperPropertiesView's
@@ -680,21 +694,57 @@ Item {
                 model: Playlist.entries
                 spacing: 5
 
+                // MiniPlaylistPanel.createEntryRow: 60×34 thumbnail, the
+                // wallpaper id, a ✕ to remove, click to select
                 delegate: Rectangle {
                     required property int index
                     required property var modelData
                     width: miniList.width
-                    height: 34
+                    height: 42
                     radius: 4
-                    color: Playlist.index === index ? "#333333" : "#2a2a2a"
-                    border.color: Playlist.index === index ? Theme.accent : "#3a3a3a"
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
+                    color: rowMouse.containsMouse ? "#333333" : "#2a2a2a"
+                    border.width: view.miniSelected === index ? 2 : 1
+                    border.color: view.miniSelected === index ? Theme.accent : "#3a3a3a"
+
+                    MouseArea {
+                        id: rowMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: view.miniSelected = index
+                    }
+                    RowLayout {
+                        anchors.fill: parent
                         anchors.leftMargin: 6
-                        text: modelData.wallpaperId
-                        color: "#d3d3d3"
-                        font.pixelSize: 11
+                        anchors.rightMargin: 6
+                        spacing: 8
+                        Image {
+                            Layout.preferredWidth: 60
+                            Layout.preferredHeight: 34
+                            source: Library.previewFor(modelData.wallpaperId)
+                            fillMode: Image.PreserveAspectFit
+                            asynchronous: true
+                            sourceSize.width: 120
+                            sourceSize.height: 68
+                            opacity: status === Image.Ready ? 1 : 0
+                            Behavior on opacity { NumberAnimation { duration: 200 } }
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: modelData.wallpaperId
+                            color: "#d3d3d3"
+                            font.pixelSize: 11
+                            elide: Text.ElideRight
+                        }
+                        Text {
+                            text: "✕"
+                            color: "#d9534f"
+                            font.pixelSize: 10
+                            MouseArea {
+                                anchors.fill: parent
+                                anchors.margins: -6
+                                onClicked: view.miniRemove(index)
+                            }
+                        }
                     }
                 }
             }

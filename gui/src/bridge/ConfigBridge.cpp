@@ -125,3 +125,23 @@ void ConfigBridge::rescanLibrary()
         QStringLiteral("org.nyaa.Paper.Library"), QStringLiteral("Rescan"));
     QDBusConnection::sessionBus().send(call);
 }
+
+bool ConfigBridge::saveApplied(const QString &monitor, const QString &wallpaperId,
+                               const QVariantMap &values)
+{
+    nyaa::io::WallpaperStore::Last last;
+    last.wallpaperId = wallpaperId.toStdString();
+    for (auto it = values.begin(); it != values.end(); ++it)
+        last.values[it.key().toStdString()] = it.value().toString().toStdString();
+    return m_wallpapers.save(monitor.toStdString(), last);
+}
+
+QVariantMap ConfigBridge::loadApplied(const QString &monitor)
+{
+    const nyaa::io::WallpaperStore::Last last = m_wallpapers.load(monitor.toStdString());
+    QVariantMap values;
+    for (const auto &[key, value] : last.values)
+        values.insert(QString::fromStdString(key), QString::fromStdString(value));
+    values.insert(QStringLiteral("__wallpaperId"), QString::fromStdString(last.wallpaperId));
+    return values;
+}

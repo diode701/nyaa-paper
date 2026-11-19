@@ -2,9 +2,11 @@
 
 #include <QObject>
 #include <QString>
+#include <QVariantMap>
 
 #include "io/AppConfig.h"
 #include "io/ConfigStore.h"
+#include "io/WallpaperStore.h"
 
 /// The QML handle on config.json. One instance, owned by main; the file is the
 /// single source of truth for both this process and the daemon.
@@ -68,6 +70,10 @@ public:
     Q_INVOKABLE QString filePath() const;
     /// Fire-and-forget: asks the daemon to re-read config.json and rescan.
     Q_INVOKABLE void rescanLibrary();
+    /// Remembers the applied values for a monitor, and reads them back.
+    Q_INVOKABLE bool saveApplied(const QString &monitor, const QString &wallpaperId,
+                                 const QVariantMap &values);
+    Q_INVOKABLE QVariantMap loadApplied(const QString &monitor);
 
 Q_SIGNALS:
     void changed();
@@ -75,5 +81,6 @@ Q_SIGNALS:
 
 private:
     nyaa::io::ConfigStore m_store;
+    nyaa::io::WallpaperStore m_wallpapers;
     nyaa::io::AppConfig m_config;
 };

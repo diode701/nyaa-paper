@@ -309,7 +309,18 @@ Item {
 
                 Button {
                     text: "Apply"
-                    onClicked: Engine.applyWallpaper(view.targetMonitor, view.wallpaperId, view.wallpaperBasePath)
+                    onClicked: {
+                        Engine.applyWallpaper(view.targetMonitor, view.wallpaperId, view.wallpaperBasePath)
+                        Config.saveApplied(view.targetMonitor, view.wallpaperId, Properties.values())
+                    }
+                }
+                Button {
+                    text: "Load last"
+                    onClicked: {
+                        const saved = Config.loadApplied(view.targetMonitor)
+                        if (saved.__wallpaperId === view.wallpaperId)
+                            Properties.applyValues(saved)
+                    }
                 }
                 Button {
                     text: "Add to playlist"

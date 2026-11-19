@@ -23,6 +23,7 @@ qt_add_executable(nyaa-paper-qt
     src/io/ProjectJson.cpp
     src/util/VideoDuration.cpp
     src/io/ConfigStore.cpp
+    src/io/WallpaperStore.cpp
     src/domain/settings/Settings.cpp
     src/engine/IEngine.hpp
     src/engine/DbusEngine.hpp
@@ -105,7 +106,7 @@ target_include_directories(projectjson_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/
 target_link_libraries(projectjson_test PRIVATE Qt6::Core)
 add_test(NAME projectjson_test COMMAND projectjson_test)
 
-add_executable(config_test tests/config_test.cpp src/io/ConfigStore.cpp)
+add_executable(config_test tests/config_test.cpp src/io/ConfigStore.cpp src/io/WallpaperStore.cpp)
 target_include_directories(config_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(config_test PRIVATE Qt6::Core)
 add_test(NAME config_test COMMAND config_test)

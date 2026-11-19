@@ -133,3 +133,25 @@ void PropertyModel::setValue(const QString &name, const QVariant &value)
     }
     emit changed();
 }
+
+QVariantMap PropertyModel::values() const
+{
+    QVariantMap out;
+    for (const auto &setting : m_settings.all())
+        out.insert(QString::fromStdString(setting->getName()),
+                   QString::fromStdString(setting->getValueString()));
+    return out;
+}
+
+void PropertyModel::applyValues(const QVariantMap &values)
+{
+    for (auto it = values.begin(); it != values.end(); ++it) {
+        auto *setting = m_settings.find(it.key().toStdString());
+        if (setting)
+            setting->setValueFromString(it.value().toString().toStdString());
+    }
+    if (!m_settings.all().empty()) {
+        emit dataChanged(index(0), index(int(m_settings.all().size()) - 1));
+    }
+    emit changed();
+}

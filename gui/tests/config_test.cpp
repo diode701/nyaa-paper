@@ -4,6 +4,7 @@
 #include <string>
 
 #include "io/ConfigStore.h"
+#include "io/WallpaperStore.h"
 
 using namespace nyaa::io;
 
@@ -42,6 +43,20 @@ int main()
 
     assert(expandUser("~/.cache/wal") != "~/.cache/wal");
     assert(expandUser("relative/path") == "relative/path");
+
+    // per-monitor memory of what was applied
+    nyaa::io::WallpaperStore wallpapers("/tmp/nyaa-config-test/wallpapers.json");
+    nyaa::io::WallpaperStore::Last last;
+    last.wallpaperId = "1234";
+    last.values["bloom"] = "1";
+    last.values["tint"] = "1.0000 0.5333 0.0000";
+    assert(wallpapers.save("eDP-1", last));
+
+    const auto restored = wallpapers.load("eDP-1");
+    assert(restored.wallpaperId == "1234");
+    assert(restored.values.at("bloom") == "1");
+    assert(restored.values.at("tint") == "1.0000 0.5333 0.0000");
+    assert(wallpapers.load("HDMI-1").empty());
 
     std::puts("config tests passed");
     return 0;

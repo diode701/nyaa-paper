@@ -3,6 +3,7 @@
 #include <QAbstractListModel>
 #include <QString>
 #include <QVariantList>
+#include <QVariantMap>
 
 #include "domain/settings/SettingList.h"
 
@@ -39,6 +40,10 @@ public:
 
     Q_INVOKABLE void loadWallpaper(const QString &basePath);
     Q_INVOKABLE void setValue(const QString &name, const QVariant &value);
+    /// name -> getValueString(), the shape the wallpaper store uses.
+    Q_INVOKABLE QVariantMap values() const;
+    /// Applies saved values by name; unknown keys are ignored.
+    Q_INVOKABLE void applyValues(const QVariantMap &values);
 
 Q_SIGNALS:
     void countChanged();

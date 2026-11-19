@@ -7,9 +7,12 @@ namespace nyaa::util {
 
 bool detectNvidia()
 {
-    // The module check is instant; nvidia-smi can take a moment.
-    if (QFileInfo::exists(QStringLiteral("/sys/module/nvidia")))
-        return true;
+    // The file checks are instant; nvidia-smi can take a moment.
+    // /sys/module is hidden inside a Flatpak, /proc/driver/nvidia and the
+    // device nodes (--device=dri) are not.
+    for (const char *path : {"/sys/module/nvidia", "/proc/driver/nvidia/version", "/dev/nvidiactl"})
+        if (QFileInfo::exists(QString::fromLatin1(path)))
+            return true;
     QProcess smi;
     smi.start(QStringLiteral("nvidia-smi"), {});
     if (!smi.waitForStarted(500))

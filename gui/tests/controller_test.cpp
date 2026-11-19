@@ -17,6 +17,7 @@
 #include "io/WallpaperStore.h"
 #include "models/GlobalOptionsModel.hpp"
 #include "models/PropertyModel.hpp"
+#include "models/WallpaperModel.hpp"
 
 using nyaa::domain::GpuConfig;
 
@@ -72,7 +73,8 @@ int main(int argc, char *argv[])
 
     ConfigBridge config;
     EngineBridge engine;
-    PlaylistBridge playlist;
+    WallpaperModel library;
+    PlaylistBridge playlist(library, config);
     PropertyModel properties;
     GlobalOptionsModel globals;
     PropertiesController controller(properties, globals, engine, playlist, config);

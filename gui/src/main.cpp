@@ -42,11 +42,12 @@ int main(int argc, char *argv[])
     PreviewSettings settings;
     ConfigBridge config;
     EngineBridge engine;
-    PlaylistBridge playlist;
+    WallpaperModel library;
+    PlaylistBridge playlist(library, config);
+    playlist.setConnectedMonitors(engine.monitors());
     PropertyModel properties;
     GlobalOptionsModel globalOptions;
     PropertiesController controller(properties, globalOptions, engine, playlist, config);
-    WallpaperModel library;
     if (qEnvironmentVariableIsSet("NYAA_MOCK")) {
         library.setAll(MockLibrary::load());
     } else {

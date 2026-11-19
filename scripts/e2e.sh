@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # End to end, without touching the desktop: a private session bus, a real
-# nyaa-paperd on it, and a fake engine that records the argv and GPU
-# environment it was started with. Then controller_test applies one wallpaper
-# on two monitors with two GPUs, and we check what each process received.
+# nyaa-paperd on it (own config and state dirs), and a fake engine that records
+# the argv and GPU environment it was started with.
+#   controller_test  one wallpaper on two monitors with two GPUs
+#   playlist_test    playlist editing against the daemon's stored documents
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 work="$(mktemp -d)"
@@ -28,6 +29,7 @@ dbus-run-session -- bash -c "
   for i in \$(seq 50); do gdbus introspect --session -d org.nyaa.Paper -o /org/nyaa/Paper >/dev/null 2>&1 && break; sleep 0.1; done
   status=0
   NYAA_TEST_DAEMON=1 '$root/gui/build/controller_test' || status=\$?
+  '$root/gui/build/playlist_test' || status=\$?
   sleep 0.5
   kill -TERM \$daemon; wait \$daemon 2>/dev/null || true   # daemon stops its engines
   exit \$status

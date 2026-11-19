@@ -37,6 +37,10 @@ qt_add_executable(nyaa-paper-qt
     src/bridge/EngineBridge.cpp
     src/bridge/PropertiesController.hpp
     src/bridge/PropertiesController.cpp
+    src/bridge/ConfigRenderer.hpp
+    src/bridge/ConfigRenderer.cpp
+    src/io/WallpaperConfigJson.h
+    src/io/WallpaperConfigJson.cpp
     src/domain/WallpaperConfig.h
     src/models/WallpaperModel.hpp
     src/models/WallpaperModel.cpp
@@ -113,7 +117,7 @@ target_include_directories(projectjson_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/
 target_link_libraries(projectjson_test PRIVATE Qt6::Core)
 add_test(NAME projectjson_test COMMAND projectjson_test)
 
-add_executable(config_test tests/config_test.cpp src/io/ConfigStore.cpp src/io/WallpaperStore.cpp)
+add_executable(config_test tests/config_test.cpp src/io/ConfigStore.cpp src/io/WallpaperStore.cpp src/io/WallpaperConfigJson.cpp)
 target_include_directories(config_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(config_test PRIVATE Qt6::Core)
 add_test(NAME config_test COMMAND config_test)
@@ -131,6 +135,9 @@ qt_add_executable(controller_test
     src/bridge/ConfigBridge.cpp
     src/bridge/EngineBridge.cpp
     src/bridge/PlaylistBridge.cpp
+    src/bridge/ConfigRenderer.cpp
+    src/models/WallpaperModel.cpp
+    src/io/WallpaperConfigJson.cpp
     src/engine/DbusEngine.cpp
     src/engine/IEngine.hpp
     src/engine/MockEngine.hpp
@@ -151,3 +158,25 @@ qt_add_executable(controller_test
 target_include_directories(controller_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(controller_test PRIVATE Qt6::Core Qt6::Gui Qt6::DBus)
 add_test(NAME controller_test COMMAND controller_test)
+
+# PlaylistBridge against a real daemon; needs a session bus with nyaa-paperd,
+# so it is run by scripts/e2e.sh, not by ctest.
+qt_add_executable(playlist_test
+    tests/playlist_test.cpp
+    src/bridge/PlaylistBridge.cpp
+    src/bridge/ConfigBridge.cpp
+    src/bridge/ConfigRenderer.cpp
+    src/models/WallpaperModel.cpp
+    src/domain/settings/Setting.cpp
+    src/domain/settings/Settings.cpp
+    src/domain/settings/SettingFactory.cpp
+    src/domain/settings/SettingList.cpp
+    src/domain/options/GlobalOptions.cpp
+    src/domain/Renderer.cpp
+    src/io/ProjectJson.cpp
+    src/io/ConfigStore.cpp
+    src/io/WallpaperConfigJson.cpp
+    ${GUI_DBUS_SOURCES}
+)
+target_include_directories(playlist_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(playlist_test PRIVATE Qt6::Core Qt6::Gui Qt6::DBus)

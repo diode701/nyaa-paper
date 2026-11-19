@@ -12,6 +12,7 @@
 #include "bridge/EngineBridge.hpp"
 #include "bridge/PlaylistBridge.hpp"
 #include "domain/Renderer.h"
+#include "io/WallpaperConfigJson.h"
 #include "models/GlobalOptionsModel.hpp"
 #include "models/PropertyModel.hpp"
 #include "util/VideoDuration.h"
@@ -250,6 +251,9 @@ QVariantMap PropertiesController::playlistEntry(const QString &monitorName)
     }
 
     QVariantMap entry;
+    // Java: the entry IS the captured WallpaperConfig. The playlist bridge
+    // re-renders argv/env from it whenever it saves the playlist.
+    entry[QStringLiteral("config")] = nyaa::io::toJson(capture(monitor)).toVariantMap();
     entry[QStringLiteral("wallpaperId")] = m_wallpaperId;
     entry[QStringLiteral("argv")] = request.argv;
     entry[QStringLiteral("env")] = request.env;

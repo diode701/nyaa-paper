@@ -30,6 +30,10 @@
   video wallpapers (probed once by the GUI at add time), or the playlist
   interval when unknown/zero. The daemon never runs ffprobe.
 
+  ListMonitors  Monitors that have a stored playlist (Java: listMonitors).
+  Delete        Removes a monitor's playlist; a running one stops first. The
+                wallpaper on screen is left alone. Idempotent.
+
   States reported by State()/StateChanged: "idle", "playing", "paused".
   *Index is the entry being shown, or -1 when idle.
 -->
@@ -59,6 +63,12 @@
       <arg name="monitor" type="s" direction="in"/>
     </method>
     <method name="Stop">
+      <arg name="monitor" type="s" direction="in"/>
+    </method>
+    <method name="ListMonitors">
+      <arg name="monitors" type="as" direction="out"/>
+    </method>
+    <method name="Delete">
       <arg name="monitor" type="s" direction="in"/>
     </method>
     <method name="State">

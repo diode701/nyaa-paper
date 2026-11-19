@@ -97,6 +97,14 @@ QString WallpaperModel::previewFor(const QString &id) const
     return {};
 }
 
+QString WallpaperModel::basePathFor(const QString &id) const
+{
+    for (const auto &item : m_all)
+        if (item.id == id)
+            return item.basePath;
+    return {};
+}
+
 QString WallpaperModel::titleFor(const QString &id) const
 {
     for (const auto &item : m_all)

@@ -43,6 +43,10 @@ public:
     Q_INVOKABLE QVariantMap at(int row) const;
     Q_INVOKABLE QString previewFor(const QString &id) const;
     Q_INVOKABLE QString titleFor(const QString &id) const;
+    /// Folder of a subscribed wallpaper; empty when it is not in the library.
+    QString basePathFor(const QString &id) const;
+    /// True when the library has been loaded and the id is in it.
+    bool contains(const QString &id) const { return !basePathFor(id).isEmpty(); }
 
 Q_SIGNALS:
     void filterChanged();

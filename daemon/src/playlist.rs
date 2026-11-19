@@ -459,6 +459,34 @@ impl Playlist {
         self.publish(&monitor);
     }
 
+    /// Java: PlaylistManager.listMonitors, sorted for a stable UI.
+    fn list_monitors(&self) -> Vec<String> {
+        let mut monitors: Vec<String> = self.inner.docs.lock().unwrap().keys().cloned().collect();
+        monitors.sort();
+        monitors
+    }
+
+    /// Java: PlaylistManager.delete. Stops a running runner, keeps the wallpaper.
+    fn delete(&self, monitor: String) {
+        self.bump(&monitor, false, false);
+        self.inner.docs.lock().unwrap().remove(&monitor);
+        let path = self.inner.dir.join(format!("{monitor}.json"));
+        if let Err(e) = std::fs::remove_file(&path) {
+            if e.kind() != std::io::ErrorKind::NotFound {
+                warn!(%monitor, %e, "cannot delete playlist file");
+            }
+        }
+        self.publish(&monitor);
+        let conn = self.inner.conn.lock().unwrap().clone();
+        if let Some(conn) = conn {
+            tokio::spawn(async move {
+                let _ = conn
+                    .emit_signal(None::<&str>, OBJECT_PATH, IFACE, "PlaylistChanged", &(monitor.as_str()))
+                    .await;
+            });
+        }
+    }
+
     fn state(&self, monitor: String) -> (String, i32) {
         let state = *self.inner.states.lock().unwrap().get(&monitor).unwrap_or(&State::default());
         (Self::state_text(state).to_string(), state.index as i32)

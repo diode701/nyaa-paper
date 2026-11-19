@@ -28,10 +28,16 @@ Item {
         }
     }
 
+    // Java runOnMonitor: every control needs a selected monitor first.
+    function onMonitor(action) {
+        if (Playlist.monitor === "") { status = "Select a monitor first"; return }
+        action()
+    }
+
     onVisibleChanged: {
         if (visible) {
-            Playlist.load(Engine.monitors.length > 0 ? Engine.monitors[0] : "")
-            status = "Select a monitor"
+            if (Playlist.monitor !== "") Playlist.load(Playlist.monitor)
+            status = Playlist.monitor === "" ? "Select a monitor" : ""
         }
     }
 
@@ -84,8 +90,17 @@ Item {
                     anchors.fill: parent
                     anchors.margins: 5
                     spacing: 5
+                    Text {
+                        visible: Playlist.monitors.length === 0
+                        text: "No playlists yet.\nAdd entries from\nProperties view."
+                        color: "#808080"
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                        Layout.margins: 10
+                    }
                     Repeater {
-                        model: Engine.monitors
+                        model: Playlist.monitors
                         delegate: ActionButton {
                             required property string modelData
                             Layout.fillWidth: true
@@ -94,7 +109,8 @@ Item {
                             color: "#3a3a3a"
                             onClicked: {
                                 Playlist.load(modelData)
-                                view.status = "Loaded playlist for " + modelData
+                                view.selected = -1
+                                view.status = ""
                             }
                         }
                     }
@@ -201,13 +217,13 @@ Item {
                 anchors.rightMargin: 15
                 spacing: 10
 
-                ActionButton { text: "▶ Play"; color: Theme.accent; onClicked: Playlist.play() }
-                ActionButton { text: "⏸ Pause"; color: Theme.warning; onClicked: Playlist.pause() }
-                ActionButton { text: "⏹ Stop"; color: Theme.danger; onClicked: Playlist.stop() }
+                ActionButton { text: "▶ Play"; color: Theme.accent; onClicked: view.onMonitor(Playlist.play) }
+                ActionButton { text: "⏸ Pause"; color: Theme.warning; onClicked: view.onMonitor(Playlist.togglePause) }
+                ActionButton { text: "⏹ Stop"; color: Theme.danger; onClicked: view.onMonitor(Playlist.stop) }
                 Rectangle { width: 1; height: 24; color: "#3a3a3a" }
-                ActionButton { text: "↺ Reset"; color: "#999999"; onClicked: Playlist.reset() }
-                ActionButton { text: "⏮ Prev"; color: "#888888"; onClicked: Playlist.prev() }
-                ActionButton { text: "Next ⏭"; color: "#888888"; onClicked: Playlist.next() }
+                ActionButton { text: "↺ Reset"; color: "#999999"; onClicked: view.onMonitor(Playlist.reset) }
+                ActionButton { text: "⏮ Prev"; color: "#888888"; onClicked: view.onMonitor(Playlist.prev) }
+                ActionButton { text: "Next ⏭"; color: "#888888"; onClicked: view.onMonitor(Playlist.next) }
 
                 Item { Layout.fillWidth: true }
 

@@ -40,8 +40,11 @@ Item {
 
     function addCurrent() {
         if (targetMonitor === "") { status = "Please select a monitor first."; return }
-        Playlist.add(Controller.playlistEntry(targetMonitor))
-        status = "Added to " + targetMonitor + " playlist (" + Playlist.entries.length + " entries)"
+        // Java addToPlaylist: load THAT monitor's playlist, append, save
+        const count = Playlist.addTo(targetMonitor, Controller.playlistEntry(targetMonitor))
+        if (count < 0) { status = "Could not add to the playlist (is the daemon running?)"; return }
+        status = "Added to " + targetMonitor + " playlist (" + count + " entries)"
+        if (miniOpen) Playlist.load(targetMonitor)
     }
 
     function openWallpaper() {
@@ -693,9 +696,9 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 spacing: 5
                 ActionButton { text: "▶"; implicitWidth: 28; onClicked: Playlist.play() }
-                ActionButton { text: "⏸"; implicitWidth: 28; onClicked: Playlist.pause() }
+                ActionButton { text: "⏸"; implicitWidth: 28; onClicked: Playlist.togglePause() }
                 ActionButton { text: "⏹"; implicitWidth: 28; onClicked: Playlist.stop() }
-                ActionButton { text: "↺"; implicitWidth: 28; onClicked: Playlist.prev() }
+                ActionButton { text: "↺"; implicitWidth: 28; onClicked: Playlist.reset() }
                 ActionButton { text: "⏮"; implicitWidth: 28; onClicked: Playlist.prev() }
                 ActionButton { text: "⏭"; implicitWidth: 28; onClicked: Playlist.next() }
             }

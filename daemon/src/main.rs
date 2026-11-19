@@ -23,12 +23,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
     //Using Three itneterfaces: One object Path.... Requesting BUS_NAME also gives us single-instance behaviour: A second daemon fails here and exits. Baisically a documented preset.
 
     let conn = zbus::connection::Builder::session()
-        .name(BUS_NAME)
         .serve_at(OBJECT_PATH, engine.clone())
         .serve_at(OBJECT_PATH, library.clone())
         .serve_at(OBJECT_PATH, playlist.clone())
         .build()
         .await?;
+
+    // One daemon per session. zbus's default request (ALLOW_REPLACEMENT |
+    // REPLACE_EXISTING) let every new daemon take the name from the running
+    // one, which kept running nameless with its engines. Request without
+    // replacement or queueing: a second daemon exits instead.
+    use zbus::fdo::{RequestNameFlags, RequestNameReply};
+    match conn.request_name_with_flags(BUS_NAME, RequestNameFlags::DO_NOT_QUEUE.into()).await {
+        Ok(RequestNameReply::PrimaryOwner) | Ok(RequestNameReply::AlreadyOwner) => {}
+        Ok(_) | Err(zbus::Error::NameTaken) => {
+            eprintln!("nyaa-paperd is already running on this session; exiting");
+            std::process::exit(1);
+        }
+        Err(e) => return Err(e.into()),
+    }
 
 
     // From here on the reaper task is allowed to emit signals...

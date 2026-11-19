@@ -4,16 +4,14 @@
 #include <QObject>
 #include <QStringList>
 #include <QVariantMap>
-#include <QVariantList>
 #include <memory>
 
 #include "engine/IEngine.hpp"
-#include "io/AppConfig.h"
 
-class ConfigBridge;
-
-/// The QML-facing engine API. Everything QML may call about playback lives
-/// here; QML never sees D-Bus, never sees argv, never sees a PID it can misuse.
+/// What runs where. Java equivalent: WallpaperManager's public face.
+///
+/// It does not build commands: PropertiesController renders them from the
+/// settings you edited and hands them here. QML never sees argv or D-Bus.
 class EngineBridge : public QObject
 {
     Q_OBJECT
@@ -24,7 +22,7 @@ class EngineBridge : public QObject
     Q_PROPERTY(bool mock READ mock CONSTANT)
 
 public:
-    explicit EngineBridge(const ConfigBridge &config, QObject *parent = nullptr);
+    explicit EngineBridge(QObject *parent = nullptr);
 
     QString version() const { return m_engine->version(); }
     QString enginePath() const { return m_engine->enginePath(); }
@@ -33,34 +31,21 @@ public:
     bool mock() const { return m_mock; }
 
     Q_INVOKABLE void refreshRunning() { m_engine->refreshRunning(); }
-    Q_INVOKABLE QStringList monitorList() const { return m_monitors; }
     Q_INVOKABLE void stop(const QString &monitor) { m_engine->stop(monitor); }
     Q_INVOKABLE void stopAll() { m_engine->stopAll(); }
 
-    /// Apply by id with the bare minimum argv. The domain Renderer will replace
-    /// this once the Setting hierarchy lands; the daemon does not care either way.
-    /// Builds the real argv through domain::Renderer: parses the wallpaper's
-    /// project.json, applies the global defaults and the configured paths.
-    Q_INVOKABLE void applyWallpaper(const QString &monitor, const QString &wallpaperId,
-                                    const QString &basePath);
-
-    /// One playlist entry for the daemon: the rendered argv, env and the display
-    /// duration (video length when it is a video, 0 otherwise).
-    Q_INVOKABLE QVariantMap playlistEntry(const QString &monitor, const QString &wallpaperId,
-                                          const QString &basePath);
+    /// Run this exact command on the monitor; the answer is applyFinished().
+    void apply(const QString &monitor, const EngineRequest &request) { m_engine->apply(monitor, request); }
 
 Q_SIGNALS:
     void infoChanged();
     void runningChanged();
     void engineExited(const QString &monitor, int code);
+    void applyFinished(const QString &monitor, bool ok, const QString &message);
     void error(const QString &message);
 
 private:
-    EngineRequest buildRequest(const QString &monitor, const QString &wallpaperId,
-                               const QString &basePath);
-
     std::unique_ptr<IEngine> m_engine;
-    const ConfigBridge &m_bridge;
     QVariantMap m_running;
     QStringList m_monitors;
     bool m_mock = false;

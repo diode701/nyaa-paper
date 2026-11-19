@@ -2,48 +2,55 @@
 
 #include <QAbstractListModel>
 #include <QString>
-#include <QVector>
 
-class ConfigBridge;
+#include "domain/options/GlobalOptions.h"
 
-/// One row per engine-wide option. Values live in the shared config; the model
-/// is a view over ConfigBridge so both stay in step.
+/// The Global Options tab. One row per domain GlobalOption, in
+/// GlobalOptionsFactory order; the model owns the options it shows.
+///
+/// Java: WallpaperPropertiesView.populateGlobalSettings() built fresh options
+/// for every wallpaper you opened, and their values travelled with that apply
+/// (saved in the monitor's WallpaperConfig). Same here: reset() on open, the
+/// controller captures and restores them.
 class GlobalOptionsModel : public QAbstractListModel
 {
     Q_OBJECT
-    Q_PROPERTY(int count READ rowCount NOTIFY countChanged)
+    Q_PROPERTY(int count READ rowCount CONSTANT)
 
 public:
-    /// Mirrors the delegate choice in QML.
-    enum OptionKind { Volume = 0, Fps = 1, Scaling = 2, Clamp = 3, Layer = 4, Flag = 5 };
+    /// Which control the view draws. Matches the delegate choice in QML.
+    enum OptionKind { Volume = 0, Fps = 1, Scaling = 2, Clamp = 3, Flag = 5 };
     enum Role {
         NameRole = Qt::UserRole + 1,
         LabelRole,
         KindRole,
-        ValueRole,
-        BoolRole,
+        ValueRole,   // volume level, fps number, scaling name, clamp mode
+        BoolRole,    // muted, fps limited, clamp enabled, flag on
         OptionsRole
     };
 
-    explicit GlobalOptionsModel(ConfigBridge *config, QObject *parent = nullptr);
+    explicit GlobalOptionsModel(QObject *parent = nullptr);
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
 
+    /// A bool toggles the row's checkbox; anything else sets its value.
     Q_INVOKABLE void setValue(const QString &name, const QVariant &value);
-    Q_INVOKABLE void reload();
+
+    const nyaa::domain::options::GlobalOptions &options() const { return m_options; }
+
+    /// Fresh defaults (a new wallpaper was opened).
+    void reset();
+    /// Apply saved name -> value pairs; unknown names are ignored.
+    void restore(const std::map<std::string, std::string> &saved);
 
 Q_SIGNALS:
-    void countChanged();
+    void changed();
 
 private:
-    struct Row {
-        QString name;
-        QString label;
-        int kind;
-    };
+    const nyaa::domain::options::GlobalOption *optionAt(int row) const;
+    void refreshAll();
 
-    ConfigBridge *m_config = nullptr;
-    QVector<Row> m_rows;
+    nyaa::domain::options::GlobalOptions m_options;
 };

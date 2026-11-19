@@ -5,6 +5,7 @@
 #include <QDBusConnection>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
+#include <QDBusReply>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -147,6 +148,19 @@ void PlaylistBridge::removeAt(int row)
     m_entries.removeAt(row);
     emit entriesChanged();
     pushDocument();
+}
+
+bool PlaylistBridge::pauseIfPlaying(const QString &monitor)
+{
+    if (!m_playlist || monitor.isEmpty())
+        return false;
+    // Blocking on purpose: the apply must not race the playlist's next tick.
+    int index = -1;
+    const QDBusReply<QString> state = m_playlist->State(monitor, index);
+    if (!state.isValid() || state.value() != QStringLiteral("playing"))
+        return false;
+    m_playlist->Pause(monitor).waitForFinished();
+    return true;
 }
 
 void PlaylistBridge::play()

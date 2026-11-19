@@ -140,53 +140,8 @@ Item {
                     }
 
                     Section { text: "ENGINE" }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 12
-                        Text { text: "Volume"; color: Theme.muted; font.pixelSize: 11; Layout.preferredWidth: 130 }
-                        Slider {
-                            Layout.preferredWidth: 260
-                            from: 0
-                            to: 100
-                            value: Config.volume
-                            onMoved: Config.volume = Math.round(value)
-                        }
-                        CheckBox {
-                            text: "mute"
-                            checked: Config.muted
-                            onToggled: Config.muted = checked
-                        }
-                        Item { Layout.fillWidth: true }
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 12
-                        Text { text: "FPS limit"; color: Theme.muted; font.pixelSize: 11; Layout.preferredWidth: 130 }
-                        CheckBox {
-                            text: "enabled"
-                            checked: Config.fpsLimited
-                            onToggled: Config.fpsLimited = checked
-                        }
-                        SpinBox {
-                            from: 0
-                            to: 240
-                            value: Config.fps
-                            onValueModified: Config.fps = value
-                        }
-                        Item { Layout.fillWidth: true }
-                    }
-                    OptionRow {
-                        label: "Scaling"
-                        options: ["default", "stretch", "fit", "fill"]
-                        value: Config.scaling
-                        onPicked: Config.scaling = value
-                    }
-                    OptionRow {
-                        label: "Clamp"
-                        options: ["", "clamp", "border", "repeat"]
-                        value: Config.clampMode
-                        onPicked: Config.clampMode = value
-                    }
+                    // Volume, FPS, scaling, clamp and flags are per wallpaper and
+                    // per monitor (Properties → Global Options), as in Java.
                     OptionRow {
                         label: "Wayland layer"
                         options: ["", "background", "bottom", "top", "overlay"]

@@ -23,30 +23,12 @@ struct PreviewConfig
     int cachePages = 1;
 };
 
+/// Machine-level engine settings. Per-wallpaper choices (volume, fps, flags,
+/// GPU, screenshot) are NOT here: like Java, they belong to each apply and are
+/// saved per monitor in that monitor's WallpaperConfig.
 struct EngineDefaults
 {
-    int volume = 70;
-    bool muted = false;
-    int fps = 30;
-    bool fpsLimited = false;
-    std::string scaling = "default";
-    std::string clamp;
     std::string layer = "bottom";       // Wayland: background | bottom | top | overlay
-    std::vector<std::string> flags;
-};
-
-struct GpuPrefs
-{
-    std::string mode = "DEFAULT";   // DEFAULT | DRI_PRIME | NVIDIA
-    int driPrimeNumber = 1;
-    bool glThreaded = false;
-};
-
-struct ScreenshotPrefs
-{
-    bool enabled = false;
-    std::string path;
-    int delay = 5;
 };
 
 struct UiConfig
@@ -61,8 +43,6 @@ struct AppConfig
     PathConfig paths;
     PreviewConfig preview;
     EngineDefaults engine;
-    GpuPrefs gpu;
-    ScreenshotPrefs screenshot;
     UiConfig ui;
 };
 

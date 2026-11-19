@@ -34,10 +34,12 @@ std::vector<std::string> SettingList::arguments(bool prePropertyFlags) const
 std::map<std::string, std::string> SettingList::serialize() const
 {
     std::map<std::string, std::string> out;
+    // Java's captureConfig saves every non-null value; only labels and group
+    // headers return null. An empty text input is a real value.
     for (const auto &setting : settings_) {
-        const std::string value = setting->getValueString();
-        if (!value.empty())
-            out[setting->getName()] = value;
+        if (setting->getKind() == Kind::Text || setting->getKind() == Kind::Group)
+            continue;
+        out[setting->getName()] = setting->getValueString();
     }
     return out;
 }

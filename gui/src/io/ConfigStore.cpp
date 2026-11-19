@@ -33,29 +33,8 @@ QJsonObject toJson(const AppConfig &config)
     preview["pageSlideMs"] = config.preview.pageSlideMs;
     preview["cachePages"] = config.preview.cachePages;
 
-    QJsonArray flags;
-    for (const auto &flag : config.engine.flags)
-        flags.append(QString::fromStdString(flag));
-
     QJsonObject engine;
-    engine["volume"] = config.engine.volume;
-    engine["muted"] = config.engine.muted;
-    engine["fps"] = config.engine.fps;
-    engine["fpsLimited"] = config.engine.fpsLimited;
-    engine["scaling"] = QString::fromStdString(config.engine.scaling);
-    engine["clamp"] = QString::fromStdString(config.engine.clamp);
     engine["layer"] = QString::fromStdString(config.engine.layer);
-    engine["flags"] = flags;
-
-    QJsonObject gpu;
-    gpu["mode"] = QString::fromStdString(config.gpu.mode);
-    gpu["driPrimeNumber"] = config.gpu.driPrimeNumber;
-    gpu["glThreaded"] = config.gpu.glThreaded;
-
-    QJsonObject shot;
-    shot["enabled"] = config.screenshot.enabled;
-    shot["path"] = QString::fromStdString(config.screenshot.path);
-    shot["delay"] = config.screenshot.delay;
 
     QJsonObject ui;
     ui["monitor"] = QString::fromStdString(config.ui.monitor);
@@ -65,8 +44,6 @@ QJsonObject toJson(const AppConfig &config)
     root["paths"] = paths;
     root["preview"] = preview;
     root["engine"] = engine;
-    root["gpu"] = gpu;
-    root["screenshot"] = shot;
     root["ui"] = ui;
     return root;
 }
@@ -107,25 +84,7 @@ AppConfig fromJson(const QJsonObject &root)
     config.preview.cachePages = intOr(preview, "cachePages", config.preview.cachePages);
 
     const QJsonObject engine = root.value("engine").toObject();
-    config.engine.volume = intOr(engine, "volume", config.engine.volume);
-    config.engine.muted = boolOr(engine, "muted", config.engine.muted);
-    config.engine.fps = intOr(engine, "fps", config.engine.fps);
-    config.engine.fpsLimited = boolOr(engine, "fpsLimited", config.engine.fpsLimited);
-    config.engine.scaling = stringOr(engine, "scaling", config.engine.scaling);
-    config.engine.clamp = stringOr(engine, "clamp", config.engine.clamp);
     config.engine.layer = stringOr(engine, "layer", config.engine.layer);
-    for (const QJsonValue &flag : engine.value("flags").toArray())
-        config.engine.flags.push_back(flag.toString().toStdString());
-
-    const QJsonObject gpu = root.value("gpu").toObject();
-    config.gpu.mode = stringOr(gpu, "mode", config.gpu.mode);
-    config.gpu.driPrimeNumber = intOr(gpu, "driPrimeNumber", config.gpu.driPrimeNumber);
-    config.gpu.glThreaded = boolOr(gpu, "glThreaded", config.gpu.glThreaded);
-
-    const QJsonObject shot = root.value("screenshot").toObject();
-    config.screenshot.enabled = boolOr(shot, "enabled", config.screenshot.enabled);
-    config.screenshot.path = stringOr(shot, "path", config.screenshot.path);
-    config.screenshot.delay = intOr(shot, "delay", config.screenshot.delay);
 
     const QJsonObject ui = root.value("ui").toObject();
     config.ui.monitor = stringOr(ui, "monitor", config.ui.monitor);

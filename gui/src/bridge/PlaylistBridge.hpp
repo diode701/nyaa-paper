@@ -35,6 +35,10 @@ public:
     Q_INVOKABLE void next();
     Q_INVOKABLE void prev();
 
+    /// PropertiesView.applyToMonitor: a manual apply pauses that monitor's
+    /// playlist first. True when it was playing and is now paused.
+    bool pauseIfPlaying(const QString &monitor);
+
 Q_SIGNALS:
     void monitorChanged();
     void entriesChanged();

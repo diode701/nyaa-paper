@@ -1,70 +1,67 @@
 #include "GlobalOptionsModel.hpp"
 
-#include "bridge/ConfigBridge.hpp"
+#include <QStringList>
 
-GlobalOptionsModel::GlobalOptionsModel(ConfigBridge *config, QObject *parent)
+using namespace nyaa::domain::options;
+
+namespace {
+// Row order is GlobalOptions::all(): volume, fps, scaling, clamp, then flags.
+constexpr int kFixedRows = 4;
+} // namespace
+
+GlobalOptionsModel::GlobalOptionsModel(QObject *parent)
     : QAbstractListModel(parent)
-    , m_config(config)
 {
-    m_rows = {
-        {QStringLiteral("volume"), QStringLiteral("Volume"), Volume},
-        {QStringLiteral("fps"), QStringLiteral("FPS limit"), Fps},
-        {QStringLiteral("scaling"), QStringLiteral("Scaling"), Scaling},
-        {QStringLiteral("clamp"), QStringLiteral("Texture clamp"), Clamp},
-        {QStringLiteral("layer"), QStringLiteral("Wayland layer"), Layer},
-        {QStringLiteral("disable-mouse"), QStringLiteral("Disable mouse interaction"), Flag},
-        {QStringLiteral("disable-parallax"), QStringLiteral("Disable parallax"), Flag},
-        {QStringLiteral("disable-particles"), QStringLiteral("Disable particles"), Flag},
-        {QStringLiteral("noautomute"), QStringLiteral("Don't auto-mute"), Flag},
-        {QStringLiteral("no-audio-processing"), QStringLiteral("Disable audio processing"), Flag},
-        {QStringLiteral("no-fullscreen-pause"), QStringLiteral("Don't pause on fullscreen"), Flag},
-        {QStringLiteral("fullscreen-pause-only-active"), QStringLiteral("Pause only when active fullscreen (Wayland)"), Flag},
-    };
 }
 
 int GlobalOptionsModel::rowCount(const QModelIndex &parent) const
 {
-    return parent.isValid() ? 0 : int(m_rows.size());
+    return parent.isValid() ? 0 : int(m_options.all().size());
+}
+
+const GlobalOption *GlobalOptionsModel::optionAt(int row) const
+{
+    const auto all = m_options.all();
+    return (row >= 0 && row < int(all.size())) ? all[size_t(row)] : nullptr;
 }
 
 QVariant GlobalOptionsModel::data(const QModelIndex &index, int role) const
 {
-    if (!index.isValid() || index.row() < 0 || index.row() >= m_rows.size())
+    const GlobalOption *option = optionAt(index.row());
+    if (!index.isValid() || !option)
         return {};
 
-    const Row &row = m_rows[index.row()];
+    const int row = index.row();
+    const int kind = row < kFixedRows ? row : Flag;
+
     switch (role) {
     case NameRole:
-        return row.name;
+        return QString::fromStdString(option->getName());
     case LabelRole:
-        return row.label;
+        return QString::fromStdString(option->getLabel());
     case KindRole:
-        return row.kind;
+        return kind;
     case ValueRole:
-        switch (row.kind) {
-        case Volume: return m_config->volume();
-        case Fps: return m_config->fps();
-        case Scaling: return m_config->scaling();
-        case Clamp: return m_config->clampMode();
-        case Layer: return m_config->layer();
+        switch (kind) {
+        case Volume: return m_options.volume().getVolume();
+        case Fps: return m_options.fps().getFps();
+        case Scaling: return QString::fromStdString(m_options.scaling().getScaling());
+        case Clamp: return QString::fromStdString(m_options.clamp().getMode());
         default: return {};
         }
     case BoolRole:
-        switch (row.kind) {
-        case Volume: return m_config->muted();
-        case Fps: return m_config->fpsLimited();
-        case Flag: return m_config->flagEnabled(row.name);
+        switch (kind) {
+        case Volume: return m_options.volume().isMuted();
+        case Fps: return m_options.fps().isLimited();
+        case Clamp: return m_options.clamp().isEnabled();
+        case Flag: return m_options.flags()[size_t(row - kFixedRows)].isEnabled();
         default: return false;
         }
     case OptionsRole:
-        switch (row.kind) {
-        case Scaling: return QStringList{QStringLiteral("default"), QStringLiteral("stretch"),
-                                         QStringLiteral("fit"), QStringLiteral("fill")};
-        case Clamp: return QStringList{QString(), QStringLiteral("clamp"),
-                                       QStringLiteral("border"), QStringLiteral("repeat")};
-        case Layer: return QStringList{QString(), QStringLiteral("background"),
-                                       QStringLiteral("bottom"), QStringLiteral("top"),
-                                       QStringLiteral("overlay")};
+        // ScalingSetting.OPTIONS and ClampSetting.OPTIONS, in Java's order
+        switch (kind) {
+        case Scaling: return QStringList{"stretch", "fit", "fill", "default"};
+        case Clamp: return QStringList{"clamp", "border", "repeat"};
         default: return QStringList{};
         }
     default:
@@ -80,32 +77,41 @@ QHash<int, QByteArray> GlobalOptionsModel::roleNames() const
 
 void GlobalOptionsModel::setValue(const QString &name, const QVariant &value)
 {
-    if (name == QStringLiteral("volume")) {
-        if (value.typeId() == QMetaType::Bool)
-            m_config->setMuted(value.toBool());
-        else
-            m_config->setVolume(value.toInt());
-    } else if (name == QStringLiteral("fps")) {
-        if (value.typeId() == QMetaType::Bool)
-            m_config->setFpsLimited(value.toBool());
-        else
-            m_config->setFps(value.toInt());
-    } else if (name == QStringLiteral("scaling")) {
-        m_config->setScaling(value.toString());
-    } else if (name == QStringLiteral("clamp")) {
-        m_config->setClampMode(value.toString());
-    } else if (name == QStringLiteral("layer")) {
-        m_config->setLayer(value.toString());
-    } else {
-        m_config->setFlag(name, value.toBool());
-    }
+    const bool isToggle = value.typeId() == QMetaType::Bool;
+    const std::string key = name.toStdString();
 
-    m_config->save();
-    emit dataChanged(index(0), index(int(m_rows.size()) - 1));
+    if (key == "volume") {
+        if (isToggle) m_options.volume().setMuted(value.toBool());
+        else m_options.volume().setVolume(value.toInt());
+    } else if (key == "fps") {
+        if (isToggle) m_options.fps().setLimited(value.toBool());
+        else m_options.fps().setFps(value.toInt());
+    } else if (key == "scaling") {
+        m_options.scaling().setValueFromString(value.toString().toStdString());
+    } else if (key == "clamp") {
+        if (isToggle) m_options.clamp().setEnabled(value.toBool());
+        else m_options.clamp().setMode(value.toString().toStdString());
+    } else {
+        m_options.setFlag(key, value.toBool());
+    }
+    refreshAll();
 }
 
-void GlobalOptionsModel::reload()
+void GlobalOptionsModel::reset()
 {
-    if (!m_rows.isEmpty())
-        emit dataChanged(index(0), index(int(m_rows.size()) - 1));
+    m_options.reset();
+    refreshAll();
+}
+
+void GlobalOptionsModel::restore(const std::map<std::string, std::string> &saved)
+{
+    m_options.restore(saved);
+    refreshAll();
+}
+
+void GlobalOptionsModel::refreshAll()
+{
+    if (rowCount() > 0)
+        emit dataChanged(index(0), index(rowCount() - 1));
+    emit changed();
 }

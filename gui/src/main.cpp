@@ -13,7 +13,8 @@
 #include "bridge/ConfigBridge.hpp"
 #include "bridge/EngineBridge.hpp"
 #include "bridge/PlaylistBridge.hpp"
-#include "io/ConfigStore.h"
+#include "bridge/PropertiesController.hpp"
+#include <memory>
 #include "models/DbusLibrary.hpp"
 #include "models/GlobalOptionsModel.hpp"
 #include "models/PropertyModel.hpp"
@@ -37,16 +38,14 @@ int main(int argc, char *argv[])
     app.setOrganizationName(QStringLiteral("diode701"));
     app.setDesktopFileName(QStringLiteral("io.github.diode701.NyaaPaper"));
 
-    nyaa::io::ConfigStore configStore;
-    const nyaa::io::AppConfig appConfig = configStore.load();
-
     Theme theme;
     PreviewSettings settings;
     ConfigBridge config;
-    EngineBridge engine(config);
+    EngineBridge engine;
     PlaylistBridge playlist;
     PropertyModel properties;
-    GlobalOptionsModel globalOptions(&config);
+    GlobalOptionsModel globalOptions;
+    PropertiesController controller(properties, globalOptions, engine, playlist, config);
     WallpaperModel library;
     if (qEnvironmentVariableIsSet("NYAA_MOCK")) {
         library.setAll(MockLibrary::load());
@@ -54,6 +53,19 @@ int main(int argc, char *argv[])
         auto *dbusLibrary = new DbusLibrary(&app);
         QObject::connect(dbusLibrary, &DbusLibrary::wallpapersLoaded,
                          &library, &WallpaperModel::setAll);
+        // Builder.build(): once at startup, drop saved configs of wallpapers
+        // that are no longer subscribed.
+        auto cleaned = std::make_shared<bool>(false);
+        QObject::connect(dbusLibrary, &DbusLibrary::wallpapersLoaded, &controller,
+                         [&controller, cleaned](const QVector<WallpaperItem> &items) {
+                             if (*cleaned || items.isEmpty())
+                                 return;
+                             *cleaned = true;
+                             QStringList ids;
+                             for (const auto &item : items)
+                                 ids << item.id;
+                             controller.forgetUnsubscribed(ids);
+                         });
         // No daemon yet? Show the sample deck rather than an empty window.
         QObject::connect(dbusLibrary, &DbusLibrary::failed, &library, [&library](const QString &message) {
             qWarning("library: %s", qUtf8Printable(message));
@@ -69,6 +81,7 @@ int main(int argc, char *argv[])
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Properties", &properties);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "GlobalOptions", &globalOptions);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Engine", &engine);
+    qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Controller", &controller);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Library", &library);
 
     QQmlApplicationEngine qml;

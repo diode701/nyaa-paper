@@ -53,6 +53,8 @@ Q_SIGNALS:
     void runningChanged(const QMap<QString, int> &running);
     void engineExited(const QString &monitor, int code);
     void daemonError(const QString &message);
+    /// The answer to apply(): ok, or the daemon's error text.
+    void applyFinished(const QString &monitor, bool ok, const QString &message);
 
 protected:
     void setInfo(const QString &version, const QString &enginePath)

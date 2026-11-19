@@ -38,6 +38,13 @@ public:
 
     QString wallpaper() const { return m_wallpaper; }
 
+    /// The wallpaper's own settings, as edited. The properties controller
+    /// renders and captures from these.
+    const nyaa::domain::settings::SettingList &settings() const { return m_settings; }
+    nyaa::domain::settings::SettingList &settings() { return m_settings; }
+    /// Tell the view every row changed (after a restore).
+    void refreshAll();
+
     Q_INVOKABLE void loadWallpaper(const QString &basePath);
     Q_INVOKABLE void setValue(const QString &name, const QVariant &value);
     /// name -> getValueString(), the shape the wallpaper store uses.

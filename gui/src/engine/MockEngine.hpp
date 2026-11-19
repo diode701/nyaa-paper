@@ -28,8 +28,8 @@ public:
 public Q_SLOTS:
     void apply(const QString &monitor, const EngineRequest &command) override
     {
-        Q_UNUSED(monitor);
         Q_UNUSED(command);
+        QTimer::singleShot(0, this, [this, monitor] { Q_EMIT applyFinished(monitor, true, {}); });
     }
     void stop(const QString &monitor) override { Q_UNUSED(monitor); }
     void stopAll() override {}

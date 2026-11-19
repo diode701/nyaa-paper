@@ -14,6 +14,8 @@ public:
     virtual ~GlobalOption() = default;
 
     virtual std::string getName() const = 0;
+    /// The heading the view shows (Java: Setting.description).
+    virtual std::string getLabel() const = 0;
     virtual std::vector<std::string> toCommandArgs() const = 0;
     virtual std::string getValueString() const = 0;
     virtual void setValueFromString(const std::string &value) = 0;
@@ -27,6 +29,7 @@ class VolumeOption final : public GlobalOption
 {
 public:
     std::string getName() const override { return "volume"; }
+    std::string getLabel() const override { return "Audio"; }
     std::vector<std::string> toCommandArgs() const override;
     std::string getValueString() const override;
     void setValueFromString(const std::string &value) override;
@@ -45,6 +48,7 @@ class FpsOption final : public GlobalOption
 {
 public:
     std::string getName() const override { return "fps"; }
+    std::string getLabel() const override { return "Frame Rate Limit (0 = unlimited)"; }
     std::vector<std::string> toCommandArgs() const override;
     std::string getValueString() const override;
     void setValueFromString(const std::string &value) override;
@@ -63,6 +67,7 @@ class ScalingOption final : public GlobalOption
 {
 public:
     std::string getName() const override { return "scaling"; }
+    std::string getLabel() const override { return "Wallpaper Scaling"; }
     std::vector<std::string> toCommandArgs() const override;
     std::string getValueString() const override;
     void setValueFromString(const std::string &value) override;
@@ -79,6 +84,7 @@ class ClampOption final : public GlobalOption
 {
 public:
     std::string getName() const override { return "clamp"; }
+    std::string getLabel() const override { return "Texture Clamping"; }
     std::vector<std::string> toCommandArgs() const override;
     std::string getValueString() const override;
     void setValueFromString(const std::string &value) override;
@@ -104,7 +110,7 @@ public:
     }
 
     std::string getName() const override { return flag_; }
-    std::string getLabel() const { return label_; }
+    std::string getLabel() const override { return label_; }
     std::vector<std::string> toCommandArgs() const override;
     std::string getValueString() const override { return enabled_ ? "true" : "false"; }
     void setValueFromString(const std::string &value) override;
@@ -130,6 +136,22 @@ public:
     void restore(const std::map<std::string, std::string> &saved);
     /// Enables a flag by its CLI name (without --). Unknown names are ignored.
     void setFlag(const std::string &name, bool enabled);
+
+    /// Back to GlobalOptionsFactory.createAll() defaults. Java builds fresh
+    /// options every time a properties view opens.
+    void reset() { *this = GlobalOptions(); }
+
+    // Typed access for the view, which edits these objects directly.
+    VolumeOption &volume() { return volume_; }
+    FpsOption &fps() { return fps_; }
+    ScalingOption &scaling() { return scaling_; }
+    ClampOption &clamp() { return clamp_; }
+    std::vector<FlagOption> &flags() { return flags_; }
+    const VolumeOption &volume() const { return volume_; }
+    const FpsOption &fps() const { return fps_; }
+    const ScalingOption &scaling() const { return scaling_; }
+    const ClampOption &clamp() const { return clamp_; }
+    const std::vector<FlagOption> &flags() const { return flags_; }
 
 private:
     VolumeOption volume_;

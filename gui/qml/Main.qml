@@ -179,12 +179,7 @@ ApplicationWindow {
     Shortcut {
         sequence: "S"
         enabled: app.view === 1 && app.keysEnabled
-        onActivated: Engine.stop(properties.targetMonitor)
-    }
-    Shortcut {
-        sequence: "A"
-        enabled: app.view === 0 && app.keysEnabled
-        onActivated: Engine.applyWallpaper(Engine.monitors.length > 0 ? Engine.monitors[0] : "", app.currentId, app.currentBasePath)
+        onActivated: properties.stopCurrent()
     }
     Shortcut {
         sequence: "A"

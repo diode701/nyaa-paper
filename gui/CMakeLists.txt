@@ -35,6 +35,9 @@ qt_add_executable(nyaa-paper-qt
     src/bridge/PlaylistBridge.cpp
     src/bridge/EngineBridge.hpp
     src/bridge/EngineBridge.cpp
+    src/bridge/PropertiesController.hpp
+    src/bridge/PropertiesController.cpp
+    src/domain/WallpaperConfig.h
     src/models/WallpaperModel.hpp
     src/models/WallpaperModel.cpp
     src/models/MockLibrary.hpp
@@ -119,3 +122,32 @@ add_executable(videoduration_test tests/videoduration_test.cpp src/util/VideoDur
 target_include_directories(videoduration_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(videoduration_test PRIVATE Qt6::Core)
 add_test(NAME videoduration_test COMMAND videoduration_test)
+
+# PropertiesController with the mock engine: edits reach the command, and every
+# monitor keeps its own config and GPU. Offscreen, test-mode config paths.
+qt_add_executable(controller_test
+    tests/controller_test.cpp
+    src/bridge/PropertiesController.cpp
+    src/bridge/ConfigBridge.cpp
+    src/bridge/EngineBridge.cpp
+    src/bridge/PlaylistBridge.cpp
+    src/engine/DbusEngine.cpp
+    src/engine/IEngine.hpp
+    src/engine/MockEngine.hpp
+    src/models/PropertyModel.cpp
+    src/models/GlobalOptionsModel.cpp
+    src/domain/settings/Setting.cpp
+    src/domain/settings/Settings.cpp
+    src/domain/settings/SettingFactory.cpp
+    src/domain/settings/SettingList.cpp
+    src/domain/options/GlobalOptions.cpp
+    src/domain/Renderer.cpp
+    src/io/ProjectJson.cpp
+    src/io/ConfigStore.cpp
+    src/io/WallpaperStore.cpp
+    src/util/VideoDuration.cpp
+    ${GUI_DBUS_SOURCES}
+)
+target_include_directories(controller_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(controller_test PRIVATE Qt6::Core Qt6::Gui Qt6::DBus)
+add_test(NAME controller_test COMMAND controller_test)

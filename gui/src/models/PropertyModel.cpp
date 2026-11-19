@@ -39,8 +39,13 @@ QVariant PropertyModel::data(const QModelIndex &index, int role) const
     case DisplayRole:
         if (const auto *color = dynamic_cast<const nyaa::domain::settings::ColorSetting *>(setting))
             return QString::fromStdString(color->getHex());
+        // ComboProperty shows the label of the current key, not the key
+        if (const auto *combo = dynamic_cast<const ComboSetting *>(setting))
+            return QString::fromStdString(combo->getOptionLabel());
         return QString::fromStdString(setting->getValueString());
     case ValueRole: {
+        if (const auto *flag = dynamic_cast<const nyaa::domain::settings::BooleanSetting *>(setting))
+            return flag->value();   // a real bool, so the checkbox can bind to it
         if (const auto *slider = dynamic_cast<const SliderSetting *>(setting))
             return slider->value();
         if (const auto *combo = dynamic_cast<const ComboSetting *>(setting))
@@ -83,6 +88,13 @@ QHash<int, QByteArray> PropertyModel::roleNames() const
             {DisplayRole, "display"}, {ValueRole, "settingValue"},     {MinimumRole, "minimum"},
             {MaximumRole, "maximum"}, {StepRole, "step"},       {OptionsRole, "options"},
             {IsGroupRole, "isGroup"}};
+}
+
+void PropertyModel::refreshAll()
+{
+    if (!m_settings.all().empty())
+        emit dataChanged(index(0), index(int(m_settings.all().size()) - 1));
+    emit changed();
 }
 
 void PropertyModel::loadWallpaper(const QString &basePath)

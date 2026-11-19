@@ -32,38 +32,26 @@ Item {
             Playlist.load(targetMonitor)
     }
 
-    function applyCurrent() {
-        if (targetMonitor === "") { status = "Please select a monitor."; return }
-        if (Config.screenshotEnabled && Config.screenshotPath === "") {
-            status = "Please enter a screenshot output path."; return
-        }
-        status = "Applying..."
-        Engine.applyWallpaper(targetMonitor, wallpaperId, wallpaperBasePath)
-        Config.saveApplied(targetMonitor, wallpaperId, Properties.values())
-        status = "Applied to " + targetMonitor
-    }
+    // The logic lives in PropertiesController (Java: WallpaperPropertiesView's
+    // applyToMonitor / addToPlaylist / loadSavedSettings / stopOnMonitor).
+    function applyCurrent() { Controller.apply(targetMonitor) }
+    function loadLast() { Controller.loadLast(targetMonitor) }
+    function stopCurrent() { Controller.stop(targetMonitor) }
 
     function addCurrent() {
         if (targetMonitor === "") { status = "Please select a monitor first."; return }
-        Playlist.add(Engine.playlistEntry(targetMonitor, wallpaperId, wallpaperBasePath))
+        Playlist.add(Controller.playlistEntry(targetMonitor))
         status = "Added to " + targetMonitor + " playlist (" + Playlist.entries.length + " entries)"
     }
 
-    function loadLast() {
-        if (targetMonitor === "") { status = "Please select a monitor first."; return }
-        const saved = Config.loadApplied(targetMonitor)
-        if (saved.__wallpaperId !== wallpaperId) {
-            status = "No saved settings for this wallpaper on " + targetMonitor
-            return
-        }
-        Properties.applyValues(saved)
-        status = "Loaded saved settings for " + targetMonitor
+    function openWallpaper() {
+        const count = Controller.open(wallpaperId, wallpaperBasePath)
+        status = count > 0 ? "Loaded " + count + " custom properties" : "Ready"
     }
 
-    function stopCurrent() {
-        if (targetMonitor === "") { status = "Please select a monitor."; return }
-        Engine.stop(targetMonitor)
-        status = "Stopped on " + targetMonitor
+    Connections {
+        target: Controller
+        function onStatus(message) { view.status = message }
     }
 
     function cycleMonitor(delta) {
@@ -80,13 +68,8 @@ Item {
             targetMonitor = monitors[index]
     }
 
-    onVisibleChanged: {
-        if (visible) {
-            Properties.loadWallpaper(wallpaperBasePath)
-            status = "Loaded " + Properties.count + " custom properties"
-        }
-    }
-    onWallpaperBasePathChanged: if (visible) Properties.loadWallpaper(wallpaperBasePath)
+    onVisibleChanged: if (visible) openWallpaper()
+    onWallpaperBasePathChanged: if (visible) openWallpaper()
 
     ColumnLayout {
         anchors.fill: parent
@@ -461,16 +444,6 @@ Item {
                                 Item { Layout.fillWidth: true }
                             }
 
-                            ComboBox {
-                                visible: kind === 4
-                                Layout.preferredWidth: 240
-                                implicitHeight: 30
-                                font.pixelSize: 12
-                                model: ["", "background", "bottom", "top", "overlay"]
-                                currentIndex: Math.max(0, model.indexOf(String(settingValue)))
-                                onActivated: GlobalOptions.setValue(name, currentText)
-                            }
-
                             CheckBox {
                                 visible: kind === 5
                                 text: label
@@ -505,13 +478,13 @@ Item {
 
                 RadioButton {
                     text: "Default (auto)"
-                    checked: Config.gpuMode === "DEFAULT"
-                    onToggled: if (checked) Config.gpuMode = "DEFAULT"
+                    checked: Controller.gpuMode === "DEFAULT"
+                    onToggled: if (checked) Controller.gpuMode = "DEFAULT"
                 }
                 RadioButton {
                     text: "DRI_PRIME (AMD/Intel)"
-                    checked: Config.gpuMode === "DRI_PRIME"
-                    onToggled: if (checked) Config.gpuMode = "DRI_PRIME"
+                    checked: Controller.gpuMode === "DRI_PRIME"
+                    onToggled: if (checked) Controller.gpuMode = "DRI_PRIME"
                 }
                 RowLayout {
                     spacing: 10
@@ -519,22 +492,22 @@ Item {
                     SpinBox {
                         from: 0
                         to: 9
-                        value: Config.driPrimeNumber
-                        enabled: Config.gpuMode === "DRI_PRIME"
-                        onValueModified: Config.driPrimeNumber = value
+                        value: Controller.driPrimeNumber
+                        enabled: Controller.gpuMode === "DRI_PRIME"
+                        onValueModified: Controller.driPrimeNumber = value
                     }
                     Item { Layout.fillWidth: true }
                 }
                 RadioButton {
                     text: "NVIDIA Prime Offload"
-                    checked: Config.gpuMode === "NVIDIA"
-                    onToggled: if (checked) Config.gpuMode = "NVIDIA"
+                    checked: Controller.gpuMode === "NVIDIA"
+                    onToggled: if (checked) Controller.gpuMode = "NVIDIA"
                 }
                 CheckBox {
                     text: "Disable GL threaded optimizations (fixes GLFW/OpenGL issues)"
-                    checked: Config.glThreaded
+                    checked: Controller.glThreaded
                     font.pixelSize: 12
-                    onToggled: Config.glThreaded = checked
+                    onToggled: Controller.glThreaded = checked
                 }
             }
         }
@@ -559,18 +532,18 @@ Item {
                 Text { text: "📸 Screenshot (for PyWAL etc.)"; color: "#ffffff"; font.pixelSize: 16 }
                 CheckBox {
                     text: "Generate screenshot on apply"
-                    checked: Config.screenshotEnabled
-                    onToggled: Config.screenshotEnabled = checked
+                    checked: Controller.screenshotEnabled
+                    onToggled: Controller.screenshotEnabled = checked
                 }
                 RowLayout {
                     spacing: 10
                     Text { text: "Output file:"; color: "#d3d3d3"; font.pixelSize: 12 }
                     TextField {
                         Layout.preferredWidth: 300
-                        text: Config.screenshotPath
-                        enabled: Config.screenshotEnabled
+                        text: Controller.screenshotPath
+                        enabled: Controller.screenshotEnabled
                         placeholderText: "/path/to/screenshot.png"
-                        onEditingFinished: Config.screenshotPath = text
+                        onEditingFinished: Controller.screenshotPath = text
                     }
                     Item { Layout.fillWidth: true }
                 }
@@ -580,9 +553,9 @@ Item {
                     SpinBox {
                         from: 0
                         to: 100
-                        value: Config.screenshotDelay
-                        enabled: Config.screenshotEnabled
-                        onValueModified: Config.screenshotDelay = value
+                        value: Controller.screenshotDelay
+                        enabled: Controller.screenshotEnabled
+                        onValueModified: Controller.screenshotDelay = value
                     }
                     Item { Layout.fillWidth: true }
                 }

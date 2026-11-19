@@ -20,12 +20,22 @@ std::string VolumeOption::getValueString() const
 
 void VolumeOption::setValueFromString(const std::string &value)
 {
+    // Java: Integer.parseInt, and 70 when it fails
+    const auto parse = [](const std::string &text) {
+        try {
+            size_t used = 0;
+            const int parsed = std::stoi(text, &used);
+            return used == text.size() ? parsed : 70;
+        } catch (...) {
+            return 70;
+        }
+    };
     if (value.rfind("silent|", 0) == 0) {
         muted_ = true;
-        volume_ = std::atoi(value.c_str() + 7);
+        volume_ = parse(value.substr(7));
     } else {
         muted_ = false;
-        volume_ = std::atoi(value.c_str());
+        volume_ = parse(value);
     }
 }
 
@@ -106,12 +116,13 @@ void FlagOption::setValueFromString(const std::string &value)
 
 // ---- aggregate -------------------------------------------------------------
 GlobalOptions::GlobalOptions()
-    : flags_{FlagOption("disable-mouse", "Disable mouse interaction"),
-             FlagOption("disable-parallax", "Disable parallax"),
-             FlagOption("noautomute", "Don't auto-mute"),
-             FlagOption("no-audio-processing", "Disable audio processing"),
-             FlagOption("no-fullscreen-pause", "Don't pause on fullscreen"),
-             FlagOption("fullscreen-pause-only-active", "Pause only when active fullscreen"),
+    // GlobalOptionsFactory.createAll(), same order, same labels
+    : flags_{FlagOption("disable-mouse", "Disable Mouse Interaction"),
+             FlagOption("disable-parallax", "Disable Parallax"),
+             FlagOption("noautomute", "Don't Auto-mute"),
+             FlagOption("no-audio-processing", "Disable Audio Processing"),
+             FlagOption("no-fullscreen-pause", "Don't Pause on Fullscreen"),
+             FlagOption("fullscreen-pause-only-active", "Pause Only When Active Fullscreen (Wayland)"),
              FlagOption("disable-particles", "Disable particles")}
 {
 }

@@ -6,7 +6,6 @@
 
 #include "io/AppConfig.h"
 #include "io/ConfigStore.h"
-#include "io/WallpaperStore.h"
 
 /// The QML handle on config.json. One instance, owned by main; the file is the
 /// single source of truth for both this process and the daemon.
@@ -22,19 +21,7 @@ class ConfigBridge : public QObject
     Q_PROPERTY(QString animation READ animation WRITE setAnimation NOTIFY changed)
     Q_PROPERTY(int pageSlideMs READ pageSlideMs WRITE setPageSlideMs NOTIFY changed)
 
-    Q_PROPERTY(int volume READ volume WRITE setVolume NOTIFY changed)
-    Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY changed)
-    Q_PROPERTY(bool fpsLimited READ fpsLimited WRITE setFpsLimited NOTIFY changed)
-    Q_PROPERTY(int fps READ fps WRITE setFps NOTIFY changed)
-    Q_PROPERTY(QString scaling READ scaling WRITE setScaling NOTIFY changed)
-    Q_PROPERTY(QString clampMode READ clampMode WRITE setClampMode NOTIFY changed)
     Q_PROPERTY(QString layer READ layer WRITE setLayer NOTIFY changed)
-    Q_PROPERTY(QString gpuMode READ gpuMode WRITE setGpuMode NOTIFY changed)
-    Q_PROPERTY(int driPrimeNumber READ driPrimeNumber WRITE setDriPrimeNumber NOTIFY changed)
-    Q_PROPERTY(bool glThreaded READ glThreaded WRITE setGlThreaded NOTIFY changed)
-    Q_PROPERTY(bool screenshotEnabled READ screenshotEnabled WRITE setScreenshotEnabled NOTIFY changed)
-    Q_PROPERTY(QString screenshotPath READ screenshotPath WRITE setScreenshotPath NOTIFY changed)
-    Q_PROPERTY(int screenshotDelay READ screenshotDelay WRITE setScreenshotDelay NOTIFY changed)
 
 public:
     explicit ConfigBridge(QObject *parent = nullptr);
@@ -48,19 +35,7 @@ public:
     QString pywalPath() const;
     QString animation() const;
     int pageSlideMs() const;
-    int volume() const;
-    bool muted() const;
-    bool fpsLimited() const;
-    int fps() const;
-    QString scaling() const;
-    QString clampMode() const;
     QString layer() const;
-    QString gpuMode() const;
-    int driPrimeNumber() const;
-    bool glThreaded() const;
-    bool screenshotEnabled() const;
-    QString screenshotPath() const;
-    int screenshotDelay() const;
 
     void setWorkshopPath(const QString &value);
     void setEnginePath(const QString &value);
@@ -69,33 +44,13 @@ public:
     void setPywalPath(const QString &value);
     void setAnimation(const QString &value);
     void setPageSlideMs(int value);
-    void setVolume(int value);
-    void setMuted(bool value);
-    void setFpsLimited(bool value);
-    void setFps(int value);
-    void setScaling(const QString &value);
-    void setClampMode(const QString &value);
     void setLayer(const QString &value);
-    void setGpuMode(const QString &value);
-    void setDriPrimeNumber(int value);
-    void setGlThreaded(bool value);
-    void setScreenshotEnabled(bool value);
-    void setScreenshotPath(const QString &value);
-    void setScreenshotDelay(int value);
 
     Q_INVOKABLE bool save();
     Q_INVOKABLE void reload();
     Q_INVOKABLE QString filePath() const;
     /// Fire-and-forget: asks the daemon to re-read config.json and rescan.
     Q_INVOKABLE void rescanLibrary();
-    /// Remembers the applied values for a monitor, and reads them back.
-    Q_INVOKABLE bool saveApplied(const QString &monitor, const QString &wallpaperId,
-                                 const QVariantMap &values);
-    Q_INVOKABLE QVariantMap loadApplied(const QString &monitor);
-
-    /// Engine flag list (the --disable-* family), by CLI name.
-    Q_INVOKABLE bool flagEnabled(const QString &name) const;
-    Q_INVOKABLE void setFlag(const QString &name, bool enabled);
 
 Q_SIGNALS:
     void changed();
@@ -103,6 +58,5 @@ Q_SIGNALS:
 
 private:
     nyaa::io::ConfigStore m_store;
-    nyaa::io::WallpaperStore m_wallpapers;
     nyaa::io::AppConfig m_config;
 };

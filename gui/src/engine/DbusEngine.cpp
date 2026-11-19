@@ -63,10 +63,21 @@ void DbusEngine::refreshRunning()
 void DbusEngine::apply(const QString &monitor, const EngineRequest &command)
 {
     if (!m_engine) {
-        emit daemonError(tr("daemon is not available"));
+        emit applyFinished(monitor, false, tr("daemon is not available"));
         return;
     }
-    m_engine->Apply(monitor, command.wallpaperId, command.argv, command.env);
+    auto *watcher = new QDBusPendingCallWatcher(
+        m_engine->Apply(monitor, command.wallpaperId, command.argv, command.env), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this,
+            [this, monitor](QDBusPendingCallWatcher *call) {
+                const QDBusPendingReply<uint> reply = *call;
+                if (reply.isError())
+                    emit applyFinished(monitor, false, reply.error().message());
+                else
+                    emit applyFinished(monitor, true, {});
+                call->deleteLater();
+                refreshRunning();
+            });
 }
 
 void DbusEngine::stop(const QString &monitor)

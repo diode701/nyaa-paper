@@ -1,5 +1,9 @@
 // Plain asserts: the domain has no Qt, no event loop, no display.
+// The checks must run in every build type, Release (NDEBUG) included.
+#undef NDEBUG
 #include <cassert>
+// Variadic so braced initialisers with commas stay one argument.
+#define CHECK(...) assert((__VA_ARGS__))
 #include <cstdio>
 
 #include "domain/options/GlobalOptions.h"
@@ -14,39 +18,39 @@ using namespace nyaa::domain::settings;
 int main()
 {
     BooleanSetting bloom("bloom", "Bloom", true);
-    assert(bloom.toCommandArgs() == std::vector<std::string>{"--set-property", "bloom=1"});
-    assert(bloom.getValueString() == "1");
+    CHECK(bloom.toCommandArgs() == std::vector<std::string>{"--set-property", "bloom=1"});
+    CHECK(bloom.getValueString() == "1");
     bloom.setValueFromString("false");
-    assert(bloom.getValueString() == "0");
+    CHECK(bloom.getValueString() == "0");
     bloom.setValueFromString("nonsense"); // must keep the current value
-    assert(bloom.getValueString() == "0");
-    assert(!bloom.isPrePropertyFlag()); // properties travel after the engine flags
+    CHECK(bloom.getValueString() == "0");
+    CHECK(!bloom.isPrePropertyFlag()); // properties travel after the engine flags
 
     SliderSetting fov("fov", "Field of view", 0.42, {0.1, 1.5, 0.05});
-    assert(fov.toCommandArgs() == std::vector<std::string>{"--set-property", "fov=0.42"});
+    CHECK(fov.toCommandArgs() == std::vector<std::string>{"--set-property", "fov=0.42"});
     fov.setValueFromString("1.234");
-    assert(fov.getValueString() == "1.23");
-    assert(fov.getRange().max == 1.5);
+    CHECK(fov.getValueString() == "1.23");
+    CHECK(fov.getRange().max == 1.5);
 
     ColorSetting tint("tint", "Tint", {1.0, 0.5333, 0.0});
-    assert(tint.getValueString() == "1.0000 0.5333 0.0000");
-    assert(tint.getHex() == "#FF8800");
+    CHECK(tint.getValueString() == "1.0000 0.5333 0.0000");
+    CHECK(tint.getHex() == "#FF8800");
     tint.setValueFromString("0.0 0.5 1.0");
-    assert(tint.getHex() == "#0080FF");
+    CHECK(tint.getHex() == "#0080FF");
 
     ComboSetting mode("mode", "Mode", 1, {{0, "day"}, {1, "night"}});
-    assert(mode.toCommandArgs() == std::vector<std::string>{"--set-property", "mode=1"});
-    assert(mode.getOptionLabel() == "night");
-    assert(mode.getOptions().size() == 2);
+    CHECK(mode.toCommandArgs() == std::vector<std::string>{"--set-property", "mode=1"});
+    CHECK(mode.getOptionLabel() == "night");
+    CHECK(mode.getOptions().size() == 2);
 
     TextInputSetting note("note", "Note", "hello");
-    assert(note.toCommandArgs() == std::vector<std::string>{"--set-property", "note=hello"});
+    CHECK(note.toCommandArgs() == std::vector<std::string>{"--set-property", "note=hello"});
 
     TextSetting caption("caption", "A label");
-    assert(caption.toCommandArgs().empty());
+    CHECK(caption.toCommandArgs().empty());
 
     GroupSetting group("group", "Section");
-    assert(group.toCommandArgs().empty());
+    CHECK(group.toCommandArgs().empty());
 
     // factory: a desc becomes the right subclass
     SettingDesc desc;
@@ -56,8 +60,8 @@ int main()
     desc.number = 0.42;
     desc.range = {0.1, 1.5, 0.05};
     auto built = makeSetting(desc);
-    assert(built && built->getName() == "fov");
-    assert(built->toCommandArgs() == std::vector<std::string>{"--set-property", "fov=0.42"});
+    CHECK(built && built->getName() == "fov");
+    CHECK(built->toCommandArgs() == std::vector<std::string>{"--set-property", "fov=0.42"});
 
     // renderer: the exact argv the daemon will run
     SettingList list;
@@ -86,14 +90,14 @@ int main()
         "--set-property", "bloom=1",
         "--set-property", "fov=0.42",
     };
-    assert(command.argv == expected);
-    assert(command.env == std::vector<std::string>{"DRI_PRIME=1", "__GL_THREADED_OPTIMIZATIONS=0"});
-    assert(command.wallpaperId == "1234");
+    CHECK(command.argv == expected);
+    CHECK(command.env == std::vector<std::string>{"DRI_PRIME=1", "__GL_THREADED_OPTIMIZATIONS=0"});
+    CHECK(command.wallpaperId == "1234");
 
     // a wallpaper outside the workshop root is passed by path, not by id
     nyaa::domain::Wallpaper odd{"9999", "Odd", "scene", "x.pkg", "/elsewhere/9999", ""};
     const EngineCommand byPath = nyaa::domain::Renderer::render("eDP-1", odd, list, globals, gpu, {}, options);
-    assert(byPath.argv[3] == "/elsewhere/9999");
+    CHECK(byPath.argv[3] == "/elsewhere/9999");
 
     // K2: a GlobalOption IS a Setting (Java: GlobalOption extends Setting), so
     // one list of Setting* renders exactly like the two containers.
@@ -107,16 +111,16 @@ int main()
             all.push_back(option);                 // upcast: no adapter needed
         for (const auto &setting : list.all())
             all.push_back(setting.get());
-        assert(all.front()->getKind() == Kind::Volume);
-        assert(all.front()->getDescription() == "Audio");
+        CHECK(all.front()->getKind() == Kind::Volume);
+        CHECK(all.front()->getDescription() == "Audio");
         const auto one = nyaa::domain::Renderer::render("eDP-1", wallpaper, all, gpu, {}, options);
         const auto two = nyaa::domain::Renderer::render("eDP-1", wallpaper, list, g, gpu, {}, options);
-        assert(one.argv == two.argv);
+        CHECK(one.argv == two.argv);
         const std::vector<std::string> tail(one.argv.begin() + 8, one.argv.end());
-        assert((tail == std::vector<std::string>{"--silent", "--disable-mouse", "--clamp", "border",
+        CHECK((tail == std::vector<std::string>{"--silent", "--disable-mouse", "--clamp", "border",
                                                   "--set-property", "bloom=1", "--set-property", "fov=0.42"}));
         g.reset();
-        assert(!g.volume().isMuted() && g.arguments(true) == std::vector<std::string>({"--volume", "70"}));
+        CHECK(!g.volume().isMuted() && g.arguments(true) == std::vector<std::string>({"--volume", "70"}));
     }
 
     std::puts("domain tests passed");

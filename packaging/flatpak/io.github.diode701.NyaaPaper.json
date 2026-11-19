@@ -22,6 +22,7 @@
     "--filesystem=xdg-config/nyaa-paper:create"
   ],
   "modules": [
+    "linux-wallpaperengine.json",
     {
       "name": "nyaa-paperd",
       "buildsystem": "simple",
@@ -29,41 +30,53 @@
         "env": {
           "CARGO_HOME": "/run/build/nyaa-paperd/cargo",
           "PATH": "/usr/lib/sdk/rust-stable/bin:/usr/bin:/bin"
-        }
+        },
+        "build-args": [
+          "--share=network"
+        ],
+        "comment": "network: cargo fetches crates (local builds; Flathub would need generated cargo sources)"
       },
       "build-commands": [
         "cargo build --release --manifest-path daemon/Cargo.toml",
         "install -Dm755 daemon/target/release/nyaa-paperd /app/bin/nyaa-paperd"
       ],
       "sources": [
-        { "type": "dir", "path": "../.." }
+        {
+          "type": "dir",
+          "path": "../..",
+          "skip": [
+            "daemon/target",
+            "gui/build",
+            ".git",
+            "packaging/flatpak/.flatpak-builder"
+          ]
+        }
       ]
     },
     {
       "name": "nyaa-paper",
       "buildsystem": "simple",
       "build-commands": [
-        "cmake -S gui -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/app",
+        "cmake -S gui -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/app -DNYAA_BUILD_TESTS=OFF",
         "cmake --build build",
         "cmake --install build",
         "install -Dm755 packaging/nyaa-paper /app/bin/nyaa-paper",
         "install -Dm644 packaging/flatpak/io.github.diode701.NyaaPaper.desktop /app/share/applications/io.github.diode701.NyaaPaper.desktop",
         "install -Dm644 packaging/flatpak/io.github.diode701.NyaaPaper.metainfo.xml /app/share/metainfo/io.github.diode701.NyaaPaper.metainfo.xml",
-        "install -Dm644 icon.png /app/share/icons/hicolor/512x512/apps/io.github.diode701.NyaaPaper.png"
+        "install -Dm644 packaging/flatpak/io.github.diode701.NyaaPaper.png /app/share/icons/hicolor/512x512/apps/io.github.diode701.NyaaPaper.png"
       ],
       "sources": [
-        { "type": "dir", "path": "../.." }
+        {
+          "type": "dir",
+          "path": "../..",
+          "skip": [
+            "daemon/target",
+            "gui/build",
+            ".git",
+            "packaging/flatpak/.flatpak-builder"
+          ]
+        }
       ]
-    },
-    {
-      "name": "linux-wallpaperengine",
-      "comment": "Bundled and pinned. Placeholder until the LWE build module lands; see docs/STATE.md.",
-      "buildsystem": "simple",
-      "build-commands": [
-        "echo 'linux-wallpaperengine module not wired yet' && mkdir -p /app/bin",
-        "if [ -x /usr/bin/linux-wallpaperengine ]; then install -Dm755 /usr/bin/linux-wallpaperengine /app/bin/linux-wallpaperengine; fi"
-      ],
-      "sources": []
     }
   ]
 }

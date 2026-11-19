@@ -149,6 +149,8 @@ install(TARGETS nyaa-paper-qt
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
+option(NYAA_BUILD_TESTS "Build the unit tests" ON)
+if(NYAA_BUILD_TESTS)
 # Domain tests: plain executable, no Qt types involved.
 enable_testing()
 add_executable(domain_test
@@ -258,3 +260,4 @@ qt_add_executable(thumbs_test tests/thumbs_test.cpp src/ui/Thumbnails.cpp)
 target_include_directories(thumbs_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(thumbs_test PRIVATE Qt6::Core Qt6::Gui Qt6::Quick)
 add_test(NAME thumbs_test COMMAND thumbs_test)
+endif()  # NYAA_BUILD_TESTS

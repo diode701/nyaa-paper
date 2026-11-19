@@ -226,6 +226,11 @@ fn scan(root: &Path) -> Vec<Entry> {
                 continue;
             }
         };
+        // Workshop "Asset" items (post-processing presets) have a project.json
+        // but are not wallpapers; the engine refuses them. Java listed them.
+        if value.get("category").and_then(|v| v.as_str()).is_some_and(|c| c.eq_ignore_ascii_case("asset")) {
+            continue;
+        }
         let text = |key: &str| value.get(key).and_then(|v| v.as_str()).map(str::to_string);
         let title = text("title").unwrap_or_else(|| id.clone());
         let kind = text("type").unwrap_or_default();
@@ -265,6 +270,7 @@ mod tests {
             ("200", None),                                   // no project.json
             ("300", Some("{ not json")),                     // broken
             ("400", Some(r#"{"type": "video"}"#)),           // no title
+            ("500", Some(r#"{"category": "Asset", "title": "A preset"}"#)), // not a wallpaper
         ] {
             let dir = root.join(id);
             std::fs::create_dir_all(&dir).unwrap();

@@ -17,7 +17,7 @@
     "--talk-name=org.nyaa.Paper",
     "--talk-name=org.kde.StatusNotifierWatcher",
     "--filesystem=~/.local/share/Steam/steamapps/workshop/content/431960:ro",
-    "--filesystem=~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/workshop/content/431960:ro",
+    "--filesystem=~/.local/share/Steam/steamapps/common/wallpaper_engine:ro",
     "--filesystem=~/Pictures:create",
     "--filesystem=xdg-config/nyaa-paper:create"
   ],

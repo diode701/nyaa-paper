@@ -21,6 +21,7 @@ qt_add_executable(nyaa-paper-qt
     src/domain/Renderer.cpp
     src/domain/options/GlobalOptions.cpp
     src/io/ProjectJson.cpp
+    src/io/ConfigStore.cpp
     src/domain/settings/Settings.cpp
     src/engine/IEngine.hpp
     src/engine/DbusEngine.hpp
@@ -95,3 +96,8 @@ add_executable(projectjson_test tests/projectjson_test.cpp src/io/ProjectJson.cp
 target_include_directories(projectjson_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(projectjson_test PRIVATE Qt6::Core)
 add_test(NAME projectjson_test COMMAND projectjson_test)
+
+add_executable(config_test tests/config_test.cpp src/io/ConfigStore.cpp)
+target_include_directories(config_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(config_test PRIVATE Qt6::Core)
+add_test(NAME config_test COMMAND config_test)

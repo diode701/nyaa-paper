@@ -5,6 +5,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde_json::Value;
 use tracing::{info, warn};
+use tokio::sync::Notify;
 use zbus::Connection;
 
 use crate::engine::Engine;
@@ -22,6 +23,8 @@ struct State {
 
 struct Inner {
     engine: Engine,
+    pending: Mutex<HashMap<String, i32>>,
+    skip: Notify,
     docs: Mutex<HashMap<String, Value>>,
     states: Mutex<HashMap<String, State>>,
     conn: Mutex<Option<Connection>>,
@@ -40,6 +43,8 @@ impl Playlist {
             inner: Arc::new(Inner {
                 engine,
                 docs: Mutex::new(HashMap::new()),
+                pending: Mutex::new(HashMap::new()),
+                skip: Notify::new(),
                 states: Mutex::new(HashMap::new()),
                 conn: Mutex::new(None),
                 dir,
@@ -138,7 +143,36 @@ impl Playlist {
                     warn!(%monitor, %e, "playlist entry failed, advancing");
                 }
 
-                tokio::time::sleep(Duration::from_secs_f64(delay)).await;
+                // A Next/Prev from the UI wakes the sleep instead of waiting.
+                let step = tokio::select! {
+                    _ = tokio::time::sleep(Duration::from_secs_f64(delay)) => 0,
+                    _ = inner.skip.notified() => {
+                        inner.pending.lock().unwrap().remove(&monitor).unwrap_or(0)
+                    }
+                };
+
+                if step != 0 {
+                    let len = {
+                        let docs = inner.docs.lock().unwrap();
+                        docs.get(&monitor)
+                            .and_then(|doc| doc.get("entries"))
+                            .and_then(|entries| entries.as_array())
+                            .map(|entries| entries.len())
+                            .unwrap_or(0)
+                    };
+                    if len > 0 {
+                        let mut states = inner.states.lock().unwrap();
+                        let state = states.entry(monitor.clone()).or_default();
+                        state.index = if step > 0 {
+                            (state.index + 1) % len
+                        } else {
+                            (state.index + len - 1) % len
+                        };
+                        drop(states);
+                        publish_from(&inner, &monitor);
+                        continue;
+                    }
+                }
 
                 if !still_current(&inner, &monitor, generation) {
                     return;
@@ -374,6 +408,18 @@ impl Playlist {
     fn pause(&self, monitor: String) {
         self.bump(&monitor, true, true);
         self.publish(&monitor);
+    }
+
+    async fn next(&self, monitor: String) -> zbus::fdo::Result<()> {
+        self.inner.pending.lock().unwrap().insert(monitor, 1);
+        self.inner.skip.notify_waiters();
+        Ok(())
+    }
+
+    async fn prev(&self, monitor: String) -> zbus::fdo::Result<()> {
+        self.inner.pending.lock().unwrap().insert(monitor, -1);
+        self.inner.skip.notify_waiters();
+        Ok(())
     }
 
     async fn stop(&self, monitor: String) {

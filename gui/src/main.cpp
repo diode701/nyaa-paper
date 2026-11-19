@@ -77,6 +77,9 @@ int main(int argc, char *argv[])
         return 1;
 
     // Dev aid: NYAA_GLOBAL=1 opens the properties view on the GLOBAL tab.
+    if (qEnvironmentVariableIsSet("NYAA_MINI"))
+        qml.rootObjects().first()->setProperty("startMini", true);
+
     if (qEnvironmentVariableIsSet("NYAA_GLOBAL"))
         qml.rootObjects().first()->setProperty("startGlobal", true);
 

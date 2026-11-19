@@ -152,6 +152,18 @@ void PlaylistBridge::pause()
         m_playlist->Pause(m_monitor);
 }
 
+void PlaylistBridge::next()
+{
+    if (m_playlist && !m_monitor.isEmpty())
+        m_playlist->Next(m_monitor);
+}
+
+void PlaylistBridge::prev()
+{
+    if (m_playlist && !m_monitor.isEmpty())
+        m_playlist->Prev(m_monitor);
+}
+
 void PlaylistBridge::stop()
 {
     if (m_playlist && !m_monitor.isEmpty())

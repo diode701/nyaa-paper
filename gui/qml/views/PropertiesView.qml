@@ -22,6 +22,16 @@ Item {
 
     readonly property int leftWidth: Math.min(540, Math.max(320, view.width * 0.26))
 
+    property bool miniOpen: false
+    property bool startMini: false
+    onStartMiniChanged: if (startMini) toggleMini()
+
+    function toggleMini() {
+        miniOpen = !miniOpen
+        if (miniOpen)
+            Playlist.load(targetMonitor)
+    }
+
     function applyCurrent() {
         Engine.applyWallpaper(targetMonitor, wallpaperId, wallpaperBasePath)
         Config.saveApplied(targetMonitor, wallpaperId, Properties.values())
@@ -67,9 +77,96 @@ Item {
     }
     onWallpaperBasePathChanged: if (visible) Properties.loadWallpaper(wallpaperBasePath)
 
+    // Mini playlist panel: the Java app's Ctrl+L, sliding in over the content.
+    Rectangle {
+        id: miniPanel
+        visible: view.miniOpen
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: 300
+        color: Theme.panel
+        border.color: Theme.line
+        z: 20
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 14
+            spacing: 8
+
+            RowLayout {
+                Layout.fillWidth: true
+                Text {
+                    text: "PLAYLIST"
+                    color: Theme.accent
+                    font.pixelSize: 10
+                    font.letterSpacing: 3
+                    font.bold: true
+                }
+                Item { Layout.fillWidth: true }
+                Text {
+                    text: Playlist.state
+                    color: Theme.dim
+                    font.pixelSize: 10
+                }
+            }
+            Text {
+                text: view.targetMonitor
+                color: Theme.dim
+                font.pixelSize: 10
+                font.family: Theme.mono
+            }
+
+            ListView {
+                id: miniList
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                model: Playlist.entries
+                spacing: 2
+
+                delegate: Rectangle {
+                    required property int index
+                    required property var modelData
+                    width: miniList.width
+                    height: 40
+                    radius: 6
+                    color: Playlist.index === index ? Theme.panelAlt : "transparent"
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: 10
+                        text: ("0" + (index + 1)).slice(-2) + "  " + modelData.wallpaperId
+                        color: Playlist.index === index ? Theme.accent : Theme.text
+                        font.pixelSize: 11
+                        font.family: Theme.mono
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 6
+                ActionButton { text: "▶"; onClicked: Playlist.play() }
+                ActionButton { text: "⏸"; onClicked: Playlist.pause() }
+                ActionButton { text: "⏭"; onClicked: Playlist.next() }
+                ActionButton { text: "⏹"; onClicked: Playlist.stop() }
+            }
+            Text {
+                Layout.fillWidth: true
+                text: "↑↓ select · DEL remove · space · N/P · esc close"
+                color: Theme.dim
+                font.pixelSize: 9
+                wrapMode: Text.WordWrap
+            }
+        }
+    }
+
     RowLayout {
         anchors.fill: parent
         anchors.margins: 24
+        anchors.leftMargin: view.miniOpen ? 324 : 24
         spacing: 22
 
         // ---- left: what is selected -------------------------------------

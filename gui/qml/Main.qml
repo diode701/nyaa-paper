@@ -25,6 +25,7 @@ ApplicationWindow {
     property int view: 0
     property bool settingsOpen: false
     property bool startGlobal: false
+    property bool startMini: false
     property string currentId: ""
     property string currentTitle: ""
     property string currentPreview: ""
@@ -72,8 +73,38 @@ ApplicationWindow {
     }
     Shortcut {
         sequence: "L"
-        enabled: app.view === 1
+        enabled: app.view === 1 && !properties.miniOpen
         onActivated: properties.loadLast()
+    }
+    Shortcut {
+        sequence: "Ctrl+L"
+        enabled: app.view === 1
+        onActivated: properties.toggleMini()
+    }
+    Shortcut {
+        sequence: "N"
+        enabled: app.view === 1 && properties.miniOpen
+        onActivated: Playlist.next()
+    }
+    Shortcut {
+        sequence: "P"
+        enabled: app.view === 1 && properties.miniOpen
+        onActivated: Playlist.prev()
+    }
+    Shortcut {
+        sequence: "Up"
+        enabled: app.view === 1 && properties.miniOpen
+        onActivated: playlistView.select(-1)
+    }
+    Shortcut {
+        sequence: "Down"
+        enabled: app.view === 1 && properties.miniOpen
+        onActivated: playlistView.select(1)
+    }
+    Shortcut {
+        sequence: "Delete"
+        enabled: app.view === 1 && properties.miniOpen
+        onActivated: playlistView.removeSelected()
     }
     Shortcut {
         sequence: "B"
@@ -161,6 +192,7 @@ ApplicationWindow {
                     wallpaperPreview: app.currentPreview
                     wallpaperBasePath: app.currentBasePath
                     startGlobal: app.startGlobal
+                    startMini: app.startMini
                     anchors.fill: parent
                     visible: app.view === 1
                     onBack: { app.view = 0; root.forceActiveFocus() }

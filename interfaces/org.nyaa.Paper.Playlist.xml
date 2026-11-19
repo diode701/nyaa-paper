@@ -49,6 +49,12 @@
     <method name="Pause">
       <arg name="monitor" type="s" direction="in"/>
     </method>
+    <method name="Next">
+      <arg name="monitor" type="s" direction="in"/>
+    </method>
+    <method name="Prev">
+      <arg name="monitor" type="s" direction="in"/>
+    </method>
     <method name="Stop">
       <arg name="monitor" type="s" direction="in"/>
     </method>

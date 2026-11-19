@@ -27,13 +27,13 @@ not ported.
 | Properties | `A` add to playlist | `A` | same |
 | Properties | `S` stop | `S` | same |
 | Properties | `L` load saved settings | `L` | same |
-| Properties | `Ctrl+L` toggle mini playlist panel | — | **gap** |
+| Properties | `Ctrl+L` toggle mini playlist panel | same | same (added) |
 | Properties | `Esc` back | `Esc` | same |
 | Playlist | `Esc` / `B` back | `Esc` / `B` | same (added) |
 | Playlist | `Up` / `Down` select entry | same | same (added) |
 | Playlist | `Delete` remove | same | same (added) |
 | Playlist | `Space` play/pause | same | same |
-| Playlist | `N` next / `P` previous | — | **gap**: the D-Bus interface has no Next/Prev |
+| Playlist | `N` next / `P` previous | same, via new `Next`/`Prev` methods | same (added) |
 
 ## Library
 
@@ -66,9 +66,9 @@ not ported.
 | `PlaylistManagerView`: entries, monitor selector, play/pause/stop | same | same |
 | `PlaylistRunner` in the UI process | `playlist.rs` in the daemon | better: survives the UI |
 | entries carry duration from `VideoDurationUtil` | same (`util/VideoDuration`) | same |
-| `next` / `prev` | — | **gap**, needs contract methods |
+| `next` / `prev` | `Playlist.Next` / `Playlist.Prev` | same |
 | reorder by drag | — | **gap** |
-| `MiniPlaylistPanel` in the properties view | — | **gap** |
+| `MiniPlaylistPanel` in the properties view | `Ctrl+L` panel | same |
 
 ## Wallpaper / engine
 
@@ -115,7 +115,7 @@ the Java app could not discover paths; the daemon can.
 
 ## Remaining priority
 
-1. Playlist `Next`/`Prev` (contract) and the mini panel (`Ctrl+L`).
-2. Page prefetch in the library.
-3. Screenshot toggle in the UI.
-4. Drag reorder in the playlist.
+1. Page prefetch in the library.
+2. Screenshot toggle in the UI.
+3. Drag reorder in the playlist.
+4. First-run launcher (Java has a separate setup app; v2 auto-discovers paths).

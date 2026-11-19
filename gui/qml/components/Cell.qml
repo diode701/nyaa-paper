@@ -1,4 +1,5 @@
 import QtQuick
+import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
 
 Item {
@@ -7,47 +8,57 @@ Item {
     required property string title
     required property string kind
     required property string preview
-    required property int index
+    required property int seed
 
     property bool selected: false
     property bool hovered: mouse.containsMouse
+
+    readonly property bool animate: Settings.animationMode === 2
+                                    || (Settings.animationMode === 1 && (hovered || selected))
+
     signal clicked
 
+    scale: hovered && !selected ? 1.015 : 1.0
+    Behavior on scale {
+        NumberAnimation { duration: Theme.fast; easing.type: Easing.OutCubic }
+    }
 
     Rectangle {
         id: card
         anchors.fill: parent
         radius: Theme.radius
         color: Theme.panel
-        border.width: 1
-        border.color: cell.hovered ? Theme.dim : Theme.line
+        border.width: cell.selected ? 2 : 1
+        border.color: cell.selected ? Theme.accent : (cell.hovered ? Theme.dim : Theme.line)
         clip: true
 
         Rectangle {
             anchors.fill: parent
             visible: cell.preview === ""
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.hsla((cell.index * 0.11) % 1.0, 0.55, 0.42, 1.0) }
-                GradientStop { position: 1.0; color: Qt.hsla((cell.index * 0.11 + 0.1) % 1.0, 0.6, 0.16, 1.0) }
+                GradientStop { position: 0.0; color: Qt.hsla((cell.seed * 0.11) % 1.0, 0.55, 0.40, 1.0) }
+                GradientStop { position: 1.0; color: Qt.hsla((cell.seed * 0.11 + 0.1) % 1.0, 0.6, 0.14, 1.0) }
             }
         }
 
-        Image {
+        AnimatedImage {
             anchors.fill: parent
+            anchors.margins: 1
             source: cell.preview
             visible: cell.preview !== ""
-            fillMode: Image.PreserveAspectCrop
+            fillMode: Image.PreserveAspectFit
             asynchronous: true
-            cache: true
-            sourceSize.width: 480
-            sourceSize.height: 320
+            cache: false
+            playing: cell.animate
+            sourceSize.width: 400
+            sourceSize.height: 400
         }
 
         Rectangle {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            height: 72
+            height: 52
             gradient: Gradient {
                 GradientStop { position: 0.0; color: "#00000000" }
                 GradientStop { position: 1.0; color: "#e6070809" }
@@ -58,12 +69,12 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            anchors.leftMargin: 14
-            anchors.rightMargin: 14
-            anchors.bottomMargin: 12
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            anchors.bottomMargin: 9
             text: cell.title
             color: Theme.text
-            font.pixelSize: 13
+            font.pixelSize: 12
             elide: Text.ElideRight
         }
 
@@ -71,9 +82,9 @@ Item {
             visible: cell.kind !== ""
             anchors.top: parent.top
             anchors.left: parent.left
-            anchors.margins: 10
-            implicitWidth: kindLabel.implicitWidth + 14
-            implicitHeight: 20
+            anchors.margins: 9
+            implicitWidth: kindLabel.implicitWidth + 12
+            implicitHeight: 18
             radius: 4
             color: "#99070809"
             Text {
@@ -81,8 +92,8 @@ Item {
                 anchors.centerIn: parent
                 text: cell.kind.toUpperCase()
                 color: Theme.muted
-                font.pixelSize: 9
-                font.letterSpacing: 1.5
+                font.pixelSize: 8
+                font.letterSpacing: 1.4
             }
         }
     }

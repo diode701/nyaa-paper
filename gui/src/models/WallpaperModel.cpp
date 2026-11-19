@@ -73,3 +73,16 @@ QString WallpaperModel::titleAt(int row) const
         return {};
     return m_all[m_visible[row]].title;
 }
+
+QVariantMap WallpaperModel::at(int row) const
+{
+    QVariantMap out;
+    if (row < 0 || row >= m_visible.size())
+        return out;
+    const WallpaperItem &item = m_all[m_visible[row]];
+    out.insert(QStringLiteral("id"), item.id);
+    out.insert(QStringLiteral("title"), item.title);
+    out.insert(QStringLiteral("kind"), item.type);
+    out.insert(QStringLiteral("preview"), item.preview);
+    return out;
+}

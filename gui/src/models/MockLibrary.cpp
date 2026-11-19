@@ -72,6 +72,14 @@ QVector<WallpaperItem> MockLibrary::load()
         "NYAA_WORKSHOP",
         QDir::homePath() + QStringLiteral("/.local/share/Steam/steamapps/workshop/content/431960"));
     QVector<WallpaperItem> items = fromWorkshop(root);
+    if (qEnvironmentVariableIsSet("NYAA_TEST_GIFS")) {
+        QVector<WallpaperItem> gifs;
+        for (const auto &item : items) {
+            if (item.preview.endsWith(QLatin1String(".gif")))
+                gifs.push_back(item);
+        }
+        items = gifs;
+    }
     if (items.isEmpty())
         items = sample();
     return items;

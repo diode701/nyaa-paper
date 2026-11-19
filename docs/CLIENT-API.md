@@ -33,6 +33,16 @@ Q_INVOKABLE void stopAll();
 signals: infoChanged, runningChanged, engineExited(monitor, code), error(message)
 ```
 
+## 2b. Presentation preferences (implemented)
+
+```cpp
+class PreviewSettings {          // QML: Settings
+    Q_PROPERTY(int animationMode)   // 0 off, 1 hover, 2 always
+    Q_INVOKABLE void cycle();       // bound to G
+};
+```
+Stored at `~/.config/nyaa-paper/gui.ini` so dev and flatpak share one file.
+
 ## 3. Domain layer — this is what you write
 
 ```cpp

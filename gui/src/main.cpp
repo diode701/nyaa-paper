@@ -7,6 +7,7 @@
 #include "bridge/EngineBridge.hpp"
 #include "models/MockLibrary.hpp"
 #include "models/WallpaperModel.hpp"
+#include "ui/PreviewSettings.hpp"
 #include "ui/Theme.hpp"
 
 int main(int argc, char *argv[])
@@ -17,11 +18,13 @@ int main(int argc, char *argv[])
     app.setDesktopFileName(QStringLiteral("io.github.diode701.NyaaPaper"));
 
     Theme theme;
+    PreviewSettings settings;
     EngineBridge engine;
     WallpaperModel library;
     library.setAll(MockLibrary::load());
 
     qmlRegisterSingletonInstance("NyaaPaper.Theme", 1, 0, "Theme", &theme);
+    qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Settings", &settings);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Engine", &engine);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Library", &library);
 
@@ -37,7 +40,8 @@ int main(int argc, char *argv[])
     // Dev aid: NYAA_SHOT=/path/frame.png renders one frame and exits.
     if (qEnvironmentVariableIsSet("NYAA_SHOT")) {
         const QString path = qEnvironmentVariable("NYAA_SHOT");
-        QTimer::singleShot(1200, &app, [&qml, path] {
+        const int delay = qEnvironmentVariableIntValue("NYAA_SHOT_DELAY");
+        QTimer::singleShot(delay > 0 ? delay : 1200, &app, [&qml, path] {
             if (auto *window = qobject_cast<QQuickWindow *>(qml.rootObjects().value(0)))
                 window->grabWindow().save(path);
             QCoreApplication::quit();

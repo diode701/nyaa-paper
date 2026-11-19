@@ -6,13 +6,16 @@ import NyaaPaper.Theme 1.0
 Rectangle {
     id: root
     property int mode: 0
-    implicitHeight: 40
+    property string pageLabel: ""
+    implicitHeight: 34
     color: Theme.panel
+
+    readonly property int runningCount: Object.keys(Engine.running).length
 
     function hints() {
         if (mode === 0)
-            return [["\u2191\u2193\u2190\u2192", "move"], ["ENTER", "open"], ["/", "search"],
-                    ["M", "playlists"], ["CTRL+Q", "quit"]]
+            return [["\u2190\u2191\u2193\u2192", "move"], ["ENTER", "open"], ["/", "search"],
+                    ["M", "playlists"], ["G", "animations"], ["CTRL+Q", "quit"]]
         if (mode === 1)
             return [["CTRL+ENTER", "apply"], ["S", "stop"], ["L", "load last"],
                     ["A", "add to playlist"], ["ESC", "back"]]
@@ -28,35 +31,54 @@ Rectangle {
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 22
-        anchors.rightMargin: 22
-        spacing: 20
+        anchors.leftMargin: 18
+        anchors.rightMargin: 18
+        spacing: 16
 
         Repeater {
             model: root.hints()
             delegate: RowLayout {
                 required property var modelData
-                spacing: 6
+                spacing: 5
                 KeyCap { text: modelData[0] }
-                Text {
-                    text: modelData[1]
-                    color: Theme.muted
-                    font.pixelSize: 11
-                }
+                Text { text: modelData[1]; color: Theme.muted; font.pixelSize: 10 }
             }
         }
 
         Item { Layout.fillWidth: true }
 
         Text {
-            text: Library.count + " wallpapers"
+            text: Settings.animationMode === 2 ? "gif always"
+                : Settings.animationMode === 1 ? "gif on hover" : "gif off"
             color: Theme.dim
-            font.pixelSize: 11
+            font.pixelSize: 10
         }
         Text {
-            text: Engine.version
+            visible: Engine.mock
+            text: "mock"
+            color: Theme.accent
+            font.pixelSize: 10
+            font.family: Theme.mono
+        }
+        RowLayout {
+            spacing: 5
+            visible: root.runningCount > 0
+            Rectangle {
+                width: 5
+                height: 5
+                radius: 3
+                color: Theme.accent
+            }
+            Text {
+                text: root.runningCount + " running"
+                color: Theme.muted
+                font.pixelSize: 10
+            }
+        }
+        Text {
+            text: Library.count + " wallpapers" + (root.pageLabel !== "" ? "  " + root.pageLabel : "")
             color: Theme.dim
-            font.pixelSize: 11
+            font.pixelSize: 10
             font.family: Theme.mono
         }
     }

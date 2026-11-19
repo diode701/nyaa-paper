@@ -2,6 +2,7 @@
 
 #include <QAbstractListModel>
 #include <QString>
+#include <QVariantMap>
 #include <QVector>
 
 /// One row of the library, as the daemon reports it.
@@ -37,6 +38,8 @@ public:
 
     Q_INVOKABLE QString idAt(int row) const;
     Q_INVOKABLE QString titleAt(int row) const;
+    /// One row as {id,title,kind,preview} for the QML page deck.
+    Q_INVOKABLE QVariantMap at(int row) const;
 
 Q_SIGNALS:
     void filterChanged();

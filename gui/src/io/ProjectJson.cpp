@@ -75,6 +75,60 @@ Rgb parseColor(const QJsonValue &value)
     return {};
 }
 
+// project.json is hand-written by wallpaper authors, so numbers often arrive
+// as strings ("value": "1"). These mirror how Java's PropertyParser read them.
+
+/// PropertyParser.parseDouble: a number, or a string that parses as one.
+double toDouble(const QJsonValue &value, double fallback)
+{
+    if (value.isDouble())
+        return value.toDouble();
+    if (value.isString()) {
+        bool ok = false;
+        const double parsed = value.toString().trimmed().toDouble(&ok);
+        if (ok)
+            return parsed;
+    }
+    return fallback;
+}
+
+/// parseCombo: ((Number) raw).intValue() or Integer.parseInt(raw.toString()).
+int toInt(const QJsonValue &value, int fallback)
+{
+    if (value.isDouble())
+        return static_cast<int>(value.toDouble());
+    if (value.isString()) {
+        bool ok = false;
+        const int parsed = value.toString().trimmed().toInt(&ok);
+        if (ok)
+            return parsed;
+    }
+    return fallback;
+}
+
+/// parseBoolean: Boolean as is, Number != 0, or the strings "true" / "1".
+bool toBool(const QJsonValue &value)
+{
+    if (value.isBool())
+        return value.toBool();
+    if (value.isDouble())
+        return static_cast<int>(value.toDouble()) != 0;
+    const QString text = value.toString().trimmed().toLower();
+    return text == QLatin1String("true") || text == QLatin1String("1");
+}
+
+/// parseTextInput: prop.get("value").toString(), whatever the JSON type.
+QString toText(const QJsonValue &value)
+{
+    if (value.isString())
+        return value.toString();
+    if (value.isDouble())
+        return QString::number(value.toDouble(), 'g', 15);
+    if (value.isBool())
+        return value.toBool() ? QStringLiteral("true") : QStringLiteral("false");
+    return {};
+}
+
 Kind kindFromType(const QString &type)
 {
     if (type == "bool" || type == "boolean") return Kind::Bool;
@@ -124,30 +178,41 @@ std::vector<SettingDesc> parseProperties(const std::string &json)
         desc.order = property.value("order").toInt(std::numeric_limits<int>::max());
 
         const QJsonValue value = property.value("value");
+        bool malformed = false;   // PropertyParser's "Skipping malformed property"
         switch (desc.kind) {
         case Kind::Bool:
-            desc.boolean = value.isBool() ? value.toBool() : value.toInt() != 0;
+            desc.boolean = toBool(value);
             break;
         case Kind::Slider:
-            desc.number = value.toDouble();
-            desc.range.min = property.value("min").toDouble(0.0);
-            desc.range.max = property.value("max").toDouble(1.0);
-            desc.range.step = property.value("step").toDouble(0.01);
+            // Java defaults: value 0, min 0, max 100, step 1
+            desc.number = toDouble(value, 0.0);
+            desc.range.min = toDouble(property.value("min"), 0.0);
+            desc.range.max = toDouble(property.value("max"), 100.0);
+            desc.range.step = toDouble(property.value("step"), 1.0);
             if (desc.range.step <= 0.0)
-                desc.range.step = 0.01;
+                desc.range.step = 1.0;
             break;
         case Kind::Color:
             desc.color = parseColor(value);
             break;
         case Kind::Combo: {
-            desc.number = static_cast<double>(value.toInt());
+            desc.number = static_cast<double>(toInt(value, 0));
             const QJsonArray options = property.value("options").toArray();
             for (const QJsonValue &option : options) {
                 const QJsonObject object = option.toObject();
+                // item.optString("label", item.optString("text", "?"))
                 QString label = object.value("label").toString();
                 if (label.isEmpty())
-                    label = object.value("text").toString();
-                desc.options.emplace_back(object.value("value").toInt(), label.toStdString());
+                    label = object.value("text").toString(QStringLiteral("?"));
+                // Java: Integer.parseInt throws on "dark1"/"en", and
+                // parseFromWppr skips the whole property. Same here.
+                constexpr int kNotANumber = std::numeric_limits<int>::min();
+                const int key = toInt(object.value("value"), kNotANumber);
+                if (key == kNotANumber) {
+                    malformed = true;
+                    break;
+                }
+                desc.options.emplace_back(key, label.toStdString());
             }
             break;
         }
@@ -155,10 +220,13 @@ std::vector<SettingDesc> parseProperties(const std::string &json)
         case Kind::Group:
             break;
         default:
-            desc.text = value.toString().toStdString();
+            // textinput, file, directory, scenetexture
+            desc.text = toText(value).toStdString();
             break;
         }
 
+        if (malformed)
+            continue;
         out.push_back(std::move(desc));
     }
 

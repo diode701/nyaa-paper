@@ -47,6 +47,16 @@ QJsonObject toJson(const AppConfig &config)
     engine["layer"] = QString::fromStdString(config.engine.layer);
     engine["flags"] = flags;
 
+    QJsonObject gpu;
+    gpu["mode"] = QString::fromStdString(config.gpu.mode);
+    gpu["driPrimeNumber"] = config.gpu.driPrimeNumber;
+    gpu["glThreaded"] = config.gpu.glThreaded;
+
+    QJsonObject shot;
+    shot["enabled"] = config.screenshot.enabled;
+    shot["path"] = QString::fromStdString(config.screenshot.path);
+    shot["delay"] = config.screenshot.delay;
+
     QJsonObject ui;
     ui["monitor"] = QString::fromStdString(config.ui.monitor);
 
@@ -55,6 +65,8 @@ QJsonObject toJson(const AppConfig &config)
     root["paths"] = paths;
     root["preview"] = preview;
     root["engine"] = engine;
+    root["gpu"] = gpu;
+    root["screenshot"] = shot;
     root["ui"] = ui;
     return root;
 }
@@ -104,6 +116,16 @@ AppConfig fromJson(const QJsonObject &root)
     config.engine.layer = stringOr(engine, "layer", config.engine.layer);
     for (const QJsonValue &flag : engine.value("flags").toArray())
         config.engine.flags.push_back(flag.toString().toStdString());
+
+    const QJsonObject gpu = root.value("gpu").toObject();
+    config.gpu.mode = stringOr(gpu, "mode", config.gpu.mode);
+    config.gpu.driPrimeNumber = intOr(gpu, "driPrimeNumber", config.gpu.driPrimeNumber);
+    config.gpu.glThreaded = boolOr(gpu, "glThreaded", config.gpu.glThreaded);
+
+    const QJsonObject shot = root.value("screenshot").toObject();
+    config.screenshot.enabled = boolOr(shot, "enabled", config.screenshot.enabled);
+    config.screenshot.path = stringOr(shot, "path", config.screenshot.path);
+    config.screenshot.delay = intOr(shot, "delay", config.screenshot.delay);
 
     const QJsonObject ui = root.value("ui").toObject();
     config.ui.monitor = stringOr(ui, "monitor", config.ui.monitor);

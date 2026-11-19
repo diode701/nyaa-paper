@@ -88,3 +88,19 @@ QVariantMap WallpaperModel::at(int row) const
     out.insert(QStringLiteral("basePath"), item.basePath);
     return out;
 }
+
+QString WallpaperModel::previewFor(const QString &id) const
+{
+    for (const auto &item : m_all)
+        if (item.id == id)
+            return item.preview;
+    return {};
+}
+
+QString WallpaperModel::titleFor(const QString &id) const
+{
+    for (const auto &item : m_all)
+        if (item.id == id)
+            return item.title;
+    return id;
+}

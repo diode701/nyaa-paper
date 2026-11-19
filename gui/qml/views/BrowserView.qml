@@ -4,6 +4,8 @@ import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
 import "../components"
 
+/// The Java browser: a fixed 180px grid centred in the window, 15px gaps,
+/// 20px padding, and a status bar reading "Page X/Y | Title | ←↑↓→ move | …".
 Item {
     id: view
 
@@ -11,49 +13,46 @@ Item {
     signal playlists
     signal requestFocus
 
-    property string pageLabel: "1/1"
-
-    // The original app's geometry, unchanged: fixed 180px thumbs, 15px gaps,
-    // 20px margins, and the status bar taken out of the usable height.
-    readonly property int gap: Look.gap
-    readonly property int thumb: Look.thumb
-    readonly property int pad: Look.pad
-    readonly property int cols: Math.max(1, Math.floor((width - 2 * pad + gap) / (thumb + gap)))
-    readonly property int rows: Math.max(1, Math.floor((height - 2 * pad + gap) / (thumb + gap)))
+    // usable area excludes the 20px padding and the status bar
+    readonly property int cols: Math.max(1, Math.floor((width - 2 * Look.pad + Look.gap) / (Look.thumb + Look.gap)))
+    readonly property int rows: Math.max(1, Math.floor((height - 26 - 2 * Look.pad + Look.gap) / (Look.thumb + Look.gap)))
     readonly property int pageSize: cols * rows
-    readonly property int cellSize: thumb
-    readonly property string cursorTitle: (cursor >= 0 && cursor < pageItems.length)
-                                          ? pageItems[cursor].title : ""
-
     readonly property int pageCount: Math.max(1, Math.ceil(Library.count / pageSize))
+    readonly property string cursorTitle: (cursor >= 0 && cursor < pageItems.length) ? pageItems[cursor].title : ""
+
     property int page: 0
     property int cursor: 0
+    property string selectedId: ""
     property var pageItems: []
-    property int flipDir: 1
     property bool searchOpen: false
 
     function rebuild() {
+        if (page < 0)
+            page = 0
         var start = page * pageSize
         var items = []
         var n = Math.min(pageSize, Math.max(0, Library.count - start))
         for (var i = 0; i < n; ++i)
             items.push(Library.at(start + i))
         pageItems = items
-        pageLabel = (page + 1) + "/" + pageCount
+        // selection is remembered by id, like the Java app
+        if (selectedId !== "") {
+            var found = -1
+            for (var j = 0; j < items.length; ++j)
+                if (items[j].id === selectedId) { found = j; break }
+            cursor = found >= 0 ? found : 0
+        }
         if (cursor >= items.length)
             cursor = Math.max(0, items.length - 1)
+        if (items.length > 0)
+            selectedId = items[cursor].id
     }
 
-    function goTo(newPage, newCursor) {
+    function goTo(newPage) {
         if (newPage < 0 || newPage >= pageCount)
             return
-        flipDir = newPage > page ? 1 : -1
         page = newPage
-        cursor = Math.max(0, newCursor)
-        deck.x = flipDir * 42
-        deck.opacity = 0.3
         rebuild()
-        deckAnim.restart()
     }
 
     function move(dx, dy) {
@@ -61,17 +60,19 @@ Item {
             return
         var col = cursor % cols
         var row = Math.floor(cursor / cols)
-        if (dy < 0 && row === 0) {
-            goTo(page - 1, Math.min((rows - 1) * cols + col, pageSize - 1))
-            return
+        if (dy < 0 && row === 0 && page > 0) {
+            goTo(page - 1)
+            cursor = Math.min((rows - 1) * cols + col, pageItems.length - 1)
+        } else if (dy > 0 && row === rows - 1 && page < pageCount - 1) {
+            goTo(page + 1)
+            cursor = Math.min(col, pageItems.length - 1)
+        } else {
+            var next = cursor + dy * cols + dx
+            if (next >= 0 && next < pageItems.length)
+                cursor = next
         }
-        if (dy > 0 && row === rows - 1) {
-            goTo(page + 1, col)
-            return
-        }
-        var next = cursor + dy * cols + dx
-        if (next >= 0 && next < pageItems.length)
-            cursor = next
+        if (pageItems.length > 0)
+            selectedId = pageItems[cursor].id
     }
 
     function current() { return pageItems.length ? pageItems[cursor] : null }
@@ -99,66 +100,64 @@ Item {
     Component.onCompleted: rebuild()
     onVisibleChanged: if (visible) rebuild()
     onPageSizeChanged: {
-        page = 0
-        cursor = 0
+        page = Math.max(0, Math.min(page, pageCount - 1))
         rebuild()
     }
 
     Connections {
         target: Library
-        function onFilterChanged() {
-            view.page = 0
-            view.cursor = 0
-            view.rebuild()
-        }
+        function onFilterChanged() { view.page = 0; view.cursor = 0; view.rebuild() }
         function onCountChanged() { view.rebuild() }
     }
 
     Item {
-        id: deck
         anchors.fill: parent
+        anchors.bottomMargin: 26
 
         Grid {
             anchors.centerIn: parent
+            anchors.topMargin: Look.pad
+            anchors.bottomMargin: Look.pad
             columns: view.cols
             spacing: view.gap
 
             Repeater {
                 model: view.pageItems
                 delegate: Cell {
-                    width: view.thumb
-                    height: view.thumb
+                    preview: view.pageItems[index] ? view.pageItems[index].preview : ""
+                    title: view.pageItems[index] ? view.pageItems[index].title : ""
+                    width: Look.thumb
+                    height: Look.thumb
                     pageStart: view.page * view.pageSize
                     selected: index === view.cursor
                     onClicked: {
                         view.cursor = index
-                        view.openCurrent()
+                        view.selectedId = view.pageItems[index].id
                     }
                 }
             }
-        }
 
-        ParallelAnimation {
-            id: deckAnim
-            NumberAnimation {
-                target: deck
-                property: "x"
-                to: 0
-                duration: 170
-                easing.type: Easing.OutCubic
-            }
-            NumberAnimation { target: deck; property: "opacity"; to: 1; duration: 170 }
+            Keys.onReturnPressed: view.openCurrent()
         }
     }
 
     Text {
         anchors.centerIn: parent
+        anchors.verticalCenterOffset: -20
         visible: Library.count === 0
         text: "nothing here\nadd wallpapers in Steam"
-        color: Theme.dim
-        font.pixelSize: 14
+        color: "#aaaaaa"
+        font.pixelSize: 13
         horizontalAlignment: Text.AlignHCenter
-        lineHeight: 1.4
+    }
+
+    StatusBar {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        text: "Page " + (view.page + 1) + "/" + view.pageCount
+              + (view.cursorTitle !== "" ? " | " + view.cursorTitle : "")
+              + " | ←↑↓→ move | N/P page | Enter select | M playlists | Q quit"
     }
 
     Rectangle {
@@ -168,37 +167,31 @@ Item {
         opacity: view.searchOpen ? 1 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 140 } }
-        MouseArea {
-            anchors.fill: parent
-            onClicked: view.closeSearch(true)
-        }
     }
 
     Rectangle {
-        id: searchPanel
         width: Math.min(560, view.width - 80)
-        height: 44
-        radius: 22
-        color: Theme.panel
+        height: 40
+        radius: 4
+        color: "#2d2d2d"
         border.width: 1
-        border.color: Theme.accent
+        border.color: "#3a3a3a"
         anchors.horizontalCenter: parent.horizontalCenter
-        y: view.searchOpen ? 26 : -60
+        y: view.searchOpen ? 20 : -60
         opacity: view.searchOpen ? 1 : 0
         visible: opacity > 0
-        Behavior on y { NumberAnimation { duration: 170; easing.type: Easing.OutCubic } }
-        Behavior on opacity { NumberAnimation { duration: 120 } }
+        Behavior on y { NumberAnimation { duration: 140 } }
 
         TextField {
             id: search
             anchors.fill: parent
-            anchors.leftMargin: 20
-            anchors.rightMargin: 14
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
             background: Item {}
-            color: Theme.text
-            font.pixelSize: 14
+            color: "#ffffff"
+            font.pixelSize: 13
             placeholderText: "search wallpapers"
-            placeholderTextColor: Theme.dim
+            placeholderTextColor: "#aaaaaa"
             onTextChanged: Library.filter = text
             Keys.onEscapePressed: view.closeSearch(true)
             Keys.onReturnPressed: {

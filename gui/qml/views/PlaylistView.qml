@@ -1,193 +1,239 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "../components"
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
+import "../components"
 
+/// A 1:1 port of PlaylistManagerView: top bar, 180px monitor column, entry rows
+/// with thumbnails and reorder buttons, bottom control bar with mode/interval/loop.
 Item {
     id: view
 
     signal back
 
-    property int selected: 0
+    property string status: "Select a monitor"
+    property int selected: -1
 
     function select(delta) {
         const count = Playlist.entries.length
-        if (count === 0)
-            return
-        selected = Math.max(0, Math.min(count - 1, selected + delta))
+        if (count === 0) return
+        selected = Math.max(0, Math.min(count - 1, (selected < 0 ? 0 : selected + delta)))
     }
 
     function removeSelected() {
-        if (Playlist.entries.length > 0)
+        if (selected >= 0 && selected < Playlist.entries.length) {
             Playlist.removeAt(selected)
-    }
-
-    function handleKey(event) {
-        if (event.key === Qt.Key_Escape) {
-            back()
-            event.accepted = true
+            selected = Math.min(selected, Playlist.entries.length - 1)
         }
     }
 
     onVisibleChanged: {
-        if (visible)
+        if (visible) {
             Playlist.load(Engine.monitors.length > 0 ? Engine.monitors[0] : "")
+            status = "Select a monitor"
+        }
     }
 
-    RowLayout {
+    ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 24
-        spacing: 22
+        spacing: 0
 
-        ColumnLayout {
-            Layout.preferredWidth: 220
-            Layout.fillHeight: true
-            spacing: 8
+        Rectangle {
+            Layout.fillWidth: true
+            height: 50
+            color: "#2d2d2d"
 
-            Text {
-                text: "MONITORS"
-                color: Theme.muted
-                font.pixelSize: 10
-                font.letterSpacing: 2
-            }
-
-            Repeater {
-                model: Engine.monitors
-                delegate: Rectangle {
-                    required property int index
-                    required property string modelData
-                    Layout.fillWidth: true
-                    height: 46
-                    radius: 8
-                    color: Playlist.monitor === modelData ? Theme.panelAlt : "transparent"
-                    border.color: Playlist.monitor === modelData ? Theme.accent : Theme.line
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        anchors.leftMargin: 12
-                        text: modelData
-                        color: Theme.text
-                        font.pixelSize: 12
-                    }
-                    Rectangle {
-                        width: 6
-                        height: 6
-                        radius: 3
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.right: parent.right
-                        anchors.rightMargin: 12
-                        color: Engine.running[modelData] !== undefined ? Theme.accent : Theme.dim
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: Playlist.load(modelData)
-                    }
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 15
+                anchors.rightMargin: 15
+                spacing: 10
+                ActionButton {
+                    text: "← Back"
+                    onClicked: view.back()
+                }
+                Text {
+                    text: "Playlist Manager" + (Playlist.monitor !== "" ? " — " + Playlist.monitor : "")
+                    color: "#ffffff"
+                    font.pixelSize: 16
+                    font.bold: true
+                }
+                Item { Layout.fillWidth: true }
+                Text {
+                    text: "Esc/B: back | ↑↓: navigate | Del: remove | Space: play/pause"
+                    color: "#aaaaaa"
+                    font.pixelSize: 10
                 }
             }
-
-            Item { Layout.fillHeight: true }
         }
 
-        ColumnLayout {
+        RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.margins: 10
             spacing: 10
 
-            RowLayout {
-                Layout.fillWidth: true
-                Text {
-                    text: "PLAYLIST"
-                    color: Theme.muted
-                    font.pixelSize: 10
-                    font.letterSpacing: 2
-                }
-                Item { Layout.fillWidth: true }
-                Text {
-                    text: Playlist.state + (Playlist.index >= 0 ? "  ·  " + (Playlist.index + 1) : "")
-                    color: Theme.accent
-                    font.pixelSize: 10
-                    font.letterSpacing: 2
-                }
-            }
+            Rectangle {
+                Layout.preferredWidth: 180
+                Layout.fillHeight: true
+                color: "#2a2a2a"
+                radius: 5
 
-            Text {
-                visible: Playlist.entries.length === 0
-                text: "no entries yet — press A in the properties view to add the selected wallpaper"
-                color: Theme.dim
-                font.pixelSize: 12
-                wrapMode: Text.WordWrap
-                Layout.fillWidth: true
-            }
-
-            Repeater {
-                model: Playlist.entries
-                delegate: Rectangle {
-                    required property int index
-                    required property var modelData
-                    Layout.fillWidth: true
-                    height: 52
-                    radius: 8
-                    color: Playlist.index === index || view.selected === index ? Theme.panelAlt : "transparent"
-                    border.color: Playlist.index === index ? Theme.accent : (view.selected === index ? Theme.line : "#101418")
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12
-                        spacing: 14
-                        Text {
-                            text: ("0" + (index + 1)).slice(-2)
-                            color: Theme.dim
-                            font.family: Theme.mono
-                            font.pixelSize: 11
-                        }
-                        Text {
-                            text: "wallpaper " + modelData.wallpaperId
-                            color: Theme.text
-                            font.pixelSize: 13
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 5
+                    spacing: 5
+                    Repeater {
+                        model: Engine.monitors
+                        delegate: ActionButton {
+                            required property string modelData
                             Layout.fillWidth: true
+                            text: modelData
+                            bold: Playlist.monitor === modelData
+                            color: "#3a3a3a"
+                            onClicked: {
+                                Playlist.load(modelData)
+                                view.status = "Loaded playlist for " + modelData
+                            }
                         }
-                        Text {
-                            text: modelData.durationSec > 0
-                                  ? Math.round(modelData.durationSec) + "s"
-                                  : "interval"
-                            color: Theme.dim
-                            font.pixelSize: 10
-                            font.family: Theme.mono
+                    }
+                    Item { Layout.fillHeight: true }
+                }
+            }
+
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 5
+
+                    Repeater {
+                        model: Playlist.entries
+                        delegate: Rectangle {
+                            required property int index
+                            required property var modelData
+
+                            Layout.fillWidth: true
+                            height: 57
+                            radius: 4
+                            color: view.selected === index ? "#333333" : "#2a2a2a"
+                            border.width: view.selected === index ? 2 : 1
+                            border.color: view.selected === index ? Theme.accent : "#3a3a3a"
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.margins: 6
+                                spacing: 10
+
+                                Image {
+                                    Layout.preferredWidth: 80
+                                    Layout.preferredHeight: 45
+                                    source: Library.previewFor(modelData.wallpaperId)
+                                    fillMode: Image.PreserveAspectFit
+                                    asynchronous: true
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: Library.titleFor(modelData.wallpaperId)
+                                    color: "#d3d3d3"
+                                    font.pixelSize: 12
+                                    wrapMode: Text.WordWrap
+                                    maximumLineCount: 2
+                                    elide: Text.ElideRight
+                                }
+                                Column {
+                                    spacing: 0
+                                    ActionButton {
+                                        text: "↑"
+                                        implicitWidth: 22
+                                        implicitHeight: 20
+                                        onClicked: Playlist.move(index, index - 1)
+                                    }
+                                    ActionButton {
+                                        text: "↓"
+                                        implicitWidth: 22
+                                        implicitHeight: 20
+                                        onClicked: Playlist.move(index, index + 1)
+                                    }
+                                }
+                                Text {
+                                    text: "✕"
+                                    color: "#d9534f"
+                                    font.pixelSize: 12
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: Playlist.removeAt(index)
+                                    }
+                                }
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                z: -1
+                                onClicked: view.selected = index
+                            }
                         }
-                        ActionButton {
-                            text: "✕"
-                            onClicked: Playlist.removeAt(index)
-                        }
+                    }
+
+                    Text {
+                        visible: Playlist.entries.length === 0
+                        text: "No entries in playlist"
+                        color: "#aaaaaa"
+                        font.pixelSize: 11
+                        Layout.fillWidth: true
                     }
                 }
             }
+        }
 
-            Item { Layout.fillHeight: true }
+        Rectangle {
+            Layout.fillWidth: true
+            height: 56
+            color: "#2d2d2d"
 
             RowLayout {
-                Layout.fillWidth: true
-                spacing: 8
-                ActionButton {
-                    text: "▶ Play"
-                    onClicked: Playlist.play()
-                }
-                ActionButton {
-                    text: "⏸ Pause"
-                    onClicked: Playlist.pause()
-                }
-                ActionButton {
-                    text: "⏹ Stop"
-                    onClicked: Playlist.stop()
-                }
+                anchors.fill: parent
+                anchors.leftMargin: 15
+                anchors.rightMargin: 15
+                spacing: 10
+
+                ActionButton { text: "▶ Play"; color: Theme.accent; onClicked: Playlist.play() }
+                ActionButton { text: "⏸ Pause"; color: Theme.warning; onClicked: Playlist.pause() }
+                ActionButton { text: "⏹ Stop"; color: Theme.danger; onClicked: Playlist.stop() }
+                Rectangle { width: 1; height: 24; color: "#3a3a3a" }
+                ActionButton { text: "↺ Reset"; color: "#999999"; onClicked: Playlist.reset() }
+                ActionButton { text: "⏮ Prev"; color: "#888888"; onClicked: Playlist.prev() }
+                ActionButton { text: "Next ⏭"; color: "#888888"; onClicked: Playlist.next() }
+
                 Item { Layout.fillWidth: true }
-                Text {
-                    text: "space play/pause   ·   esc back"
-                    color: Theme.dim
-                    font.pixelSize: 10
+
+                Text { text: "Mode:"; color: "#d3d3d3"; font.pixelSize: 12 }
+                ComboBox {
+                    Layout.preferredWidth: 130
+                    implicitHeight: 28
+                    font.pixelSize: 12
+                    model: ["SEQUENTIAL", "RANDOM"]
+                    currentIndex: Playlist.mode === "RANDOM" ? 1 : 0
+                    onActivated: Playlist.setMode(currentText)
                 }
+                Text { text: "Interval (s):"; color: "#d3d3d3"; font.pixelSize: 12 }
+                SpinBox {
+                    Layout.preferredWidth: 90
+                    from: 5
+                    to: 3600
+                    value: Math.max(5, Playlist.interval)
+                    onValueModified: Playlist.setInterval(value)
+                }
+                CheckBox {
+                    text: "Loop"
+                    checked: Playlist.loop
+                    onToggled: Playlist.setLoop(checked)
+                }
+                Text { text: view.status; color: "#cccccc"; font.pixelSize: 11 }
             }
         }
     }

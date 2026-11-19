@@ -30,6 +30,12 @@ int ConfigBridge::fps() const { return m_config.engine.fps; }
 QString ConfigBridge::scaling() const { return toQ(m_config.engine.scaling); }
 QString ConfigBridge::clampMode() const { return toQ(m_config.engine.clamp); }
 QString ConfigBridge::layer() const { return toQ(m_config.engine.layer); }
+QString ConfigBridge::gpuMode() const { return toQ(m_config.gpu.mode); }
+int ConfigBridge::driPrimeNumber() const { return m_config.gpu.driPrimeNumber; }
+bool ConfigBridge::glThreaded() const { return m_config.gpu.glThreaded; }
+bool ConfigBridge::screenshotEnabled() const { return m_config.screenshot.enabled; }
+QString ConfigBridge::screenshotPath() const { return toQ(m_config.screenshot.path); }
+int ConfigBridge::screenshotDelay() const { return m_config.screenshot.delay; }
 
 void ConfigBridge::setWorkshopPath(const QString &value)
 {
@@ -128,6 +134,37 @@ bool ConfigBridge::flagEnabled(const QString &name) const
             return true;
     }
     return false;
+}
+
+void ConfigBridge::setGpuMode(const QString &value)
+{
+    m_config.gpu.mode = toS(value);
+    emit changed();
+}
+void ConfigBridge::setDriPrimeNumber(int value)
+{
+    m_config.gpu.driPrimeNumber = value;
+    emit changed();
+}
+void ConfigBridge::setGlThreaded(bool value)
+{
+    m_config.gpu.glThreaded = value;
+    emit changed();
+}
+void ConfigBridge::setScreenshotEnabled(bool value)
+{
+    m_config.screenshot.enabled = value;
+    emit changed();
+}
+void ConfigBridge::setScreenshotPath(const QString &value)
+{
+    m_config.screenshot.path = toS(value);
+    emit changed();
+}
+void ConfigBridge::setScreenshotDelay(int value)
+{
+    m_config.screenshot.delay = value;
+    emit changed();
 }
 
 void ConfigBridge::setFlag(const QString &name, bool enabled)

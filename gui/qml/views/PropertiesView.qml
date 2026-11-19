@@ -1,11 +1,13 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "../components"
+import QtQuick.Dialogs
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
 import "../components"
 
+/// A 1:1 port of WallpaperPropertiesView: top bar, tab pane with one card per
+/// setting, GPU section, Screenshot section, bottom bar with status + buttons.
 Item {
     id: view
 
@@ -16,14 +18,12 @@ Item {
     property string wallpaperPreview: ""
     property string wallpaperBasePath: ""
     property string targetMonitor: Engine.monitors.length > 0 ? Engine.monitors[0] : ""
+    property string status: "Ready"
     property bool showGlobal: false
     property bool startGlobal: false
-    onStartGlobalChanged: if (startGlobal) showGlobal = true
-
-    readonly property int leftWidth: Math.min(540, Math.max(320, view.width * 0.26))
-
     property bool miniOpen: false
     property bool startMini: false
+    onStartGlobalChanged: if (startGlobal) showGlobal = true
     onStartMiniChanged: if (startMini) toggleMini()
 
     function toggleMini() {
@@ -33,18 +33,37 @@ Item {
     }
 
     function applyCurrent() {
+        if (targetMonitor === "") { status = "Please select a monitor."; return }
+        if (Config.screenshotEnabled && Config.screenshotPath === "") {
+            status = "Please enter a screenshot output path."; return
+        }
+        status = "Applying..."
         Engine.applyWallpaper(targetMonitor, wallpaperId, wallpaperBasePath)
         Config.saveApplied(targetMonitor, wallpaperId, Properties.values())
+        status = "Applied to " + targetMonitor
     }
 
     function addCurrent() {
+        if (targetMonitor === "") { status = "Please select a monitor first."; return }
         Playlist.add(Engine.playlistEntry(targetMonitor, wallpaperId, wallpaperBasePath))
+        status = "Added to " + targetMonitor + " playlist (" + Playlist.entries.length + " entries)"
     }
 
     function loadLast() {
+        if (targetMonitor === "") { status = "Please select a monitor first."; return }
         const saved = Config.loadApplied(targetMonitor)
-        if (saved.__wallpaperId === wallpaperId)
-            Properties.applyValues(saved)
+        if (saved.__wallpaperId !== wallpaperId) {
+            status = "No saved settings for this wallpaper on " + targetMonitor
+            return
+        }
+        Properties.applyValues(saved)
+        status = "Loaded saved settings for " + targetMonitor
+    }
+
+    function stopCurrent() {
+        if (targetMonitor === "") { status = "Please select a monitor."; return }
+        Engine.stop(targetMonitor)
+        status = "Stopped on " + targetMonitor
     }
 
     function cycleMonitor(delta) {
@@ -55,66 +74,619 @@ Item {
         targetMonitor = monitors[next]
     }
 
-    /// 1-based, like the Java app: 1..9 then 0 for the tenth.
     function selectMonitorByIndex(index) {
         const monitors = Engine.monitors
         if (index >= 0 && index < monitors.length)
             targetMonitor = monitors[index]
     }
 
-    function handleKey(event) {
-        if (event.key === Qt.Key_Escape) {
-            back()
-            event.accepted = true
-        }
-    }
-
     onVisibleChanged: {
         if (visible) {
             Properties.loadWallpaper(wallpaperBasePath)
-            list.forceActiveFocus()
+            status = "Loaded " + Properties.count + " custom properties"
         }
     }
     onWallpaperBasePathChanged: if (visible) Properties.loadWallpaper(wallpaperBasePath)
 
-    // Mini playlist panel: the Java app's Ctrl+L, sliding in over the content.
-    Rectangle {
-        id: miniPanel
-        visible: view.miniOpen
-        anchors.left: parent.left
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 0
+
+        // ---- top bar ------------------------------------------------------
+        Rectangle {
+            Layout.fillWidth: true
+            height: 50
+            color: "#2d2d2d"
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 15
+                anchors.rightMargin: 15
+                spacing: 10
+
+                ActionButton { text: "← Back"; onClicked: view.back() }
+
+                ComboBox {
+                    id: monitorCombo
+                    Layout.preferredWidth: 140
+                    implicitHeight: 30
+                    font.pixelSize: 12
+                    editable: true
+                    model: Engine.monitors
+                    currentIndex: Math.max(0, Engine.monitors.indexOf(view.targetMonitor))
+                    onActivated: view.targetMonitor = currentText
+                    onAccepted: view.targetMonitor = editText
+                    background: Rectangle { color: "#444444"; radius: 3; border.color: "#555555" }
+                }
+
+                ActionButton { text: "Load last"; onClicked: view.loadLast() }
+                ActionButton { text: "Add to Playlist"; color: Theme.success; onClicked: view.addCurrent() }
+                ActionButton { text: "▶"; implicitWidth: 32; onClicked: view.toggleMini() }
+                Item { Layout.fillWidth: true }
+
+                Text {
+                    text: "Properties: " + view.wallpaperTitle
+                    color: "#ffffff"
+                    font.pixelSize: 16
+                    font.bold: true
+                    elide: Text.ElideRight
+                    Layout.maximumWidth: view.width * 0.4
+                }
+            }
+        }
+
+        // ---- tabs ---------------------------------------------------------
+        Rectangle {
+            Layout.fillWidth: true
+            height: 34
+            color: "#2d2d2d"
+
+            Row {
+                anchors.left: parent.left
+                anchors.leftMargin: 10
+                anchors.bottom: parent.bottom
+                Repeater {
+                    model: ["Custom Properties", "Global Options"]
+                    delegate: Rectangle {
+                        required property int index
+                        required property string modelData
+                        width: tabLabel.implicitWidth + 30
+                        height: 30
+                        color: (index === 1) === view.showGlobal ? "#1e1e1e" : "#3a3a3a"
+                        border.color: "#555555"
+                        Text {
+                            id: tabLabel
+                            anchors.centerIn: parent
+                            text: modelData
+                            color: "#ffffff"
+                            font.pixelSize: 12
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: view.showGlobal = index === 1
+                        }
+                    }
+                }
+            }
+        }
+
+        // ---- custom properties -------------------------------------------
+        ScrollView {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: !view.showGlobal
+            clip: true
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+            ColumnLayout {
+                width: parent.width
+                spacing: 15
+                Layout.margins: 20
+
+                Repeater {
+                    model: Properties
+                    delegate: Rectangle {
+                        required property int index
+                        required property int kind
+                        required property string name
+                        required property string label
+                        required property var display
+                        required property var settingValue
+                        required property var minimum
+                        required property var maximum
+                        required property var step
+                        required property var options
+                        required property bool isGroup
+
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 20
+                        Layout.rightMargin: 20
+                        implicitHeight: inner.implicitHeight + 20
+                        radius: 5
+                        color: isGroup ? "#333333" : "#2a2a2a"
+
+                        ColumnLayout {
+                            id: inner
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.margins: 10
+                            spacing: 5
+
+                            // bool: checkbox carries its own label
+                            CheckBox {
+                                visible: kind === 0
+                                text: label
+                                checked: settingValue === true
+                                font.pixelSize: 12
+                                onToggled: Properties.setValue(name, checked)
+                            }
+
+                            // slider: label + slider + value
+                            RowLayout {
+                                visible: kind === 1
+                                spacing: 10
+                                Text { text: label; color: "#d3d3d3"; font.pixelSize: 12 }
+                                Slider {
+                                    Layout.preferredWidth: 220
+                                    from: minimum
+                                    to: maximum
+                                    stepSize: step
+                                    value: typeof settingValue === "number" ? settingValue : 0
+                                    onMoved: Properties.setValue(name, value)
+                                }
+                                Text {
+                                    text: Number(settingValue).toFixed(2)
+                                    color: "#d3d3d3"
+                                    font.pixelSize: 12
+                                    Layout.preferredWidth: 44
+                                }
+                                Item { Layout.fillWidth: true }
+                            }
+
+                            // color: label + swatch/hex field
+                            RowLayout {
+                                visible: kind === 2
+                                spacing: 10
+                                Text { text: label; color: "#d3d3d3"; font.pixelSize: 12 }
+                                Rectangle {
+                                    width: 24; height: 24; radius: 3
+                                    border.color: "#555555"
+                                    color: String(display).match(/^#[0-9a-fA-F]{6}$/) ? String(display) : "#000000"
+                                }
+                                TextField {
+                                    Layout.preferredWidth: 140
+                                    text: String(display)
+                                    color: "#ffffff"
+                                    font.pixelSize: 12
+                                    onEditingFinished: Properties.setValue(name, text)
+                                }
+                                Item { Layout.fillWidth: true }
+                            }
+
+                            // combo: label above, box below
+                            Text { visible: kind === 3; text: label; color: "#d3d3d3"; font.pixelSize: 12 }
+                            ComboBox {
+                                visible: kind === 3
+                                Layout.preferredWidth: 240
+                                implicitHeight: 30
+                                font.pixelSize: 12
+                                model: options
+                                currentIndex: Math.max(0, options.indexOf(String(display)))
+                                onActivated: Properties.setValue(name, currentText)
+                                background: Rectangle { color: "#444444"; radius: 3; border.color: "#555555" }
+                            }
+
+                            // text: a wrapped grey label
+                            Text {
+                                visible: kind === 4
+                                text: label
+                                color: "#aaaaaa"
+                                font.pixelSize: 13
+                                wrapMode: Text.WordWrap
+                                Layout.fillWidth: true
+                            }
+
+                            // group: bold header
+                            Text {
+                                visible: isGroup
+                                text: label
+                                color: "#e0e0e0"
+                                font.pixelSize: 14
+                                font.bold: true
+                                wrapMode: Text.WordWrap
+                                Layout.fillWidth: true
+                            }
+
+                            // textinput / file / directory / texture
+                            Text {
+                                visible: kind === 6 || kind === 7 || kind === 8 || kind === 9
+                                text: label
+                                color: "#d3d3d3"
+                                font.pixelSize: 12
+                            }
+                            RowLayout {
+                                visible: kind === 6 || kind === 7 || kind === 8 || kind === 9
+                                spacing: 8
+                                TextField {
+                                    Layout.preferredWidth: 350
+                                    text: String(display)
+                                    color: "#ffffff"
+                                    font.pixelSize: 12
+                                    selectByMouse: true
+                                    onEditingFinished: Properties.setValue(name, text)
+                                }
+                                ActionButton {
+                                    visible: kind === 7 || kind === 8 || kind === 9
+                                    text: "Browse..."
+                                    onClicked: {
+                                        browse.kind = kind
+                                        browse.name = name
+                                        if (kind === 8) folderDialog.open()
+                                        else fileDialog.open()
+                                    }
+                                }
+                                Item { Layout.fillWidth: true }
+                            }
+                        }
+                    }
+                }
+
+                Text {
+                    visible: Properties.count === 0
+                    text: "This wallpaper has no customizable properties."
+                    color: "#d3d3d3"
+                    font.pixelSize: 12
+                    Layout.fillWidth: true
+                }
+            }
+        }
+
+        // ---- global options ----------------------------------------------
+        ScrollView {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: view.showGlobal
+            clip: true
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+            ColumnLayout {
+                width: parent.width
+                spacing: 15
+
+                Repeater {
+                    model: GlobalOptions
+                    delegate: Rectangle {
+                        required property string name
+                        required property string label
+                        required property int kind
+                        required property var settingValue
+                        required property var boolValue
+                        required property var options
+
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 20
+                        Layout.rightMargin: 20
+                        implicitHeight: inner.implicitHeight + 20
+                        radius: 5
+                        color: "#2a2a2a"
+
+                        ColumnLayout {
+                            id: inner
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.margins: 10
+                            spacing: 5
+
+                            Text {
+                                text: label
+                                color: "#e0e0e0"
+                                font.bold: true
+                                font.pixelSize: 12
+                                visible: kind !== 5
+                            }
+
+                            RowLayout {
+                                visible: kind === 0
+                                spacing: 10
+                                CheckBox {
+                                    text: "Mute"
+                                    checked: boolValue === true
+                                    onToggled: GlobalOptions.setValue(name, checked)
+                                }
+                                Slider {
+                                    Layout.preferredWidth: 220
+                                    from: 0
+                                    to: 100
+                                    stepSize: 5
+                                    value: typeof settingValue === "number" ? settingValue : 70
+                                    enabled: !boolValue
+                                    onMoved: GlobalOptions.setValue(name, Math.round(value))
+                                }
+                                Text {
+                                    text: String(settingValue)
+                                    color: "#d3d3d3"
+                                    font.pixelSize: 12
+                                    Layout.preferredWidth: 34
+                                }
+                                Item { Layout.fillWidth: true }
+                            }
+
+                            RowLayout {
+                                visible: kind === 1
+                                spacing: 10
+                                CheckBox {
+                                    text: "Limit FPS"
+                                    checked: boolValue === true
+                                    onToggled: GlobalOptions.setValue(name, checked)
+                                }
+                                SpinBox {
+                                    from: 0
+                                    to: 240
+                                    value: typeof settingValue === "number" ? settingValue : 30
+                                    enabled: boolValue === true
+                                    onValueModified: GlobalOptions.setValue(name, value)
+                                }
+                                Item { Layout.fillWidth: true }
+                            }
+
+                            ComboBox {
+                                visible: kind === 2
+                                Layout.preferredWidth: 240
+                                implicitHeight: 30
+                                font.pixelSize: 12
+                                model: ["stretch", "fit", "fill", "default"]
+                                currentIndex: Math.max(0, model.indexOf(String(settingValue)))
+                                onActivated: GlobalOptions.setValue(name, currentText)
+                            }
+
+                            RowLayout {
+                                visible: kind === 3
+                                spacing: 10
+                                CheckBox {
+                                    text: "Enable clamping"
+                                    checked: boolValue === true
+                                    onToggled: GlobalOptions.setValue(name, checked)
+                                }
+                                ComboBox {
+                                    Layout.preferredWidth: 160
+                                    implicitHeight: 30
+                                    font.pixelSize: 12
+                                    model: ["clamp", "border", "repeat"]
+                                    currentIndex: Math.max(0, model.indexOf(String(settingValue)))
+                                    enabled: boolValue === true
+                                    onActivated: GlobalOptions.setValue(name, currentText)
+                                }
+                                Item { Layout.fillWidth: true }
+                            }
+
+                            ComboBox {
+                                visible: kind === 4
+                                Layout.preferredWidth: 240
+                                implicitHeight: 30
+                                font.pixelSize: 12
+                                model: ["", "background", "bottom", "top", "overlay"]
+                                currentIndex: Math.max(0, model.indexOf(String(settingValue)))
+                                onActivated: GlobalOptions.setValue(name, currentText)
+                            }
+
+                            CheckBox {
+                                visible: kind === 5
+                                text: label
+                                checked: boolValue === true
+                                font.pixelSize: 12
+                                onToggled: GlobalOptions.setValue(name, checked)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ---- GPU ----------------------------------------------------------
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.leftMargin: 20
+            Layout.rightMargin: 20
+            implicitHeight: gpuColumn.implicitHeight + 20
+            radius: 5
+            color: "#2a2a2a"
+
+            ColumnLayout {
+                id: gpuColumn
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.margins: 10
+                spacing: 6
+
+                Text { text: "GPU"; color: "#ffffff"; font.pixelSize: 16 }
+
+                RadioButton {
+                    text: "Default (auto)"
+                    checked: Config.gpuMode === "DEFAULT"
+                    onToggled: if (checked) Config.gpuMode = "DEFAULT"
+                }
+                RadioButton {
+                    text: "DRI_PRIME (AMD/Intel)"
+                    checked: Config.gpuMode === "DRI_PRIME"
+                    onToggled: if (checked) Config.gpuMode = "DRI_PRIME"
+                }
+                RowLayout {
+                    spacing: 10
+                    Text { text: "GPU index:"; color: "#d3d3d3"; font.pixelSize: 12 }
+                    SpinBox {
+                        from: 0
+                        to: 9
+                        value: Config.driPrimeNumber
+                        enabled: Config.gpuMode === "DRI_PRIME"
+                        onValueModified: Config.driPrimeNumber = value
+                    }
+                    Item { Layout.fillWidth: true }
+                }
+                RadioButton {
+                    text: "NVIDIA Prime Offload"
+                    checked: Config.gpuMode === "NVIDIA"
+                    onToggled: if (checked) Config.gpuMode = "NVIDIA"
+                }
+                CheckBox {
+                    text: "Disable GL threaded optimizations (fixes GLFW/OpenGL issues)"
+                    checked: Config.glThreaded
+                    font.pixelSize: 12
+                    onToggled: Config.glThreaded = checked
+                }
+            }
+        }
+
+        // ---- screenshot ---------------------------------------------------
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.leftMargin: 20
+            Layout.rightMargin: 20
+            implicitHeight: shotColumn.implicitHeight + 20
+            radius: 5
+            color: "#2a2a2a"
+
+            ColumnLayout {
+                id: shotColumn
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.margins: 10
+                spacing: 6
+
+                Text { text: "📸 Screenshot (for PyWAL etc.)"; color: "#ffffff"; font.pixelSize: 16 }
+                CheckBox {
+                    text: "Generate screenshot on apply"
+                    checked: Config.screenshotEnabled
+                    onToggled: Config.screenshotEnabled = checked
+                }
+                RowLayout {
+                    spacing: 10
+                    Text { text: "Output file:"; color: "#d3d3d3"; font.pixelSize: 12 }
+                    TextField {
+                        Layout.preferredWidth: 300
+                        text: Config.screenshotPath
+                        enabled: Config.screenshotEnabled
+                        placeholderText: "/path/to/screenshot.png"
+                        onEditingFinished: Config.screenshotPath = text
+                    }
+                    Item { Layout.fillWidth: true }
+                }
+                RowLayout {
+                    spacing: 10
+                    Text { text: "Delay (frames):"; color: "#d3d3d3"; font.pixelSize: 12 }
+                    SpinBox {
+                        from: 0
+                        to: 100
+                        value: Config.screenshotDelay
+                        enabled: Config.screenshotEnabled
+                        onValueModified: Config.screenshotDelay = value
+                    }
+                    Item { Layout.fillWidth: true }
+                }
+            }
+        }
+
+        // ---- bottom bar ---------------------------------------------------
+        Rectangle {
+            Layout.fillWidth: true
+            height: 62
+            color: "#2d2d2d"
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 15
+                anchors.rightMargin: 15
+                spacing: 10
+
+                Text {
+                    text: view.status
+                    color: "#cccccc"
+                    font.pixelSize: 12
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                }
+                ActionButton {
+                    text: "Apply to Monitor"
+                    color: Theme.accent
+                    bold: true
+                    onClicked: view.applyCurrent()
+                }
+                ActionButton {
+                    text: "Stop on Monitor"
+                    color: Theme.danger
+                    onClicked: view.stopCurrent()
+                }
+            }
+        }
+    }
+
+    // ---- mini panel: right side, hover strip, 200ms slide, 400ms hide -----
+    readonly property int panelWidth: 300
+
+    Timer {
+        id: hideTimer
+        interval: 400
+        onTriggered: view.miniOpen = false
+    }
+
+    MouseArea {
+        width: 10
+        anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        width: 300
-        color: Theme.panel
-        border.color: Theme.line
+        hoverEnabled: true
+        onEntered: { hideTimer.stop(); view.miniOpen = true }
+    }
+
+    Rectangle {
+        id: miniPanel
+        width: view.panelWidth
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        transform: Translate {
+            x: view.miniOpen ? 0 : view.panelWidth
+            Behavior on x { NumberAnimation { duration: 200 } }
+        }
+        color: "#252525"
+        border.color: "#3a3a3a"
+        border.width: 1
         z: 20
+
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            onEntered: hideTimer.stop()
+            onExited: hideTimer.start()
+        }
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 14
+            anchors.margins: 10
             spacing: 8
 
             RowLayout {
                 Layout.fillWidth: true
-                Text {
-                    text: "PLAYLIST"
-                    color: Theme.accent
-                    font.pixelSize: 10
-                    font.letterSpacing: 3
-                    font.bold: true
-                }
+                Text { text: "Playlist — " + view.targetMonitor; color: "#ffffff"; font.pixelSize: 14 }
                 Item { Layout.fillWidth: true }
                 Text {
-                    text: Playlist.state
-                    color: Theme.dim
-                    font.pixelSize: 10
+                    text: "✕"
+                    color: "#aaaaaa"
+                    font.pixelSize: 14
+                    MouseArea { anchors.fill: parent; onClicked: view.miniOpen = false }
                 }
             }
+
             Text {
-                text: view.targetMonitor
-                color: Theme.dim
-                font.pixelSize: 10
-                font.family: Theme.mono
+                visible: Playlist.entries.length === 0
+                text: "No entries. Use 'Add to Playlist' button."
+                color: "#aaaaaa"
+                font.pixelSize: 11
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
             }
 
             ListView {
@@ -123,460 +695,53 @@ Item {
                 Layout.fillHeight: true
                 clip: true
                 model: Playlist.entries
-                spacing: 2
+                spacing: 5
 
                 delegate: Rectangle {
                     required property int index
                     required property var modelData
                     width: miniList.width
-                    height: 40
-                    radius: 6
-                    color: Playlist.index === index ? Theme.panelAlt : "transparent"
-
+                    height: 34
+                    radius: 4
+                    color: Playlist.index === index ? "#333333" : "#2a2a2a"
+                    border.color: Playlist.index === index ? Theme.accent : "#3a3a3a"
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.left: parent.left
-                        anchors.leftMargin: 10
-                        text: ("0" + (index + 1)).slice(-2) + "  " + modelData.wallpaperId
-                        color: Playlist.index === index ? Theme.accent : Theme.text
+                        anchors.leftMargin: 6
+                        text: modelData.wallpaperId
+                        color: "#d3d3d3"
                         font.pixelSize: 11
-                        font.family: Theme.mono
                     }
                 }
             }
 
             RowLayout {
-                Layout.fillWidth: true
-                spacing: 6
-                ActionButton { text: "▶"; onClicked: Playlist.play() }
-                ActionButton { text: "⏸"; onClicked: Playlist.pause() }
-                ActionButton { text: "⏭"; onClicked: Playlist.next() }
-                ActionButton { text: "⏹"; onClicked: Playlist.stop() }
-            }
-            Text {
-                Layout.fillWidth: true
-                text: "↑↓ select · DEL remove · space · N/P · esc close"
-                color: Theme.dim
-                font.pixelSize: 9
-                wrapMode: Text.WordWrap
+                Layout.alignment: Qt.AlignHCenter
+                spacing: 5
+                ActionButton { text: "▶"; implicitWidth: 28; onClicked: Playlist.play() }
+                ActionButton { text: "⏸"; implicitWidth: 28; onClicked: Playlist.pause() }
+                ActionButton { text: "⏹"; implicitWidth: 28; onClicked: Playlist.stop() }
+                ActionButton { text: "↺"; implicitWidth: 28; onClicked: Playlist.prev() }
+                ActionButton { text: "⏮"; implicitWidth: 28; onClicked: Playlist.prev() }
+                ActionButton { text: "⏭"; implicitWidth: 28; onClicked: Playlist.next() }
             }
         }
     }
 
-    RowLayout {
-        anchors.fill: parent
-        anchors.margins: 24
-        anchors.leftMargin: view.miniOpen ? 324 : 24
-        spacing: 22
-
-        // ---- left: what is selected -------------------------------------
-        ColumnLayout {
-            Layout.preferredWidth: view.leftWidth
-            Layout.fillHeight: true
-            spacing: 14
-
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: view.leftWidth
-                radius: Theme.radius
-                border.color: Theme.line
-                clip: true
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: "#1B2A33" }
-                    GradientStop { position: 1.0; color: "#0C1116" }
-                }
-
-                Image {
-                    anchors.fill: parent
-                    anchors.margins: 6
-                    source: view.wallpaperPreview
-                    fillMode: Image.PreserveAspectFit
-                    asynchronous: true
-                    visible: view.wallpaperPreview !== ""
-                }
-                Text {
-                    anchors.centerIn: parent
-                    visible: view.wallpaperPreview === ""
-                    text: "PREVIEW"
-                    color: Theme.dim
-                    font.pixelSize: 11
-                    font.letterSpacing: 3
-                }
-            }
-
-            Text {
-                text: view.wallpaperTitle !== "" ? view.wallpaperTitle : "no selection"
-                color: Theme.text
-                font.pixelSize: Math.max(18, Math.round(view.height * 0.026))
-                font.bold: true
-                font.letterSpacing: 1
-                elide: Text.ElideRight
-                Layout.fillWidth: true
-            }
-            Text {
-                text: view.wallpaperId !== "" ? "id " + view.wallpaperId : ""
-                color: Theme.dim
-                font.pixelSize: 11
-                font.family: Theme.mono
-            }
-
-            Rectangle { Layout.fillWidth: true; height: 1; color: Theme.line }
-
-            Text {
-                text: "TARGET MONITOR"
-                color: Theme.muted
-                font.pixelSize: 10
-                font.letterSpacing: 2
-            }
-
-            Flow {
-                Layout.fillWidth: true
-                spacing: 8
-                Repeater {
-                    model: Engine.monitors
-                    delegate: Rectangle {
-                        required property string modelData
-                        width: 108
-                        height: 34
-                        radius: 8
-                        color: modelData === view.targetMonitor ? Theme.accentDim : Theme.panelAlt
-                        border.color: modelData === view.targetMonitor ? Theme.accent : Theme.line
-                        Text {
-                            anchors.centerIn: parent
-                            text: modelData
-                            color: modelData === view.targetMonitor ? Theme.accent : Theme.muted
-                            font.pixelSize: 12
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: view.targetMonitor = modelData
-                        }
-                    }
-                }
-            }
-
-            Item { Layout.fillHeight: true }
-        }
-
-        // ---- right: properties ------------------------------------------
-        ColumnLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 0
-
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 18
-                Text {
-                    text: "CUSTOM"
-                    color: view.showGlobal ? Theme.dim : Theme.accent
-                    font.pixelSize: 11
-                    font.letterSpacing: 3
-                    font.bold: true
-                    MouseArea { anchors.fill: parent; onClicked: view.showGlobal = false }
-                }
-                Text {
-                    text: "GLOBAL"
-                    color: view.showGlobal ? Theme.accent : Theme.dim
-                    font.pixelSize: 11
-                    font.letterSpacing: 3
-                    font.bold: true
-                    MouseArea { anchors.fill: parent; onClicked: view.showGlobal = true }
-                }
-                Item { Layout.fillWidth: true }
-                Text {
-                    text: view.showGlobal ? "engine defaults (edit in settings, S)"
-                                          : Properties.count + " properties"
-                    color: Theme.dim
-                    font.pixelSize: 11
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.topMargin: 12
-                Layout.bottomMargin: 4
-                height: 1
-                color: Theme.line
-            }
-
-            ListView {
-                id: list
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                clip: true
-                focus: true
-                visible: !view.showGlobal
-                model: Properties
-                spacing: 2
-
-                delegate: Rectangle {
-                    required property int index
-                    required property int kind
-                    required property string name
-                    required property string label
-                    required property var display
-                    required property var settingValue
-                    required property var minimum
-                    required property var maximum
-                    required property var step
-                    required property var options
-                    required property bool isGroup
-
-                    width: list.width
-                    height: isGroup ? 42 : 50
-                    radius: 6
-                    color: isGroup ? Theme.panelAlt : "transparent"
-
-                    Text {
-                        visible: isGroup
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        text: label
-                        color: Theme.accent
-                        font.pixelSize: 11
-                        font.letterSpacing: 2
-                        font.bold: true
-                    }
-
-                    Text {
-                        visible: !isGroup
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        width: 250
-                        text: label
-                        color: Theme.text
-                        font.pixelSize: 12
-                        elide: Text.ElideRight
-                    }
-
-                    CheckBox {
-                        visible: !isGroup && kind === 0
-                        font.pixelSize: 12
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.right: parent.right
-                        anchors.rightMargin: 12
-                        checked: value === true
-                        onToggled: Properties.setValue(name, checked)
-                    }
-
-                    Row {
-                        visible: !isGroup && kind === 1
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.right: parent.right
-                        anchors.rightMargin: 12
-                        spacing: 10
-
-                        Slider {
-                            width: 220
-                            from: minimum
-                            to: maximum
-                            stepSize: step
-                            value: typeof settingValue === "number" ? settingValue : 0
-                            onMoved: Properties.setValue(name, value)
-                        }
-                        Text {
-                            width: 54
-                            text: String(display)
-                            color: Theme.muted
-                            font.pixelSize: 11
-                            font.family: Theme.mono
-                        }
-                    }
-
-                    ComboBox {
-                        visible: !isGroup && kind === 3
-                        implicitHeight: 38
-                        font.pixelSize: 12
-                        leftPadding: 10
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.right: parent.right
-                        anchors.rightMargin: 12
-                        width: 200
-                        model: options
-                        currentIndex: Math.max(0, options.indexOf(display))
-                        onActivated: Properties.setValue(name, currentText)
-                    }
-
-                    TextField {
-                        visible: !isGroup && kind !== 0 && kind !== 1 && kind !== 3
-                                 && kind !== 4 && kind !== 5
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.right: parent.right
-                        anchors.rightMargin: 12
-                        width: 240
-                        text: String(display)
-                        color: Theme.text
-                        font.pixelSize: 11
-                        selectByMouse: true
-                        onEditingFinished: Properties.setValue(name, text)
-                        background: Rectangle {
-                            color: Theme.panelAlt
-                            radius: 5
-                            border.color: Theme.line
-                        }
-                    }
-                }
-
-                Keys.onPressed: (event) => {
-                    if (event.key === Qt.Key_Escape) {
-                        view.back()
-                        event.accepted = true
-                    }
-                }
-            }
-
-            ListView {
-                id: globalList
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                visible: view.showGlobal
-                clip: true
-                model: GlobalOptions
-                spacing: 2
-
-                delegate: Rectangle {
-                    required property int index
-                    required property string name
-                    required property string label
-                    required property int kind
-                    required property var settingValue
-                    required property var boolValue
-                    required property var options
-
-                    width: globalList.width
-                    height: kind === 5 ? 42 : 50
-                    radius: 6
-                    color: "transparent"
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        width: 250
-                        text: label
-                        color: Theme.text
-                        font.pixelSize: 12
-                        elide: Text.ElideRight
-                    }
-
-                    Row {
-                        visible: kind === 0
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.right: parent.right
-                        anchors.rightMargin: 12
-                        spacing: 12
-                        Slider {
-                            width: 220
-                            from: 0
-                            to: 100
-                            value: typeof settingValue === "number" ? settingValue : 70
-                            onMoved: GlobalOptions.setValue(name, Math.round(value))
-                        }
-                        CheckBox {
-                            text: "mute"
-                            checked: boolValue === true
-                            onToggled: GlobalOptions.setValue(name, checked)
-                        }
-                    }
-
-                    Row {
-                        visible: kind === 1
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.right: parent.right
-                        anchors.rightMargin: 12
-                        spacing: 12
-                        CheckBox {
-                            text: "limit"
-                            checked: boolValue === true
-                            onToggled: GlobalOptions.setValue(name, checked)
-                        }
-                        SpinBox {
-                            from: 0
-                            to: 240
-                            value: typeof settingValue === "number" ? settingValue : 30
-                            onValueModified: GlobalOptions.setValue(name, value)
-                        }
-                    }
-
-                    ComboBox {
-                        visible: kind >= 2 && kind <= 4
-                        implicitHeight: 38
-                        font.pixelSize: 12
-                        leftPadding: 10
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.right: parent.right
-                        anchors.rightMargin: 12
-                        width: 220
-                        model: options
-                        currentIndex: Math.max(0, options.indexOf(String(settingValue)))
-                        onActivated: GlobalOptions.setValue(name, currentText)
-                    }
-
-                    CheckBox {
-                        visible: kind === 5
-                        font.pixelSize: 12
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.right: parent.right
-                        anchors.rightMargin: 12
-                        checked: boolValue === true
-                        onToggled: GlobalOptions.setValue(name, checked)
-                    }
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.topMargin: 8
-                height: 54
-                radius: 8
-                color: Theme.panelAlt
-                border.color: Theme.line
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.margins: 8
-                spacing: 10
-
-                Text {
-                    Layout.preferredWidth: 300
-                    text: "CTRL+ENTER apply · A add · S stop · L last · 1-0 monitor"
-                    color: Theme.dim
-                    font.pixelSize: 10
-                    wrapMode: Text.WordWrap
-                }
-
-                ActionButton {
-                    primary: true
-                    text: "Apply"
-                    onClicked: view.applyCurrent()
-                }
-                ActionButton {
-                    text: "Load last"
-                    onClicked: view.loadLast()
-                }
-                ActionButton {
-                    text: "Add to playlist"
-                    onClicked: view.addCurrent()
-                }
-                ActionButton {
-                    text: "Stop"
-                    onClicked: Engine.stop(view.targetMonitor)
-                }
-                ActionButton {
-                    text: "Back"
-                    onClicked: view.back()
-                }
-                Item { Layout.fillWidth: true }
-                Text {
-                    text: "ESC back"
-                    color: Theme.dim
-                    font.pixelSize: 11
-                }
-            }
-            }
-        }
+    FileDialog {
+        id: fileDialog
+        title: "Select file"
+        onAccepted: Properties.setValue(browse.name, selectedFile.toString().replace("file://", ""))
+    }
+    FolderDialog {
+        id: folderDialog
+        title: "Select directory"
+        onAccepted: Properties.setValue(browse.name, selectedFolder.toString().replace("file://", ""))
+    }
+    QtObject {
+        id: browse
+        property int kind: 7
+        property string name: ""
     }
 }

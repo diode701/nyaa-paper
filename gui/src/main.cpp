@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     Theme theme;
     PreviewSettings settings;
     ConfigBridge config;
-    EngineBridge engine(config.config());
+    EngineBridge engine(config);
     PlaylistBridge playlist;
     PropertyModel properties;
     GlobalOptionsModel globalOptions(&config);
@@ -75,6 +75,16 @@ int main(int argc, char *argv[])
     qml.loadFromModule("NyaaPaper", "Main");
     if (qml.rootObjects().isEmpty())
         return 1;
+
+    // Dev aid: NYAA_WINDOW=2540x1422 renders at the user's real window size.
+    if (qEnvironmentVariableIsSet("NYAA_WINDOW")) {
+        const QString size = qEnvironmentVariable("NYAA_WINDOW");
+        const QStringList parts = size.split(QLatin1Char('x'));
+        if (parts.size() == 2) {
+            qml.rootObjects().first()->setProperty("width", parts[0].toInt());
+            qml.rootObjects().first()->setProperty("height", parts[1].toInt());
+        }
+    }
 
     // Dev aid: NYAA_GLOBAL=1 opens the properties view on the GLOBAL tab.
     if (qEnvironmentVariableIsSet("NYAA_MINI"))

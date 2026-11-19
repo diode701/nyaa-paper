@@ -28,6 +28,7 @@ public:
     Q_INVOKABLE void reload();
     Q_INVOKABLE void add(const QVariantMap &entry);
     Q_INVOKABLE void removeAt(int row);
+    Q_INVOKABLE void move(int from, int to);
     Q_INVOKABLE void play();
     Q_INVOKABLE void pause();
     Q_INVOKABLE void stop();

@@ -151,6 +151,16 @@ impl Playlist {
                     }
                 };
 
+                if step == -2 {
+                    let mut states = inner.states.lock().unwrap();
+                    if let Some(state) = states.get_mut(&monitor) {
+                        state.index = 0;
+                    }
+                    drop(states);
+                    publish_from(&inner, &monitor);
+                    continue;
+                }
+
                 if step != 0 {
                     let len = {
                         let docs = inner.docs.lock().unwrap();
@@ -168,6 +178,10 @@ impl Playlist {
                         } else {
                             (state.index + len - 1) % len
                         };
+                        // Java stops at the end when loop is off
+                        if step > 0 && state.index == 0 && len > 0 && !doc_loop(&inner, &monitor) {
+                            state.active = false;
+                        }
                         drop(states);
                         publish_from(&inner, &monitor);
                         continue;
@@ -226,6 +240,17 @@ impl Playlist {
             }
         });
     }
+}
+
+fn doc_loop(inner: &Arc<Inner>, monitor: &str) -> bool {
+    inner
+        .docs
+        .lock()
+        .unwrap()
+        .get(monitor)
+        .and_then(|doc| doc.get("loop"))
+        .and_then(|value| value.as_bool())
+        .unwrap_or(true)
 }
 
 fn still_current(inner: &Arc<Inner>, monitor: &str, generation: u64) -> bool {
@@ -418,6 +443,12 @@ impl Playlist {
 
     async fn prev(&self, monitor: String) -> zbus::fdo::Result<()> {
         self.inner.pending.lock().unwrap().insert(monitor, -1);
+        self.inner.skip.notify_waiters();
+        Ok(())
+    }
+
+    async fn reset(&self, monitor: String) -> zbus::fdo::Result<()> {
+        self.inner.pending.lock().unwrap().insert(monitor, -2);
         self.inner.skip.notify_waiters();
         Ok(())
     }

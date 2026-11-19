@@ -131,6 +131,15 @@ void PlaylistBridge::add(const QVariantMap &entry)
     pushDocument();
 }
 
+void PlaylistBridge::move(int from, int to)
+{
+    if (from < 0 || from >= m_entries.size() || to < 0 || to >= m_entries.size() || from == to)
+        return;
+    m_entries.move(from, to);
+    emit entriesChanged();
+    pushDocument();
+}
+
 void PlaylistBridge::removeAt(int row)
 {
     if (row < 0 || row >= m_entries.size())

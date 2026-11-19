@@ -41,6 +41,8 @@ public:
     Q_INVOKABLE QString titleAt(int row) const;
     /// One row as {id,title,kind,preview} for the QML page deck.
     Q_INVOKABLE QVariantMap at(int row) const;
+    Q_INVOKABLE QString previewFor(const QString &id) const;
+    Q_INVOKABLE QString titleFor(const QString &id) const;
 
 Q_SIGNALS:
     void filterChanged();

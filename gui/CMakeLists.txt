@@ -71,6 +71,7 @@ qt_add_qml_module(nyaa-paper-qt
         qml/views/PlaylistView.qml
         qml/views/SettingsView.qml
         qml/components/ActionButton.qml
+        qml/components/StatusBar.qml
         qml/components/Cell.qml
         qml/components/HintBar.qml
         qml/components/KeyCap.qml

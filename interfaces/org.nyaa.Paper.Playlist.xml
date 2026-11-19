@@ -55,6 +55,9 @@
     <method name="Prev">
       <arg name="monitor" type="s" direction="in"/>
     </method>
+    <method name="Reset">
+      <arg name="monitor" type="s" direction="in"/>
+    </method>
     <method name="Stop">
       <arg name="monitor" type="s" direction="in"/>
     </method>

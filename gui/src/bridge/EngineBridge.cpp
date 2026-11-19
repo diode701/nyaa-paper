@@ -4,6 +4,7 @@
 #include "domain/Types.hpp"
 #include "domain/options/GlobalOptions.h"
 #include "domain/settings/SettingFactory.h"
+#include "bridge/ConfigBridge.hpp"
 #include "engine/DbusEngine.hpp"
 #include "engine/MockEngine.hpp"
 #include "io/ProjectJson.h"
@@ -33,7 +34,7 @@ EngineRequest EngineBridge::buildRequest(const QString &monitor, const QString &
 
     // Engine-wide defaults from config.json.
     options::GlobalOptions globals;
-    const auto &engine = m_config.engine;
+    const auto &engine = m_bridge.config().engine;
     globals.restore({
         {"volume", engine.muted ? "silent|" + std::to_string(engine.volume)
                                 : std::to_string(engine.volume)},
@@ -45,12 +46,29 @@ EngineRequest EngineBridge::buildRequest(const QString &monitor, const QString &
         globals.setFlag(flag, true);
 
     EngineOptions options;
-    options.workshopRoot = m_config.paths.workshop;
-    options.assetsDir = m_config.paths.assets;
+    options.workshopRoot = m_bridge.config().paths.workshop;
+    options.assetsDir = m_bridge.config().paths.assets;
     options.layer = engine.layer;
 
+    // GPU and screenshot come from the properties view, exactly like Java.
+    GpuConfig gpu;
+    const auto &gpuPrefs = m_bridge.config().gpu;
+    if (gpuPrefs.mode == "DRI_PRIME") {
+        gpu.mode = GpuConfig::Mode::DriPrime;
+        gpu.driPrimeNumber = gpuPrefs.driPrimeNumber;
+    } else if (gpuPrefs.mode == "NVIDIA") {
+        gpu.mode = GpuConfig::Mode::Nvidia;
+    }
+    gpu.glThreaded = gpuPrefs.glThreaded;
+
+    Screenshot screenshot;
+    if (m_bridge.config().screenshot.enabled) {
+        screenshot.directory = m_bridge.config().screenshot.path;
+        screenshot.delay = m_bridge.config().screenshot.delay;
+    }
+
     const nyaa::domain::EngineCommand rendered = Renderer::render(monitor.toStdString(), wallpaper, list, globals,
-                                                    GpuConfig{}, Screenshot{}, options);
+                                                    gpu, screenshot, options);
 
     EngineRequest command;
     command.wallpaperId = wallpaperId;
@@ -93,9 +111,9 @@ QVariantMap EngineBridge::playlistEntry(const QString &monitor, const QString &w
     return entry;
 }
 
-EngineBridge::EngineBridge(const nyaa::io::AppConfig &config, QObject *parent)
+EngineBridge::EngineBridge(const ConfigBridge &config, QObject *parent)
     : QObject(parent)
-    , m_config(config)
+    , m_bridge(config)
 {
     for (const QScreen *screen : QGuiApplication::screens()) {
         const QString name = screen->name();

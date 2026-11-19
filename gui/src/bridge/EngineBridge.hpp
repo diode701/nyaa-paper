@@ -10,6 +10,8 @@
 #include "engine/IEngine.hpp"
 #include "io/AppConfig.h"
 
+class ConfigBridge;
+
 /// The QML-facing engine API. Everything QML may call about playback lives
 /// here; QML never sees D-Bus, never sees argv, never sees a PID it can misuse.
 class EngineBridge : public QObject
@@ -22,7 +24,7 @@ class EngineBridge : public QObject
     Q_PROPERTY(bool mock READ mock CONSTANT)
 
 public:
-    explicit EngineBridge(const nyaa::io::AppConfig &config, QObject *parent = nullptr);
+    explicit EngineBridge(const ConfigBridge &config, QObject *parent = nullptr);
 
     QString version() const { return m_engine->version(); }
     QString enginePath() const { return m_engine->enginePath(); }
@@ -58,7 +60,7 @@ private:
                                const QString &basePath);
 
     std::unique_ptr<IEngine> m_engine;
-    const nyaa::io::AppConfig &m_config;
+    const ConfigBridge &m_bridge;
     QVariantMap m_running;
     QStringList m_monitors;
     bool m_mock = false;

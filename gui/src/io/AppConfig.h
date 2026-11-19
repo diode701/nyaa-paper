@@ -35,6 +35,20 @@ struct EngineDefaults
     std::vector<std::string> flags;
 };
 
+struct GpuPrefs
+{
+    std::string mode = "DEFAULT";   // DEFAULT | DRI_PRIME | NVIDIA
+    int driPrimeNumber = 1;
+    bool glThreaded = false;
+};
+
+struct ScreenshotPrefs
+{
+    bool enabled = false;
+    std::string path;
+    int delay = 5;
+};
+
 struct UiConfig
 {
     std::string monitor;
@@ -47,6 +61,8 @@ struct AppConfig
     PathConfig paths;
     PreviewConfig preview;
     EngineDefaults engine;
+    GpuPrefs gpu;
+    ScreenshotPrefs screenshot;
     UiConfig ui;
 };
 

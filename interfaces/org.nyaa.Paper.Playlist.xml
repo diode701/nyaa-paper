@@ -30,6 +30,15 @@
   video wallpapers (probed once by the GUI at add time), or the playlist
   interval when unknown/zero. The daemon never runs ffprobe.
 
+  Message       Java's status texts for a monitor: Playing, Paused, Resumed,
+                Stopped, Next, Previous, Reset, End of playlist, Playlist
+                finished, Already playing, Playlist is empty.
+  Play          On a paused playlist: resume without re-applying. Entries
+                whose wallpaper is no longer subscribed are removed first
+                (never while the library is empty).
+  Next/Prev/Reset  Only for a playlist that is playing or paused.
+  currentIndex  Saved after every step; a running playlist keeps its own
+                position when the client stores an edited document.
   ListMonitors  Monitors that have a stored playlist (Java: listMonitors).
   Delete        Removes a monitor's playlist; a running one stops first. The
                 wallpaper on screen is left alone. Idempotent.
@@ -80,6 +89,10 @@
       <arg name="monitor" type="s"/>
       <arg name="state" type="s"/>
       <arg name="index" type="i"/>
+    </signal>
+    <signal name="Message">
+      <arg name="monitor" type="s"/>
+      <arg name="text" type="s"/>
     </signal>
     <signal name="PlaylistChanged">
       <arg name="monitor" type="s"/>

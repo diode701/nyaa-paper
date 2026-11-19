@@ -249,7 +249,7 @@ Item {
                     checked: Playlist.loop
                     onToggled: Playlist.setLoop(checked)
                 }
-                Text { text: view.status; color: "#cccccc"; font.pixelSize: 11 }
+                Text { text: view.status !== "" ? view.status : Playlist.message; color: "#cccccc"; font.pixelSize: 11 }
             }
         }
     }

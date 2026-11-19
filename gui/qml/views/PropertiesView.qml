@@ -646,7 +646,13 @@ Item {
 
             RowLayout {
                 Layout.fillWidth: true
-                Text { text: "Playlist — " + view.targetMonitor; color: "#ffffff"; font.pixelSize: 14 }
+                // MiniPlaylistPanel: "Playlist — <monitor>", then the runner's status
+                Text {
+                    text: "Playlist — " + (Playlist.message !== "" && Playlist.monitor === view.targetMonitor
+                                           ? Playlist.message : view.targetMonitor)
+                    color: "#ffffff"
+                    font.pixelSize: 14
+                }
                 Item { Layout.fillWidth: true }
                 Text {
                     text: "✕"

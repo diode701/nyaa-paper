@@ -40,6 +40,14 @@ PlaylistBridge::PlaylistBridge(const WallpaperModel &library, const ConfigBridge
                 m_index = index;
                 emit stateChanged();
             });
+    // Java: PlaylistRunner's statusListener
+    connect(m_playlist, &OrgNyaaPaperPlaylistInterface::Message, this,
+            [this](const QString &monitor, const QString &text) {
+                if (monitor != m_monitor)
+                    return;
+                m_message = text;
+                emit messageChanged();
+            });
     // Another view (or the runner pruning entries) changed a playlist.
     connect(m_playlist, &OrgNyaaPaperPlaylistInterface::PlaylistChanged, this,
             [this](const QString &monitor) {
@@ -188,7 +196,9 @@ void PlaylistBridge::load(const QString &monitor)
         return;
     if (monitor != m_monitor) {
         m_monitor = monitor;
+        m_message.clear();
         emit monitorChanged();
+        emit messageChanged();
     }
     reload();
 }

@@ -28,6 +28,8 @@ class PlaylistBridge : public QObject
     Q_PROPERTY(QString state READ state NOTIFY stateChanged)          // idle | playing | paused
     Q_PROPERTY(int index READ index NOTIFY stateChanged)
     Q_PROPERTY(QStringList monitors READ monitors NOTIFY monitorsChanged)
+    /// The runner's last message for this monitor ("Playing", "End of playlist"…)
+    Q_PROPERTY(QString message READ message NOTIFY messageChanged)
 
 public:
     PlaylistBridge(const WallpaperModel &library, const ConfigBridge &config, QObject *parent = nullptr);
@@ -40,6 +42,7 @@ public:
     QString state() const { return m_state; }
     int index() const { return m_index; }
     QStringList monitors() const { return m_monitors; }
+    QString message() const { return m_message; }
 
     /// Which monitor the views show. Reloads even if it is the same one.
     Q_INVOKABLE void load(const QString &monitor);
@@ -76,6 +79,7 @@ Q_SIGNALS:
     void entriesChanged();
     void stateChanged();
     void monitorsChanged();
+    void messageChanged();
     void failed(const QString &message);
 
 private:
@@ -111,4 +115,5 @@ private:
     QStringList m_stored;
     QStringList m_connected;
     QStringList m_monitors;
+    QString m_message;
 };

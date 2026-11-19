@@ -129,6 +129,16 @@ impl Library {
         });
     }
 
+    /// Whether a wallpaper is subscribed. None while the library is empty
+    /// (workshop missing or unreadable): callers must not prune on that.
+    pub fn contains_id(&self, id: &str) -> Option<bool> {
+        let entries = self.inner.entries.lock().unwrap();
+        if entries.is_empty() {
+            return None;
+        }
+        Some(entries.iter().any(|entry| entry.id == id))
+    }
+
     fn rescan_now(&self) -> u32 {
         let root = self.inner.root.lock().unwrap().clone();
         let entries = scan(&root);

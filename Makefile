@@ -1,7 +1,7 @@
 # One entry point for both halves. IDEs are for editing; this file builds.
 .DEFAULT_GOAL := help
 
-.PHONY: help daemon gui run-daemon run-gui test smoke clean
+.PHONY: help daemon gui run-daemon run-gui test e2e smoke clean
 
 help:
 	@echo "daemon      build the Rust daemon (nyaa-paperd)"
@@ -9,6 +9,7 @@ help:
 	@echo "run-daemon  run the daemon using /bin/sleep as a fake engine"
 	@echo "run-gui     run the Qt client"
 	@echo "test        cargo test + the C++ test binaries"
+	@echo "e2e         real daemon on a private bus: apply + playlist, desktop untouched"
 	@echo "smoke       end-to-end: fake workshop, daemon, client render"
 	@echo "clean       remove build outputs"
 
@@ -30,6 +31,9 @@ test:
 	cmake -S gui -B gui/build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 	cmake --build gui/build
 	cd gui/build && ctest --output-on-failure
+
+e2e: daemon gui
+	./scripts/e2e.sh
 
 smoke:
 	./scripts/smoke.sh

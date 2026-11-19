@@ -15,6 +15,7 @@ Item {
     property string wallpaperPreview: ""
     property string wallpaperBasePath: ""
     property string targetMonitor: Engine.monitors.length > 0 ? Engine.monitors[0] : ""
+    property bool showGlobal: false
 
     function handleKey(event) {
         if (event.key === Qt.Key_Escape) {
@@ -23,21 +24,20 @@ Item {
         }
     }
 
-    property var rows: [
-        { label: "Camera field of view", kind: "slider", value: 0.42 },
-        { label: "Bloom", kind: "bool", value: true },
-        { label: "Tint", kind: "color", value: "#5AD2FF" },
-        { label: "Scene variant", kind: "combo", value: "night" },
-        { label: "Background music", kind: "file", value: "~/Music/night.ogg" }
-    ]
-
-    onVisibleChanged: if (visible) list.forceActiveFocus()
+    onVisibleChanged: {
+        if (visible) {
+            Properties.loadWallpaper(wallpaperBasePath)
+            list.forceActiveFocus()
+        }
+    }
+    onWallpaperBasePathChanged: if (visible) Properties.loadWallpaper(wallpaperBasePath)
 
     RowLayout {
         anchors.fill: parent
         anchors.margins: 24
         spacing: 22
 
+        // ---- left: what is selected -------------------------------------
         ColumnLayout {
             Layout.preferredWidth: 380
             Layout.fillHeight: true
@@ -53,6 +53,7 @@ Item {
                     GradientStop { position: 0.0; color: "#1B2A33" }
                     GradientStop { position: 1.0; color: "#0C1116" }
                 }
+
                 Image {
                     anchors.fill: parent
                     anchors.margins: 6
@@ -81,7 +82,7 @@ Item {
                 Layout.fillWidth: true
             }
             Text {
-                text: "video  ·  431960  ·  engine 21:9"
+                text: view.wallpaperId !== "" ? "id " + view.wallpaperId : ""
                 color: Theme.dim
                 font.pixelSize: 11
                 font.family: Theme.mono
@@ -96,12 +97,12 @@ Item {
                 font.letterSpacing: 2
             }
 
-            Row {
+            Flow {
+                Layout.fillWidth: true
                 spacing: 8
                 Repeater {
                     model: Engine.monitors
                     delegate: Rectangle {
-                        required property int index
                         required property string modelData
                         width: 108
                         height: 34
@@ -125,6 +126,7 @@ Item {
             Item { Layout.fillHeight: true }
         }
 
+        // ---- right: properties ------------------------------------------
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -133,10 +135,29 @@ Item {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 18
-                Text { text: "CUSTOM"; color: Theme.accent; font.pixelSize: 11; font.letterSpacing: 3; font.bold: true }
-                Text { text: "GLOBAL"; color: Theme.dim; font.pixelSize: 11; font.letterSpacing: 3 }
+                Text {
+                    text: "CUSTOM"
+                    color: view.showGlobal ? Theme.dim : Theme.accent
+                    font.pixelSize: 11
+                    font.letterSpacing: 3
+                    font.bold: true
+                    MouseArea { anchors.fill: parent; onClicked: view.showGlobal = false }
+                }
+                Text {
+                    text: "GLOBAL"
+                    color: view.showGlobal ? Theme.accent : Theme.dim
+                    font.pixelSize: 11
+                    font.letterSpacing: 3
+                    font.bold: true
+                    MouseArea { anchors.fill: parent; onClicked: view.showGlobal = true }
+                }
                 Item { Layout.fillWidth: true }
-                Text { text: view.rows.length + " properties"; color: Theme.dim; font.pixelSize: 11 }
+                Text {
+                    text: view.showGlobal ? "engine defaults (edit in settings, S)"
+                                          : Properties.count + " properties"
+                    color: Theme.dim
+                    font.pixelSize: 11
+                }
             }
 
             Rectangle {
@@ -153,40 +174,113 @@ Item {
                 Layout.fillHeight: true
                 clip: true
                 focus: true
-                model: view.rows
+                visible: !view.showGlobal
+                model: Properties
                 spacing: 2
 
                 delegate: Rectangle {
-                    required property var modelData
-                    width: list.width
-                    height: 54
-                    color: Theme.panel
-                    radius: 6
+                    required property int index
+                    required property int kind
+                    required property string name
+                    required property string label
+                    required property var display
+                    required property var value
+                    required property var minimum
+                    required property var maximum
+                    required property var step
+                    required property var options
+                    required property bool isGroup
 
-                    RowLayout {
-                        anchors.fill: parent
+                    width: list.width
+                    height: isGroup ? 42 : 50
+                    radius: 6
+                    color: isGroup ? Theme.panelAlt : "transparent"
+
+                    Text {
+                        visible: isGroup
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
                         anchors.leftMargin: 14
-                        anchors.rightMargin: 14
-                        Text {
-                            text: modelData.label
-                            color: "#FFFFFF"
-                            font.pixelSize: 13
-                            Layout.preferredWidth: 240
+                        text: label
+                        color: Theme.accent
+                        font.pixelSize: 11
+                        font.letterSpacing: 2
+                        font.bold: true
+                    }
+
+                    Text {
+                        visible: !isGroup
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14
+                        width: 250
+                        text: label
+                        color: Theme.text
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                    }
+
+                    CheckBox {
+                        visible: !isGroup && kind === 0
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.right: parent.right
+                        anchors.rightMargin: 12
+                        checked: value === true
+                        onToggled: Properties.setValue(name, checked)
+                    }
+
+                    Row {
+                        visible: !isGroup && kind === 1
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.right: parent.right
+                        anchors.rightMargin: 12
+                        spacing: 10
+
+                        Slider {
+                            width: 220
+                            from: minimum
+                            to: maximum
+                            stepSize: step
+                            value: typeof value === "number" ? value : 0
+                            onMoved: Properties.setValue(name, value)
                         }
-                        Item { Layout.fillWidth: true }
                         Text {
-                            text: String(modelData.value)
+                            width: 54
+                            text: String(display)
                             color: Theme.muted
-                            font.pixelSize: 12
+                            font.pixelSize: 11
                             font.family: Theme.mono
                         }
                     }
-                    Rectangle {
-                        anchors.bottom: parent.bottom
-                        width: parent.width
-                        height: 1
-                        color: Theme.line
-                        opacity: 0.6
+
+                    ComboBox {
+                        visible: !isGroup && kind === 3
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.right: parent.right
+                        anchors.rightMargin: 12
+                        width: 200
+                        model: options
+                        currentIndex: Math.max(0, options.indexOf(display))
+                        onActivated: Properties.setValue(name, currentText)
+                    }
+
+                    TextField {
+                        visible: !isGroup && kind !== 0 && kind !== 1 && kind !== 3
+                                 && kind !== 4 && kind !== 5
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.right: parent.right
+                        anchors.rightMargin: 12
+                        width: 240
+                        text: String(display)
+                        color: Theme.text
+                        font.pixelSize: 11
+                        selectByMouse: true
+                        onEditingFinished: Properties.setValue(name, text)
+                        background: Rectangle {
+                            color: Theme.panelAlt
+                            radius: 5
+                            border.color: Theme.line
+                        }
                     }
                 }
 
@@ -198,10 +292,21 @@ Item {
                 }
             }
 
+            Text {
+                visible: view.showGlobal
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                text: "Volume, FPS, scaling, clamp and the engine flags live in the shared config.\nPress S in the library to edit them."
+                color: Theme.dim
+                font.pixelSize: 12
+                wrapMode: Text.WordWrap
+            }
+
             RowLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: 6
                 spacing: 12
+
                 Button {
                     text: "Apply"
                     onClicked: Engine.applyWallpaper(view.targetMonitor, view.wallpaperId, view.wallpaperBasePath)
@@ -220,7 +325,7 @@ Item {
                 }
                 Item { Layout.fillWidth: true }
                 Text {
-                    text: "CTRL+ENTER apply   ·   S stop   ·   ESC back"
+                    text: "CTRL+ENTER apply   ·   A add   ·   S stop   ·   ESC back"
                     color: Theme.dim
                     font.pixelSize: 11
                 }

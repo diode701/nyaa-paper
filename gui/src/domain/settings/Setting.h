@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+
+#include "domain/settings/Kind.h"
 #include <vector>
 
 namespace nyaa::domain::settings {
@@ -19,6 +21,8 @@ public:
     Setting &operator=(const Setting &) = delete;
 
     virtual std::string getName() const;
+    /// What kind of control this is; the view switches on it.
+    virtual Kind getKind() const = 0;
     virtual std::string getDescription() const;
 
     /// The argv fragment. Empty for labels and group headers.

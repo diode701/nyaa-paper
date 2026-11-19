@@ -58,6 +58,16 @@ std::string ColorSetting::getValueString() const { return valueToString(); }
 
 void ColorSetting::setValueFromString(const std::string &value)
 {
+    // "#RRGGBB" or "RRGGBB" first, then the "r g b" form that we serialise.
+    std::string hex = value;
+    if (!hex.empty() && hex.front() == '#')
+        hex.erase(0, 1);
+    if (hex.size() == 6 && hex.find_first_not_of("0123456789abcdefABCDEF") == std::string::npos) {
+        const unsigned long packed = std::stoul(hex, nullptr, 16);
+        value_ = {((packed >> 16) & 0xFF) / 255.0, ((packed >> 8) & 0xFF) / 255.0, (packed & 0xFF) / 255.0};
+        return;
+    }
+
     double r = 0.0;
     double g = 0.0;
     double b = 0.0;

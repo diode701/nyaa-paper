@@ -11,6 +11,7 @@ namespace nyaa::domain::settings {
 class BooleanSetting final : public CustomSetting<bool>
 {
 public:
+    Kind getKind() const override { return Kind::Bool; }
     using CustomSetting::CustomSetting;
     std::string getValueString() const override;
     void setValueFromString(const std::string &value) override;
@@ -22,6 +23,7 @@ protected:
 class SliderSetting final : public CustomSetting<double>
 {
 public:
+    Kind getKind() const override { return Kind::Slider; }
     SliderSetting(const std::string &name, const std::string &description, double value, SliderRange range);
 
     const SliderRange &getRange() const { return range_; }
@@ -38,6 +40,7 @@ private:
 class ColorSetting final : public CustomSetting<Rgb>
 {
 public:
+    Kind getKind() const override { return Kind::Color; }
     using CustomSetting::CustomSetting;
     std::string getValueString() const override;
     void setValueFromString(const std::string &value) override;
@@ -51,6 +54,7 @@ protected:
 class ComboSetting final : public CustomSetting<int>
 {
 public:
+    Kind getKind() const override { return Kind::Combo; }
     ComboSetting(const std::string &name, const std::string &description, int value,
                  std::vector<std::pair<int, std::string>> options);
 
@@ -70,6 +74,7 @@ private:
 class TextSetting final : public Setting
 {
 public:
+    Kind getKind() const override { return Kind::Text; }
     using Setting::Setting;
     std::vector<std::string> toCommandArgs() const override { return {}; }
     std::string getValueString() const override { return {}; }
@@ -79,6 +84,7 @@ public:
 class GroupSetting final : public Setting
 {
 public:
+    Kind getKind() const override { return Kind::Group; }
     using Setting::Setting;
     std::vector<std::string> toCommandArgs() const override { return {}; }
     std::string getValueString() const override { return {}; }
@@ -88,6 +94,7 @@ public:
 class TextInputSetting final : public CustomSetting<std::string>
 {
 public:
+    Kind getKind() const override { return Kind::TextInput; }
     using CustomSetting::CustomSetting;
     std::string getValueString() const override { return value_; }
     void setValueFromString(const std::string &value) override { value_ = value; }
@@ -99,6 +106,7 @@ protected:
 class FileSetting final : public CustomSetting<std::string>
 {
 public:
+    Kind getKind() const override { return Kind::File; }
     using CustomSetting::CustomSetting;
     std::string getValueString() const override { return value_; }
     void setValueFromString(const std::string &value) override { value_ = value; }
@@ -110,6 +118,7 @@ protected:
 class DirectorySetting final : public CustomSetting<std::string>
 {
 public:
+    Kind getKind() const override { return Kind::Directory; }
     using CustomSetting::CustomSetting;
     std::string getValueString() const override { return value_; }
     void setValueFromString(const std::string &value) override { value_ = value; }
@@ -121,6 +130,7 @@ protected:
 class TextureSetting final : public CustomSetting<std::string>
 {
 public:
+    Kind getKind() const override { return Kind::Texture; }
     using CustomSetting::CustomSetting;
     std::string getValueString() const override { return value_; }
     void setValueFromString(const std::string &value) override { value_ = value; }

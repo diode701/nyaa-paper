@@ -14,6 +14,7 @@
 #include "bridge/PlaylistBridge.hpp"
 #include "io/ConfigStore.h"
 #include "models/DbusLibrary.hpp"
+#include "models/PropertyModel.hpp"
 #include "models/MockLibrary.hpp"
 #include "models/WallpaperModel.hpp"
 #include "ui/PreviewSettings.hpp"
@@ -40,6 +41,7 @@ int main(int argc, char *argv[])
     ConfigBridge config;
     EngineBridge engine(config.config());
     PlaylistBridge playlist;
+    PropertyModel properties;
     WallpaperModel library;
     if (qEnvironmentVariableIsSet("NYAA_MOCK")) {
         library.setAll(MockLibrary::load());
@@ -59,6 +61,7 @@ int main(int argc, char *argv[])
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Settings", &settings);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Config", &config);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Playlist", &playlist);
+    qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Properties", &properties);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Engine", &engine);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Library", &library);
 

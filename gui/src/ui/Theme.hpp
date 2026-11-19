@@ -22,6 +22,7 @@ class Theme : public QObject
     Q_PROPERTY(QColor danger READ danger CONSTANT)      // #d9534f stop
     Q_PROPERTY(QColor control READ control CONSTANT)    // #444 buttons
     Q_PROPERTY(QColor controlHover READ controlHover CONSTANT) // #555
+    Q_PROPERTY(QColor sleekAccent READ sleekAccent CONSTANT)    // deck accent
     Q_PROPERTY(int radius READ radius CONSTANT)
     Q_PROPERTY(int fast READ fast CONSTANT)
     Q_PROPERTY(int med READ med CONSTANT)
@@ -45,6 +46,7 @@ public:
     QColor danger() const { return QColor("#d9534f"); }
     QColor control() const { return QColor("#444444"); }
     QColor controlHover() const { return QColor("#555555"); }
+    QColor sleekAccent() const { return QColor("#5AD2FF"); }
     int radius() const { return 8; }
     int fast() const { return 140; }
     int med() const { return 220; }

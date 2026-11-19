@@ -3,17 +3,16 @@ import QtQuick.Effects
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
 
-/// One grid cell: #2a2a2a, radius 8, border #3a3a3a; selected 3px #4a90e2 with
-/// a blue glow; hover #6aa9ff 2px and scale 1.02. Image 170x170, fade 300 ms.
 Item {
     id: cell
 
-    property string preview: ""
-    property string title: ""
+    required property string preview
+    required property int index
 
     property int pageStart: 0
     property bool selected: false
     property bool hovered: mouse.containsMouse
+
     property real sel: selected ? 1 : 0
     property real hot: hovered ? 1 : 0
 
@@ -23,6 +22,9 @@ Item {
 
     signal clicked
 
+    Behavior on sel { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+    Behavior on hot { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+
     transform: Scale {
         origin.x: cell.width / 2
         origin.y: cell.height / 2
@@ -30,58 +32,106 @@ Item {
         yScale: 1.0 + Look.hoverScale * cell.hot
     }
 
+    // ---- card body ---------------------------------------------------------
     Rectangle {
         id: body
         anchors.fill: parent
+        anchors.topMargin: -2 * cell.hot
         radius: cell.radius
-        color: "#2a2a2a"
-        border.width: cell.selected ? 3 : (cell.hot > 0.5 ? 2 : 1)
-        border.color: cell.selected ? Theme.accent
-                                    : (cell.hot > 0.5 ? Theme.accentHover : "#3a3a3a")
         clip: true
 
-        AnimatedImage {
-            id: image
-            anchors.centerIn: parent
-            width: 170
-            height: 170
-            source: cell.preview
-            visible: cell.preview !== ""
-            fillMode: Image.PreserveAspectFit
-            asynchronous: true
-            cache: true
-            playing: cell.animate
-            sourceSize.width: 340
-            sourceSize.height: 340
-
-            opacity: 0
-            Behavior on opacity { NumberAnimation { duration: 300 } }
-            onStatusChanged: if (status === Image.Ready) opacity = 1
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#252E3A" }
+            GradientStop { position: 1.0; color: "#191E26" }
         }
 
-        Text {
-            anchors.centerIn: parent
-            width: 170
+        Rectangle {
+            anchors.fill: parent
             visible: cell.preview === ""
-            text: cell.title.length > 20 ? cell.title.substring(0, 18) + "…" : cell.title
-            color: "#d3d3d3"
-            font.pixelSize: 12
-            wrapMode: Text.WordWrap
-            horizontalAlignment: Text.AlignHCenter
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.hsla(((cell.pageStart + cell.index) * 0.11) % 1.0, 0.55, 0.40, 1.0) }
+                GradientStop { position: 1.0; color: Qt.hsla(((cell.pageStart + cell.index) * 0.11 + 0.1) % 1.0, 0.6, 0.14, 1.0) }
+            }
         }
     }
 
+    // Shadow + glow come from the body, so the preview is not part of the shape.
     MultiEffect {
         source: body
         anchors.fill: body
         autoPaddingEnabled: true
         blurMax: cell.selected ? Look.blurMaxSelected : Look.blurMax
         shadowEnabled: true
-        shadowColor: cell.selected ? Theme.accent : "#000000"
-        shadowOpacity: cell.selected ? 0.65 : 0.5
+        shadowColor: Qt.rgba(0.35 * cell.sel, 0.10 + 0.72 * cell.sel, 0.14 + 0.86 * cell.sel, 1.0)
+        shadowOpacity: Look.shadowOpacity + Look.shadowOpacityHover * cell.hot
+                        + (Look.shadowOpacitySelected - Look.shadowOpacity) * cell.sel
         shadowBlur: cell.selected ? Look.shadowBlurSelected : Look.shadowBlur
-        shadowVerticalOffset: 2
+        shadowVerticalOffset: Look.shadowOffset * (1.0 - cell.sel)
         shadowHorizontalOffset: 0
+    }
+
+    // ---- preview, masked to the card shape ---------------------------------
+    // When masking is on the image itself must be hidden, otherwise its square
+    // corners stay visible underneath the masked copy. If a backend cannot run
+    // the effect the preview disappears, which is obvious and one Look toggle
+    // away from the plain path.
+    AnimatedImage {
+        id: previewImage
+        anchors.fill: parent
+        anchors.margins: Look.imageInset
+        source: cell.preview
+        visible: cell.preview !== "" && !Look.roundPreviews
+        fillMode: Image.PreserveAspectFit
+        asynchronous: true
+        cache: false
+        playing: cell.animate
+        sourceSize.width: 360
+        sourceSize.height: 360
+    }
+
+    Rectangle {
+        id: maskShape
+        anchors.fill: parent
+        anchors.margins: Look.imageInset
+        radius: Math.max(0, cell.radius - Look.imageInset)
+        color: "black"
+        visible: false
+    }
+
+    MultiEffect {
+        anchors.fill: previewImage
+        source: previewImage
+        visible: Look.roundPreviews && cell.preview !== ""
+        maskEnabled: Look.roundPreviews
+        maskSource: maskShape
+    }
+
+    // top bevel
+    Rectangle {
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.margins: 1
+        height: 1
+        color: "#1fffffff"
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        radius: cell.radius
+        color: "transparent"
+        border.width: cell.selected ? Look.borderWidthSelected : Look.borderWidth
+        border.color: cell.selected ? Theme.sleekAccent : (cell.hot > 0.2 ? "#46525F" : "#333C49")
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: 3
+        radius: cell.radius
+        color: "transparent"
+        border.width: 1
+        border.color: "#66ffffff"
+        opacity: 0.35 * cell.sel
     }
 
     MouseArea {

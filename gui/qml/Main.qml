@@ -207,6 +207,16 @@ ApplicationWindow {
 
         }
 
+        HintBar {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            visible: app.view === 0
+            mode: 0
+            pageLabel: browser.pageLabel
+            selection: browser.cursorTitle
+        }
+
         SettingsView {
             anchors.fill: parent
             open: app.settingsOpen

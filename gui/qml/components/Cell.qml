@@ -18,7 +18,7 @@ Item {
 
     readonly property bool animate: Settings.animationMode === 2
                                     || (Settings.animationMode === 1 && (hovered || selected))
-    readonly property int radius: 4
+    readonly property int radius: 3
 
     signal clicked
 
@@ -80,11 +80,11 @@ Item {
         source: body
         anchors.fill: body
         autoPaddingEnabled: true
-        blurMax: cell.selected ? 20 : 14
+        blurMax: cell.selected ? 18 : 14
         shadowEnabled: true
         shadowColor: Qt.rgba(0.30 * cell.sel, 0.10 + 0.72 * cell.sel, 0.14 + 0.86 * cell.sel, 1.0)
         shadowOpacity: 0.40 + 0.10 * cell.hot + 0.22 * cell.sel
-        shadowBlur: 0.45 + 0.20 * cell.sel
+        shadowBlur: 0.45 + 0.28 * cell.sel
         shadowVerticalOffset: 3.0 * (1.0 - cell.sel)
         shadowHorizontalOffset: 0
     }
@@ -93,8 +93,18 @@ Item {
         anchors.fill: parent
         radius: cell.radius
         color: "transparent"
-        border.width: cell.selected ? 2 : 1
+        border.width: cell.selected ? 3 : 1
         border.color: cell.selected ? Theme.accent : (cell.hot > 0.2 ? "#46525F" : "#333C49")
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: 3
+        radius: cell.radius
+        color: "transparent"
+        border.width: 1
+        border.color: "#66ffffff"
+        opacity: 0.35 * cell.sel
     }
 
     MouseArea {

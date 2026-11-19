@@ -18,7 +18,7 @@ Item {
 
     readonly property bool animate: Settings.animationMode === 2
                                     || (Settings.animationMode === 1 && (hovered || selected))
-    readonly property int radius: 5
+    readonly property int radius: 4
 
     signal clicked
 
@@ -80,12 +80,12 @@ Item {
         source: body
         anchors.fill: body
         autoPaddingEnabled: true
-        blurMax: cell.selected ? 44 : 22
+        blurMax: cell.selected ? 20 : 14
         shadowEnabled: true
         shadowColor: Qt.rgba(0.30 * cell.sel, 0.10 + 0.72 * cell.sel, 0.14 + 0.86 * cell.sel, 1.0)
-        shadowOpacity: 0.42 + 0.10 * cell.hot + 0.30 * cell.sel
-        shadowBlur: 0.50 + 0.40 * cell.sel
-        shadowVerticalOffset: 4.0 * (1.0 - cell.sel)
+        shadowOpacity: 0.40 + 0.10 * cell.hot + 0.22 * cell.sel
+        shadowBlur: 0.45 + 0.20 * cell.sel
+        shadowVerticalOffset: 3.0 * (1.0 - cell.sel)
         shadowHorizontalOffset: 0
     }
 

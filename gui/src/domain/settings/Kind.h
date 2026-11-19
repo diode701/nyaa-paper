@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-namespace nyaa::domain {
+namespace nyaa::domain::settings {
 
 /// What a property is, stripped of everything the daemon or the engine cares
 /// about. The UI switches on this to pick a delegate.
@@ -37,4 +37,4 @@ struct SettingDesc {
     int order = 0;
 };
 
-} // namespace nyaa::domain
+} // namespace nyaa::domain::settings

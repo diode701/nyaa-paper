@@ -26,6 +26,10 @@ Rectangle {
         clip: true
         selectByMouse: true
         onEditingFinished: field.edited(text)
+        // unfocused, show the start of long paths, not the end
+        onTextChanged: if (!activeFocus) cursorPosition = 0
+        onActiveFocusChanged: if (!activeFocus) cursorPosition = 0
+        Component.onCompleted: cursorPosition = 0
         Text {
             anchors.verticalCenter: parent.verticalCenter
             visible: input.text === "" && !input.activeFocus

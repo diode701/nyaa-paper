@@ -65,7 +65,8 @@ ApplicationWindow {
     readonly property int debugPage: browser.page
 
     // Window-scoped shortcuts: they do not care which item holds focus.
-    readonly property bool keysEnabled: app.view !== 0 || !browser.searchOpen
+    // single-key shortcuts are off while typing: search, or the Settings dialog
+    readonly property bool keysEnabled: !app.settingsOpen && (app.view !== 0 || !browser.searchOpen)
 
     Shortcut { sequence: "Ctrl+Q"; onActivated: Qt.quit() }
     Shortcut { sequence: "Q";       enabled: app.keysEnabled; onActivated: Qt.quit() }
@@ -304,6 +305,7 @@ ApplicationWindow {
         }
 
         SettingsView {
+            id: settingsView
             anchors.fill: parent
             open: app.settingsOpen
             onClose: {
@@ -338,7 +340,13 @@ ApplicationWindow {
         }
     }
 
-    onActiveChanged: if (active) root.forceActiveFocus()
+    /// Keyboard focus belongs to the open overlay, else to the window's keys.
+    function refocus() {
+        if (settingsOpen) settingsView.forceActiveFocus()
+        else root.forceActiveFocus()
+    }
+    onActiveChanged: if (active) refocus()
+    onSettingsOpenChanged: refocus()
 
     Component.onCompleted: {
         root.forceActiveFocus()

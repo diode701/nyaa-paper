@@ -29,8 +29,13 @@ public:
     bool mock() const { return m_mock; }
 
     Q_INVOKABLE void refreshRunning() { m_engine->refreshRunning(); }
+    Q_INVOKABLE QStringList monitorList() const { return m_monitors; }
     Q_INVOKABLE void stop(const QString &monitor) { m_engine->stop(monitor); }
     Q_INVOKABLE void stopAll() { m_engine->stopAll(); }
+
+    /// Apply by id with the bare minimum argv. The domain Renderer will replace
+    /// this once the Setting hierarchy lands; the daemon does not care either way.
+    Q_INVOKABLE void applyWallpaper(const QString &monitor, const QString &wallpaperId);
 
 Q_SIGNALS:
     void infoChanged();

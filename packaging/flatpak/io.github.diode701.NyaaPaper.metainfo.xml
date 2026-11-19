@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.diode701.NyaaPaper</id>
+  <name>Nyaa Paper</name>
+  <summary>Wallpaper Engine frontend for Linux</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>AGPL-3.0-or-later</project_license>
+  <description>
+    <p>
+      Browses Steam Workshop wallpaper subscriptions, assigns them per monitor,
+      and runs them through linux-wallpaperengine. A background daemon owns the
+      engine processes so wallpapers keep playing when the window is closed.
+    </p>
+    <ul>
+      <li>Per-monitor assignment with persisted settings</li>
+      <li>Playlists with sequential or random order</li>
+      <li>Keyboard-first library with animated previews</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.diode701.NyaaPaper.desktop</launchable>
+  <url type="homepage">https://github.com/diode701/nyaa-paper</url>
+  <developer id="io.github.diode701">
+    <name>diode701</name>
+  </developer>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.3.0" date="2026-11-20"/>
+  </releases>
+</app>

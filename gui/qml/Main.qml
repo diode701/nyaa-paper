@@ -17,6 +17,9 @@ ApplicationWindow {
     color: Theme.bg
 
     property int view: 0
+    property string currentId: ""
+    property string currentTitle: ""
+    property string currentPreview: ""
 
     // read by the NYAA_KEYS dev hook; no effect on behaviour
     readonly property int debugCursor: browser.cursor
@@ -33,12 +36,27 @@ ApplicationWindow {
     Shortcut { sequence: "Down";   enabled: app.keysEnabled && app.view === 0; onActivated: browser.move(0, 1) }
     Shortcut { sequence: "PgUp";   enabled: app.keysEnabled && app.view === 0; onActivated: browser.goTo(browser.page - 1, 0) }
     Shortcut { sequence: "PgDown"; enabled: app.keysEnabled && app.view === 0; onActivated: browser.goTo(browser.page + 1, 0) }
-    Shortcut { sequence: "Return"; enabled: app.keysEnabled && app.view === 0; onActivated: browser.open() }
-    Shortcut { sequence: "Enter";  enabled: app.keysEnabled && app.view === 0; onActivated: browser.open() }
+    Shortcut { sequence: "Return"; enabled: app.keysEnabled && app.view === 0; onActivated: browser.openCurrent() }
+    Shortcut { sequence: "Enter";  enabled: app.keysEnabled && app.view === 0; onActivated: browser.openCurrent() }
     Shortcut { sequence: "/";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.openSearch() }
     Shortcut { sequence: "M";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.playlists() }
     Shortcut { sequence: "G";      enabled: app.keysEnabled && app.view === 0; onActivated: Settings.cycle() }
-    Shortcut { sequence: "Escape"; enabled: app.view !== 0; onActivated: app.view = 0 }
+    Shortcut { sequence: "Escape"; enabled: app.view !== 0; onActivated: { app.view = 0; root.forceActiveFocus() } }
+    Shortcut {
+        sequence: "Ctrl+Return"
+        enabled: app.view === 1
+        onActivated: Engine.applyWallpaper(properties.targetMonitor, properties.wallpaperId)
+    }
+    Shortcut {
+        sequence: "S"
+        enabled: app.view === 1 && app.keysEnabled
+        onActivated: Engine.stop(properties.targetMonitor)
+    }
+    Shortcut {
+        sequence: "A"
+        enabled: app.view === 0 && app.keysEnabled
+        onActivated: Engine.applyWallpaper(Engine.monitors.length > 0 ? Engine.monitors[0] : "", app.currentId)
+    }
 
     Item {
         id: root
@@ -58,12 +76,21 @@ ApplicationWindow {
                     id: browser
                     anchors.fill: parent
                     visible: app.view === 0
-                    onOpen: { app.view = 1; root.forceActiveFocus() }
+                    onOpen: (wallpaperId, title, preview) => {
+                        app.currentId = wallpaperId
+                        app.currentTitle = title
+                        app.currentPreview = preview
+                        app.view = 1
+                        root.forceActiveFocus()
+                    }
                     onPlaylists: { app.view = 2; root.forceActiveFocus() }
                     onRequestFocus: root.forceActiveFocus()
                 }
                 PropertiesView {
                     id: properties
+                    wallpaperId: app.currentId
+                    wallpaperTitle: app.currentTitle
+                    wallpaperPreview: app.currentPreview
                     anchors.fill: parent
                     visible: app.view === 1
                     onBack: { app.view = 0; root.forceActiveFocus() }

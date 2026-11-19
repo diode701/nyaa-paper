@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Nyaa Paper
+Comment=Wallpaper Engine frontend for Linux
+Exec=nyaa-paper
+Icon=io.github.diode701.NyaaPaper
+Terminal=false
+Type=Application
+Categories=Utility;Graphics;
+Keywords=wallpaper;steam;workshop;
+StartupWMClass=io.github.diode701.NyaaPaper

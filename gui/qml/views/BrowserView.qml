@@ -7,7 +7,7 @@ import "../components"
 Item {
     id: view
 
-    signal open
+    signal open(string wallpaperId, string title, string preview)
     signal playlists
     signal requestFocus
 
@@ -74,6 +74,14 @@ Item {
             cursor = next
     }
 
+    function current() { return pageItems.length ? pageItems[cursor] : null }
+
+    function openCurrent() {
+        const item = current()
+        if (item)
+            open(item.id, item.title, item.preview)
+    }
+
     function openSearch() {
         searchOpen = true
         search.forceActiveFocus()
@@ -124,7 +132,7 @@ Item {
                     selected: index === view.cursor
                     onClicked: {
                         view.cursor = index
-                        view.open()
+                        view.openCurrent()
                     }
                 }
             }
@@ -196,7 +204,7 @@ Item {
             Keys.onReturnPressed: {
                 if (view.pageItems.length > 0) {
                     view.closeSearch(false)
-                    view.open()
+                    view.openCurrent()
                 }
             }
             Keys.onDownPressed: view.closeSearch(false)

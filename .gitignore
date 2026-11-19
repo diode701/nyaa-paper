@@ -56,3 +56,8 @@ gui/build/
 compile_commands.json
 CMakeUserPresets.json
 .cache/
+
+# flatpak build outputs
+.flatpak-builder/
+packaging/repo/
+packaging/build*/

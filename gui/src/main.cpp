@@ -85,7 +85,8 @@ int main(int argc, char *argv[])
                              focus ? focus->metaObject()->className() : "none",
                              root->property("debugCursor").toInt(),
                              root->property("debugPage").toInt());
-                QCoreApplication::quit();
+                if (!qEnvironmentVariableIsSet("NYAA_SHOT"))
+                    QCoreApplication::quit();
             });
         });
     }

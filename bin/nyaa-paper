@@ -1,7 +1,0 @@
-#!/bin/bash
-if [ -f "/usr/share/nyaa-paper/nyaa-paper-launcher.jar" ]; then
-    java -jar /usr/share/nyaa-paper/nyaa-paper-launcher.jar "$@"
-else
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    java -jar "$SCRIPT_DIR/../lib/nyaa-paper-launcher.jar" "$@"
-fi

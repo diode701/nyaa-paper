@@ -6,6 +6,15 @@
 #include <QGuiApplication>
 #include <QScreen>
 
+void EngineBridge::applyWallpaper(const QString &monitor, const QString &wallpaperId)
+{
+    EngineCommand command;
+    command.wallpaperId = wallpaperId;
+    command.argv = {QStringLiteral("--screen-root"), monitor,
+                    QStringLiteral("--bg"), wallpaperId};
+    m_engine->apply(monitor, command);
+}
+
 EngineBridge::EngineBridge(QObject *parent)
     : QObject(parent)
 {

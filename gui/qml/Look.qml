@@ -5,8 +5,8 @@ import QtQuick
 QtObject {
     // grid
     property int thumb: 180
-    property int gap: 18
-    property int pad: 36
+    property int gap: 15        // Java HGAP / VGAP
+    property int pad: 20        // Java grid padding
     property int pageSlide: 170
 
     // card

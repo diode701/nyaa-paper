@@ -27,7 +27,8 @@ public:
     /// The standard location: $XDG_CONFIG_HOME/nyaa-paper/config.json
     static std::string defaultPath();
 
-    /// First existing Steam workshop folder, native or flatpak; empty if none.
+    /// Default workshop folder: $NYAA_WORKSHOP, else native Steam's path.
+    /// The daemon applies the same rule when config.json has no path.
     static std::string detectWorkshopPath();
 
 private:

@@ -1,33 +1,45 @@
 #include "PreviewSettings.hpp"
 
-#include <QDir>
+#include "bridge/ConfigBridge.hpp"
 
 namespace {
-QString configFile()
+QString nameOf(int mode)
 {
-    const QString dir = QDir::homePath() + QStringLiteral("/.config/nyaa-paper");
-    QDir().mkpath(dir);
-    return dir + QStringLiteral("/gui.ini");
+    switch (mode) {
+    case PreviewSettings::Off: return QStringLiteral("off");
+    case PreviewSettings::Hover: return QStringLiteral("hover");
+    default: return QStringLiteral("always");
+    }
 }
 } // namespace
 
-PreviewSettings::PreviewSettings(QObject *parent)
+PreviewSettings::PreviewSettings(ConfigBridge &config, QObject *parent)
     : QObject(parent)
-    , m_store(configFile(), QSettings::IniFormat)
+    , m_config(config)
 {
-    m_mode = m_store.value(QStringLiteral("previews/animation"), int(Always)).toInt();
+    // The Settings dialog edits Config.animation directly; follow it live.
+    connect(&m_config, &ConfigBridge::changed, this, &PreviewSettings::changed);
+}
+
+int PreviewSettings::animationMode() const
+{
+    const QString name = m_config.animation();
+    if (name == QStringLiteral("off"))
+        return Off;
+    if (name == QStringLiteral("hover"))
+        return Hover;
+    return Always;
 }
 
 void PreviewSettings::setAnimationMode(int mode)
 {
-    if (mode < Off || mode > Always || mode == m_mode)
+    if (mode < Off || mode > Always || mode == animationMode())
         return;
-    m_mode = mode;
-    m_store.setValue(QStringLiteral("previews/animation"), m_mode);
-    emit changed();
+    m_config.setAnimation(nameOf(mode));
+    m_config.save();
 }
 
 void PreviewSettings::cycle()
 {
-    setAnimationMode((m_mode + 1) % 3);
+    setAnimationMode((animationMode() + 1) % 3);
 }

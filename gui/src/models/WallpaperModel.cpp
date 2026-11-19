@@ -28,11 +28,16 @@ void WallpaperModel::setFilter(const QString &filter)
 
 void WallpaperModel::rebuild()
 {
+    m_byId.clear();
     m_visible.clear();
+    m_visibleRow.clear();
     m_visible.reserve(m_all.size());
     for (int i = 0; i < m_all.size(); ++i) {
-        if (m_filter.isEmpty() || m_all[i].title.contains(m_filter, Qt::CaseInsensitive))
+        m_byId.insert(m_all[i].id, i);
+        if (m_filter.isEmpty() || m_all[i].title.contains(m_filter, Qt::CaseInsensitive)) {
+            m_visibleRow.insert(m_all[i].id, int(m_visible.size()));
             m_visible.push_back(i);
+        }
     }
 }
 
@@ -91,24 +96,23 @@ QVariantMap WallpaperModel::at(int row) const
 
 QString WallpaperModel::previewFor(const QString &id) const
 {
-    for (const auto &item : m_all)
-        if (item.id == id)
-            return item.preview;
-    return {};
+    const auto it = m_byId.constFind(id);
+    return it == m_byId.cend() ? QString() : m_all[*it].preview;
 }
 
 QString WallpaperModel::basePathFor(const QString &id) const
 {
-    for (const auto &item : m_all)
-        if (item.id == id)
-            return item.basePath;
-    return {};
+    const auto it = m_byId.constFind(id);
+    return it == m_byId.cend() ? QString() : m_all[*it].basePath;
+}
+
+int WallpaperModel::indexOf(const QString &id) const
+{
+    return m_visibleRow.value(id, -1);
 }
 
 QString WallpaperModel::titleFor(const QString &id) const
 {
-    for (const auto &item : m_all)
-        if (item.id == id)
-            return item.title;
-    return id;
+    const auto it = m_byId.constFind(id);
+    return it == m_byId.cend() ? id : m_all[*it].title;
 }

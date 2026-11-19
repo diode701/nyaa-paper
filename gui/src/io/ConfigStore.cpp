@@ -132,17 +132,12 @@ std::string ConfigStore::defaultPath()
 
 std::string ConfigStore::detectWorkshopPath()
 {
-    const QString home = QDir::homePath();
-    const QStringList candidates{
-        home + "/.local/share/Steam/steamapps/workshop/content/431960",
-        home + "/.steam/steam/steamapps/workshop/content/431960",
-        home + "/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/workshop/content/431960",
-    };
-    for (const QString &candidate : candidates) {
-        if (QFileInfo::exists(candidate))
-            return candidate.toStdString();
-    }
-    return {};
+    // The same rule as the daemon (paths.rs) and Java's Builder: the env
+    // override, else native Steam's default. Flatpak Steam is out of scope.
+    const QString overridden = qEnvironmentVariable("NYAA_WORKSHOP");
+    if (!overridden.isEmpty())
+        return overridden.toStdString();
+    return (QDir::homePath() + "/.local/share/Steam/steamapps/workshop/content/431960").toStdString();
 }
 
 AppConfig ConfigStore::load() const

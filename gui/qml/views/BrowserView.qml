@@ -13,13 +13,17 @@ Item {
 
     property string pageLabel: "1/1"
 
-    // The original app's geometry, unchanged: fixed 180px thumbs, 15px gaps,
-    // 20px margins, and the status bar taken out of the usable height.
+    // WallpaperBrowser.recomputeGrid: 180 px thumbs, 15 px gaps, 20 px margins,
+    // usable area = window minus 40 x 80. Applied 150 ms after the last resize
+    // (Java's resizeDebouncer), keeping the page and the selected wallpaper.
     readonly property int gap: Look.gap
     readonly property int thumb: Look.thumb
-    readonly property int pad: Look.pad
-    readonly property int cols: Math.max(1, Math.floor((width - 2 * pad + gap) / (thumb + gap)))
-    readonly property int rows: Math.max(1, Math.floor((height - 2 * pad + gap) / (thumb + gap)))
+    readonly property int liveCols: (width - 40 < thumb || height - 80 < thumb)
+                                    ? 1 : Math.max(1, Math.floor((width - 40 + gap) / (thumb + gap)))
+    readonly property int liveRows: (width - 40 < thumb || height - 80 < thumb)
+                                    ? 1 : Math.max(1, Math.floor((height - 80 + gap) / (thumb + gap)))
+    property int cols: 1
+    property int rows: 1
     readonly property int pageSize: cols * rows
     readonly property int cellSize: thumb
     readonly property string cursorTitle: (cursor >= 0 && cursor < pageItems.length)
@@ -28,20 +32,49 @@ Item {
     readonly property int pageCount: Math.max(1, Math.ceil(Library.count / pageSize))
     property int page: 0
     property int cursor: 0
+    property string selectedId: ""      // Java: selectedId, survives reloads
     property var pageItems: []
+    property var prefetch: []           // previews of the pages around this one
     property int flipDir: 1
     property bool searchOpen: false
 
-    function rebuild() {
-        var start = page * pageSize
-        var items = []
+    function itemsOf(p) {
+        var start = p * pageSize
+        var out = []
         var n = Math.min(pageSize, Math.max(0, Library.count - start))
         for (var i = 0; i < n; ++i)
-            items.push(Library.at(start + i))
+            out.push(Library.at(start + i))
+        return out
+    }
+
+    function setCursor(i) {
+        cursor = Math.max(0, Math.min(i, pageItems.length - 1))
+        if (pageItems.length > 0)
+            selectedId = pageItems[cursor].id
+    }
+
+    /// WallpaperBrowser.loadPage: clamp the page, fill it, preload the pages
+    /// around it, and put the selection back on the same wallpaper if it is
+    /// on this page (else the first cell).
+    function rebuild() {
+        page = Math.max(0, Math.min(page, pageCount - 1))
+        var items = itemsOf(page)
         pageItems = items
         pageLabel = (page + 1) + "/" + pageCount
-        if (cursor >= items.length)
-            cursor = Math.max(0, items.length - 1)
+
+        var restored = 0
+        for (var i = 0; i < items.length; ++i) {
+            if (items[i].id === selectedId) { restored = i; break }
+        }
+        setCursor(restored)
+
+        var around = []
+        for (const p of [page - 1, page + 1]) {
+            if (p >= 0 && p < pageCount && p !== page)
+                for (const item of itemsOf(p))
+                    if (item.preview !== "") around.push(item.preview)
+        }
+        prefetch = around
     }
 
     function goTo(newPage, newCursor) {
@@ -49,29 +82,31 @@ Item {
             return
         flipDir = newPage > page ? 1 : -1
         page = newPage
-        cursor = Math.max(0, newCursor)
         deck.x = flipDir * 42
         deck.opacity = 0.3
         rebuild()
+        if (newCursor !== undefined)
+            setCursor(newCursor)       // moveSelection across pages picks the cell
         deckAnim.restart()
     }
 
+    /// WallpaperBrowser.moveSelection
     function move(dx, dy) {
         if (pageItems.length === 0)
             return
         var col = cursor % cols
         var row = Math.floor(cursor / cols)
         if (dy < 0 && row === 0) {
-            goTo(page - 1, Math.min((rows - 1) * cols + col, pageSize - 1))
+            if (page > 0) goTo(page - 1, (rows - 1) * cols + col)
             return
         }
         if (dy > 0 && row === rows - 1) {
-            goTo(page + 1, col)
+            if (page < pageCount - 1) goTo(page + 1, col)
             return
         }
         var next = cursor + dy * cols + dx
         if (next >= 0 && next < pageItems.length)
-            cursor = next
+            setCursor(next)
     }
 
     function current() { return pageItems.length ? pageItems[cursor] : null }
@@ -96,22 +131,46 @@ Item {
         requestFocus()
     }
 
-    Component.onCompleted: rebuild()
-    onVisibleChanged: if (visible) rebuild()
-    onPageSizeChanged: {
-        page = 0
-        cursor = 0
+    Timer {
+        id: resizeDebounce
+        interval: 150
+        onTriggered: {
+            view.cols = view.liveCols
+            view.rows = view.liveRows
+        }
+    }
+    onLiveColsChanged: resizeDebounce.restart()
+    onLiveRowsChanged: resizeDebounce.restart()
+
+    Component.onCompleted: {
+        cols = liveCols
+        rows = liveRows
         rebuild()
     }
+    onVisibleChanged: if (visible) rebuild()
+    onPageSizeChanged: rebuild()       // same page index, selection by id
 
     Connections {
         target: Library
         function onFilterChanged() {
             view.page = 0
-            view.cursor = 0
             view.rebuild()
         }
-        function onCountChanged() { view.rebuild() }
+        function onCountChanged() { view.rebuild() }   // onLibraryChange
+    }
+
+    // preloadAdjacentPages: decode the neighbours' thumbnails into the cache
+    Repeater {
+        model: view.prefetch
+        delegate: Image {
+            required property string modelData
+            visible: false
+            source: modelData
+            asynchronous: true
+            cache: true
+            sourceSize.width: 360
+            sourceSize.height: 360
+        }
     }
 
     Item {
@@ -131,7 +190,7 @@ Item {
                     pageStart: view.page * view.pageSize
                     selected: index === view.cursor
                     onClicked: {
-                        view.cursor = index
+                        view.setCursor(index)
                         view.openCurrent()
                     }
                 }

@@ -216,17 +216,20 @@ fn scan(root: &Path) -> Vec<Entry> {
         let id = entry.file_name().to_string_lossy().into_owned();
         let project = path.join("project.json");
 
-        let (title, kind, file) = match std::fs::read_to_string(&project) {
-            Ok(raw) => match serde_json::from_str::<serde_json::Value>(&raw) {
-                Ok(value) => (
-                    value.get("title").and_then(|v| v.as_str()).unwrap_or(id.as_str()).to_string(),
-                    value.get("type").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                    value.get("file").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                ),
-                Err(_) => (id.clone(), String::new(), String::new()),
-            },
-            Err(_) => (id.clone(), String::new(), String::new()),
+        // WpprRtrv: no project.json, not a wallpaper. ParseMD: unparsable
+        // JSON returns null and the folder is skipped.
+        let Ok(raw) = std::fs::read_to_string(&project) else { continue };
+        let value = match serde_json::from_str::<serde_json::Value>(&raw) {
+            Ok(value) => value,
+            Err(e) => {
+                warn!(%id, %e, "project.json is not valid JSON, skipped");
+                continue;
+            }
         };
+        let text = |key: &str| value.get(key).and_then(|v| v.as_str()).map(str::to_string);
+        let title = text("title").unwrap_or_else(|| id.clone());
+        let kind = text("type").unwrap_or_default();
+        let file = text("file").unwrap_or_default();
 
         let mtime = std::fs::metadata(&project)
             .and_then(|meta| meta.modified())
@@ -247,4 +250,36 @@ fn scan(root: &Path) -> Vec<Entry> {
 
     out.sort_by(|a, b| a.id.cmp(&b.id));
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn scan_keeps_only_real_wallpapers() {
+        let root = std::env::temp_dir().join(format!("nyaa-scan-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        for (id, project) in [
+            ("100", Some(r#"{"title": "Good", "type": "scene", "file": "scene.json"}"#)),
+            ("200", None),                                   // no project.json
+            ("300", Some("{ not json")),                     // broken
+            ("400", Some(r#"{"type": "video"}"#)),           // no title
+        ] {
+            let dir = root.join(id);
+            std::fs::create_dir_all(&dir).unwrap();
+            if let Some(json) = project {
+                std::fs::write(dir.join("project.json"), json).unwrap();
+            }
+        }
+        std::fs::write(root.join("stray-file.txt"), "x").unwrap();
+
+        let entries = scan(&root);
+        let ids: Vec<&str> = entries.iter().map(|e| e.id.as_str()).collect();
+        assert_eq!(ids, ["100", "400"]);
+        assert_eq!(entries[0].title, "Good");
+        assert_eq!(entries[0].kind, "scene");
+        assert_eq!(entries[1].title, "400");
+        let _ = std::fs::remove_dir_all(&root);
+    }
 }

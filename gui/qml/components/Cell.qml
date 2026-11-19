@@ -3,10 +3,16 @@ import QtQuick.Effects
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
 
+/// One grid cell. Java: WallpaperBrowser.createEmptyCell + loadPage/setCellImage.
+/// While the thumbnail loads it shows the short title (Java's placeholder
+/// label), then the image fades in over 300 ms. The static thumbnail goes
+/// through Qt's pixmap cache, so pages that were prefetched appear at once;
+/// GIFs only start an animated decoder when they are allowed to play.
 Item {
     id: cell
 
     required property string preview
+    required property string title
     required property int index
 
     property int pageStart: 0
@@ -18,9 +24,14 @@ Item {
 
     readonly property bool animate: Settings.animationMode === 2
                                     || (Settings.animationMode === 1 && (hovered || selected))
+    readonly property bool isGif: preview.toLowerCase().endsWith(".gif")
     readonly property int radius: Look.cardRadius
+    readonly property bool imageReady: previewImage.status === Image.Ready
 
     signal clicked
+
+    /// WallpaperBrowser.shortTitle
+    function shortTitle(text) { return text.length > 20 ? text.substring(0, 18) + "…" : text }
 
     Behavior on sel { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
     Behavior on hot { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
@@ -44,15 +55,6 @@ Item {
             GradientStop { position: 0.0; color: "#252E3A" }
             GradientStop { position: 1.0; color: "#191E26" }
         }
-
-        Rectangle {
-            anchors.fill: parent
-            visible: cell.preview === ""
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.hsla(((cell.pageStart + cell.index) * 0.11) % 1.0, 0.55, 0.40, 1.0) }
-                GradientStop { position: 1.0; color: Qt.hsla(((cell.pageStart + cell.index) * 0.11 + 0.1) % 1.0, 0.6, 0.14, 1.0) }
-            }
-        }
     }
 
     // Shadow + glow come from the body, so the preview is not part of the shape.
@@ -70,23 +72,49 @@ Item {
         shadowHorizontalOffset: 0
     }
 
-    // ---- preview, masked to the card shape ---------------------------------
-    // When masking is on the image itself must be hidden, otherwise its square
-    // corners stay visible underneath the masked copy. If a backend cannot run
-    // the effect the preview disappears, which is obvious and one Look toggle
-    // away from the plain path.
-    AnimatedImage {
+    // ---- placeholder: the short title while the thumbnail loads -------------
+    Text {
+        anchors.centerIn: parent
+        width: parent.width - 10
+        visible: !cell.imageReady
+        text: cell.shortTitle(cell.title)
+        color: "#d3d3d3"                    // Color.LIGHTGRAY
+        wrapMode: Text.WordWrap
+        horizontalAlignment: Text.AlignHCenter
+        font.pixelSize: 12
+    }
+
+    // ---- thumbnail: static, cached, fades in ---------------------------------
+    Image {
         id: previewImage
         anchors.fill: parent
         anchors.margins: Look.imageInset
         source: cell.preview
-        visible: cell.preview !== "" && !Look.roundPreviews
+        visible: cell.preview !== "" && !Look.roundPreviews && !animatedLoader.showing
         fillMode: Image.PreserveAspectFit
         asynchronous: true
-        cache: false
-        playing: cell.animate
+        cache: true
         sourceSize.width: 360
         sourceSize.height: 360
+        opacity: cell.imageReady ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 300 } }
+    }
+
+    // ---- animated GIF, only while it may play ---------------------------------
+    Loader {
+        id: animatedLoader
+        anchors.fill: previewImage
+        active: cell.isGif && cell.animate
+        readonly property bool showing: status === Loader.Ready && item && item.status === AnimatedImage.Ready
+        sourceComponent: AnimatedImage {
+            source: cell.preview
+            fillMode: Image.PreserveAspectFit
+            asynchronous: true
+            cache: false
+            playing: true
+            sourceSize.width: 360
+            sourceSize.height: 360
+        }
     }
 
     Rectangle {

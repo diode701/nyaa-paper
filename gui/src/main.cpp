@@ -39,8 +39,8 @@ int main(int argc, char *argv[])
     app.setDesktopFileName(QStringLiteral("io.github.diode701.NyaaPaper"));
 
     Theme theme;
-    PreviewSettings settings;
     ConfigBridge config;
+    PreviewSettings settings(config);
     EngineBridge engine;
     WallpaperModel library;
     PlaylistBridge playlist(library, config);

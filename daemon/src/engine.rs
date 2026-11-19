@@ -10,7 +10,6 @@ use tokio::process::{Child, Command};
 use tokio::task::JoinHandle;
 use tracing::{info, warn};
 use zbus::Connection;
-///NEEDS SOME SERIOUS UNDERSTANDING
 use crate::{paths, OBJECT_PATH};
 
 const IFACE: &str = "org.nyaa.Paper.Engine";
@@ -72,15 +71,16 @@ impl Engine {
         Self::terminate(running).await;
     }
 
-    // The Java WallpaperInstance.stop(): SIGTERM, wait up to 3 s, then SIGKILL.
+    // The Java WallpaperInstance.stop(): SIGTERM, wait up to 3 s, then
+    // force-kill the whole process tree (descendants first, then the engine).
     async fn terminate(running: Running) {
         let Running { pid, reaper, .. } = running;
         if let Err(e) = kill(Pid::from_raw(pid as i32), Signal::SIGTERM) {
             warn!(pid, %e, "could not send SIGTERM");
         }
         if tokio::time::timeout(STOP_GRACE, reaper).await.is_err() {
-            warn!(pid, "engine ignored SIGTERM, sending SIGKILL");
-            let _ = kill(Pid::from_raw(pid as i32), Signal::SIGKILL);
+            warn!(pid, "engine ignored SIGTERM, killing its process tree");
+            kill_tree(pid as i32);
         }
     }
 }
@@ -233,6 +233,77 @@ fn spawn_reaper(
             }
         }
     })
+}
+
+/// Every process below `root`, children before grandchildren. Read from
+/// /proc so it works without the engine's cooperation.
+fn descendants(root: i32) -> Vec<i32> {
+    let mut parents: Vec<(i32, i32)> = Vec::new(); // (pid, ppid)
+    if let Ok(dir) = std::fs::read_dir("/proc") {
+        for entry in dir.flatten() {
+            let Ok(pid) = entry.file_name().to_string_lossy().parse::<i32>() else { continue };
+            let Ok(stat) = std::fs::read_to_string(entry.path().join("stat")) else { continue };
+            // "pid (comm) state ppid ...": comm may contain spaces, so split after ')'
+            let Some(rest) = stat.rsplit_once(')').map(|(_, rest)| rest) else { continue };
+            if let Some(ppid) = rest.split_whitespace().nth(1).and_then(|p| p.parse().ok()) {
+                parents.push((pid, ppid));
+            }
+        }
+    }
+    let mut found = Vec::new();
+    let mut frontier = vec![root];
+    while let Some(parent) = frontier.pop() {
+        for &(pid, ppid) in &parents {
+            if ppid == parent && !found.contains(&pid) {
+                found.push(pid);
+                frontier.push(pid);
+            }
+        }
+    }
+    found
+}
+
+/// Java: handle.descendants().forEach(destroyForcibly); handle.destroyForcibly().
+/// The tree is collected before anything dies, because orphans get reparented.
+fn kill_tree(root: i32) {
+    for pid in descendants(root) {
+        let _ = kill(Pid::from_raw(pid), Signal::SIGKILL);
+    }
+    let _ = kill(Pid::from_raw(root), Signal::SIGKILL);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn kill_tree_takes_the_children_too() {
+        // an "engine" that ignores SIGTERM and has two children
+        let mut engine = std::process::Command::new("bash")
+            .args(["-c", "trap '' TERM; sleep 300 & sleep 300 & wait"])
+            .spawn()
+            .unwrap();
+        let root = engine.id() as i32;
+        let mut children = Vec::new();
+        for _ in 0..50 {
+            children = descendants(root);
+            if children.len() >= 2 {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        assert_eq!(children.len(), 2, "both sleeps should be found");
+
+        kill_tree(root);
+        engine.wait().unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        for pid in children {
+            let alive = std::fs::read_to_string(format!("/proc/{pid}/stat"))
+                .map(|s| !s.rsplit_once(')').map(|(_, r)| r.trim_start().starts_with('Z')).unwrap_or(true))
+                .unwrap_or(false);
+            assert!(!alive, "child {pid} survived");
+        }
+    }
 }
 
 // Exit code, or negated signal number when it died from a signal (-11 = SIGSEGV).

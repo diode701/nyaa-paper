@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QAbstractListModel>
+#include <QHash>
 #include <QString>
 #include <QVariantMap>
 #include <QVector>
@@ -45,6 +46,8 @@ public:
     Q_INVOKABLE QString titleFor(const QString &id) const;
     /// Folder of a subscribed wallpaper; empty when it is not in the library.
     QString basePathFor(const QString &id) const;
+    /// Row of a wallpaper among the visible (filtered) ones, -1 if hidden or gone.
+    Q_INVOKABLE int indexOf(const QString &id) const;
     /// True when the library has been loaded and the id is in it.
     bool contains(const QString &id) const { return !basePathFor(id).isEmpty(); }
 
@@ -57,5 +60,7 @@ private:
 
     QVector<WallpaperItem> m_all;
     QVector<int> m_visible;
+    QHash<QString, int> m_byId;        // id -> index in m_all (Java: WpprLib.idMap)
+    QHash<QString, int> m_visibleRow;  // id -> row in m_visible
     QString m_filter;
 };

@@ -1,10 +1,12 @@
 #pragma once
 
 #include <QObject>
-#include <QSettings>
 
-/// User preferences for the client. Stored at ~/.config/nyaa-paper/gui.ini so
-/// dev runs and the flatpak share one file.
+class ConfigBridge;
+
+/// How grid previews animate. One value, stored in config.json as
+/// preview.animation ("always" / "hover" / "off"): the G key and the Settings
+/// dialog change the same thing.
 class PreviewSettings : public QObject
 {
     Q_OBJECT
@@ -14,16 +16,16 @@ public:
     enum Mode { Off = 0, Hover = 1, Always = 2 };
     Q_ENUM(Mode)
 
-    explicit PreviewSettings(QObject *parent = nullptr);
+    explicit PreviewSettings(ConfigBridge &config, QObject *parent = nullptr);
 
-    int animationMode() const { return m_mode; }
+    int animationMode() const;
     void setAnimationMode(int mode);
+    /// G: always → off → hover → always (cycles like before) and saves.
     Q_INVOKABLE void cycle();
 
 Q_SIGNALS:
     void changed();
 
 private:
-    QSettings m_store;
-    int m_mode = Always;
+    ConfigBridge &m_config;
 };

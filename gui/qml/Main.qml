@@ -45,13 +45,14 @@ ApplicationWindow {
     Shortcut { sequence: "Right";  enabled: app.keysEnabled && app.view === 0; onActivated: browser.move(1, 0) }
     Shortcut { sequence: "Up";     enabled: app.keysEnabled && app.view === 0; onActivated: browser.move(0, -1) }
     Shortcut { sequence: "Down";   enabled: app.keysEnabled && app.view === 0; onActivated: browser.move(0, 1) }
-    Shortcut { sequence: "PgUp";   enabled: app.keysEnabled && app.view === 0; onActivated: browser.goTo(browser.page - 1, 0) }
-    Shortcut { sequence: "PgDown"; enabled: app.keysEnabled && app.view === 0; onActivated: browser.goTo(browser.page + 1, 0) }
+    Shortcut { sequence: "PgUp";   enabled: app.keysEnabled && app.view === 0; onActivated: browser.goTo(browser.page - 1) }
+    Shortcut { sequence: "PgDown"; enabled: app.keysEnabled && app.view === 0; onActivated: browser.goTo(browser.page + 1) }
     Shortcut { sequence: "Return"; enabled: app.keysEnabled && app.view === 0; onActivated: browser.openCurrent() }
     Shortcut { sequence: "Enter";  enabled: app.keysEnabled && app.view === 0; onActivated: browser.openCurrent() }
     Shortcut { sequence: "/";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.openSearch() }
-    Shortcut { sequence: "N";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.goTo(browser.page + 1, 0) }
-    Shortcut { sequence: "P";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.goTo(browser.page - 1, 0) }
+    // WallpaperBrowser: PAGE_UP / N = previous page, PAGE_DOWN / P = next page
+    Shortcut { sequence: "N";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.goTo(browser.page - 1) }
+    Shortcut { sequence: "P";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.goTo(browser.page + 1) }
     Shortcut { sequence: "M";      enabled: app.keysEnabled && app.view === 0; onActivated: browser.playlists() }
     Shortcut { sequence: "G";      enabled: app.keysEnabled && app.view === 0; onActivated: Settings.cycle() }
     Shortcut { sequence: "S";      enabled: app.keysEnabled && app.view === 0; onActivated: app.settingsOpen = true }

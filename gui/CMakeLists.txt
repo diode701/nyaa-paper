@@ -25,6 +25,8 @@ qt_add_executable(nyaa-paper-qt
     src/models/WallpaperModel.cpp
     src/models/MockLibrary.hpp
     src/models/MockLibrary.cpp
+    src/models/DbusLibrary.hpp
+    src/models/DbusLibrary.cpp
     src/ui/Theme.hpp
     src/ui/PreviewSettings.hpp
     src/ui/PreviewSettings.cpp

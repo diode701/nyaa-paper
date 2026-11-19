@@ -10,6 +10,7 @@
 #include <QtQml>
 
 #include "bridge/EngineBridge.hpp"
+#include "models/DbusLibrary.hpp"
 #include "models/MockLibrary.hpp"
 #include "models/WallpaperModel.hpp"
 #include "ui/PreviewSettings.hpp"
@@ -32,7 +33,19 @@ int main(int argc, char *argv[])
     PreviewSettings settings;
     EngineBridge engine;
     WallpaperModel library;
-    library.setAll(MockLibrary::load());
+    if (qEnvironmentVariableIsSet("NYAA_MOCK")) {
+        library.setAll(MockLibrary::load());
+    } else {
+        auto *dbusLibrary = new DbusLibrary(&app);
+        QObject::connect(dbusLibrary, &DbusLibrary::wallpapersLoaded,
+                         &library, &WallpaperModel::setAll);
+        // No daemon yet? Show the sample deck rather than an empty window.
+        QObject::connect(dbusLibrary, &DbusLibrary::failed, &library, [&library](const QString &message) {
+            qWarning("library: %s", qUtf8Printable(message));
+            if (library.count() == 0)
+                library.setAll(MockLibrary::sample());
+        });
+    }
 
     qmlRegisterSingletonInstance("NyaaPaper.Theme", 1, 0, "Theme", &theme);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Settings", &settings);

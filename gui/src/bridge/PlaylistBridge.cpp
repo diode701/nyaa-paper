@@ -139,6 +139,12 @@ void PlaylistBridge::push()
 {
     if (!m_playlist || m_monitor.isEmpty())
         return;
+    ++m_edits;
+    if (m_saving) {
+        m_dirty = true;   // sent when the current save returns
+        return;
+    }
+    m_saving = true;
     Document doc;
     doc.mode = m_mode;
     doc.interval = m_interval;
@@ -154,6 +160,11 @@ void PlaylistBridge::push()
         if (reply.isError())
             emit failed(reply.error().message());
         call->deleteLater();
+        m_saving = false;
+        if (m_dirty) {
+            m_dirty = false;
+            push();
+        }
     });
 }
 
@@ -209,13 +220,14 @@ void PlaylistBridge::reload()
         return;
 
     const QString monitor = m_monitor;
+    const quint64 edits = m_edits;
     auto *watcher = new QDBusPendingCallWatcher(m_playlist->Get(monitor), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
-            [this, monitor](QDBusPendingCallWatcher *call) {
+            [this, monitor, edits](QDBusPendingCallWatcher *call) {
                 const QDBusPendingReply<QString> reply = *call;
                 if (reply.isError())
                     emit failed(reply.error().message());
-                else if (monitor == m_monitor)
+                else if (monitor == m_monitor && edits == m_edits)
                     apply(parse(reply.value()));
                 call->deleteLater();
             });

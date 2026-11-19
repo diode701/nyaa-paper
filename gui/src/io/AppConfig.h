@@ -34,6 +34,16 @@ struct EngineDefaults
 struct UiConfig
 {
     std::string monitor;
+    /// Output names Qt does not report, added by hand (Java: custom monitors
+    /// in the launcher). Shown after the detected screens.
+    std::vector<std::string> customMonitors;
+};
+
+/// Java Settings.persistOnStart / autoStartOnBoot
+struct StartupConfig
+{
+    bool persistOnStart = true;     // restore each monitor's wallpaper at launch
+    bool autoStartOnBoot = false;   // start hidden in the tray at login
 };
 
 /// The whole user configuration. A plain value: no singleton, no I/O.
@@ -44,6 +54,7 @@ struct AppConfig
     PreviewConfig preview;
     EngineDefaults engine;
     UiConfig ui;
+    StartupConfig startup;
 };
 
 } // namespace nyaa::io

@@ -15,6 +15,7 @@
 #include "io/WallpaperConfigJson.h"
 #include "models/GlobalOptionsModel.hpp"
 #include "models/PropertyModel.hpp"
+#include "util/Gpu.h"
 #include "util/VideoDuration.h"
 
 using nyaa::domain::GpuConfig;
@@ -31,6 +32,7 @@ PropertiesController::PropertiesController(PropertyModel &properties, GlobalOpti
     , m_config(config)
 {
     connect(&m_engine, &EngineBridge::applyFinished, this, &PropertiesController::onApplyFinished);
+    m_nvidia = nyaa::util::detectNvidia();   // once, like the Java launcher
 }
 
 // ---- GPU / screenshot state ------------------------------------------------

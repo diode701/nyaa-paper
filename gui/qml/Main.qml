@@ -24,6 +24,32 @@ ApplicationWindow {
 
     property int view: 0
     property bool settingsOpen: false
+    /// Hidden in the tray: the grid lets go of its thumbnails (suspendToTray)
+    property bool suspended: false
+
+    /// WallpaperBrowser.collapseToTray / suspendToTray
+    function hideToTray() {
+        suspended = true
+        app.hide()
+        app.releaseResources()
+    }
+
+    /// restoreFromTray
+    function restoreFromTray() {
+        suspended = false
+        app.show()
+        app.raise()
+        app.requestActivate()
+        root.forceActiveFocus()
+    }
+
+    // Java: closing the window collapses to the tray instead of quitting.
+    onClosing: (close) => {
+        if (Tray.available) {
+            close.accepted = false
+            hideToTray()
+        }
+    }
     property bool startGlobal: false
     property bool startMini: false
     property string currentId: ""
@@ -210,6 +236,7 @@ ApplicationWindow {
                 BrowserView {
                     id: browser
                     anchors.fill: parent
+                    suspended: app.suspended
                     visible: app.view === 0
                     onOpen: (wallpaperId, title, preview, basePath) => {
                         app.currentId = wallpaperId
@@ -269,6 +296,15 @@ ApplicationWindow {
             anchors.right: parent.right
             anchors.margins: 18
         }
+    }
+
+    Connections {
+        target: Tray
+        function onRestoreRequested() { app.restoreFromTray() }
+    }
+    Connections {
+        target: Config
+        function onProblem(message) { toast.show(message) }
     }
 
     Connections {

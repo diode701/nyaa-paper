@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Quick Qml QuickControls2 DBus)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Quick Qml QuickControls2 DBus)
 qt_standard_project_setup(REQUIRES 6.5)
 
 set(INTERFACES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../interfaces)
@@ -39,6 +39,14 @@ qt_add_executable(nyaa-paper-qt
     src/bridge/PropertiesController.cpp
     src/bridge/ConfigRenderer.hpp
     src/bridge/ConfigRenderer.cpp
+    src/app/Autostart.hpp
+    src/app/Autostart.cpp
+    src/app/StartupRestore.hpp
+    src/app/StartupRestore.cpp
+    src/app/Tray.hpp
+    src/app/Tray.cpp
+    src/util/Gpu.h
+    src/util/Gpu.cpp
     src/io/WallpaperConfigJson.h
     src/io/WallpaperConfigJson.cpp
     src/domain/WallpaperConfig.h
@@ -89,7 +97,13 @@ qt_add_qml_module(nyaa-paper-qt
 target_include_directories(nyaa-paper-qt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(nyaa-paper-qt PRIVATE
-    Qt6::Core Qt6::Gui Qt6::Quick Qt6::Qml Qt6::QuickControls2 Qt6::DBus
+    Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Quick Qt6::Qml Qt6::QuickControls2 Qt6::DBus
+)
+
+qt_add_resources(nyaa-paper-qt "icons"
+    PREFIX "/"
+    BASE resources
+    FILES resources/icon-128.png
 )
 
 install(TARGETS nyaa-paper-qt
@@ -133,6 +147,11 @@ qt_add_executable(controller_test
     tests/controller_test.cpp
     src/bridge/PropertiesController.cpp
     src/bridge/ConfigBridge.cpp
+    src/app/Autostart.cpp
+    src/util/Gpu.cpp
+    src/app/StartupRestore.cpp
+    src/bridge/ConfigRenderer.cpp
+    src/io/WallpaperConfigJson.cpp
     src/bridge/EngineBridge.cpp
     src/bridge/PlaylistBridge.cpp
     src/bridge/ConfigRenderer.cpp
@@ -165,6 +184,7 @@ qt_add_executable(playlist_test
     tests/playlist_test.cpp
     src/bridge/PlaylistBridge.cpp
     src/bridge/ConfigBridge.cpp
+    src/app/Autostart.cpp
     src/bridge/ConfigRenderer.cpp
     src/models/WallpaperModel.cpp
     src/domain/settings/Setting.cpp
@@ -180,3 +200,8 @@ qt_add_executable(playlist_test
 )
 target_include_directories(playlist_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(playlist_test PRIVATE Qt6::Core Qt6::Gui Qt6::DBus)
+
+add_executable(autostart_test tests/autostart_test.cpp src/app/Autostart.cpp)
+target_include_directories(autostart_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(autostart_test PRIVATE Qt6::Core Qt6::DBus)
+add_test(NAME autostart_test COMMAND autostart_test)

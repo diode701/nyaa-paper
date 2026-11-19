@@ -29,6 +29,8 @@ class PropertiesController : public QObject
     Q_PROPERTY(QString gpuMode READ gpuMode WRITE setGpuMode NOTIFY gpuChanged)
     Q_PROPERTY(int driPrimeNumber READ driPrimeNumber WRITE setDriPrimeNumber NOTIFY gpuChanged)
     Q_PROPERTY(bool glThreaded READ glThreaded WRITE setGlThreaded NOTIFY gpuChanged)
+    /// Java: the NVIDIA radio is shown only when NVIDIA is detected
+    Q_PROPERTY(bool nvidiaAvailable READ nvidiaAvailable CONSTANT)
     // Screenshot section
     Q_PROPERTY(bool screenshotEnabled READ screenshotEnabled WRITE setScreenshotEnabled NOTIFY screenshotChanged)
     Q_PROPERTY(QString screenshotPath READ screenshotPath WRITE setScreenshotPath NOTIFY screenshotChanged)
@@ -41,6 +43,7 @@ public:
     QString gpuMode() const;
     int driPrimeNumber() const { return m_gpu.driPrimeNumber; }
     bool glThreaded() const { return m_gpu.glThreaded; }
+    bool nvidiaAvailable() const { return m_nvidia; }
     bool screenshotEnabled() const { return m_screenshotEnabled; }
     QString screenshotPath() const { return m_screenshotPath; }
     int screenshotDelay() const { return m_screenshotDelay; }
@@ -90,6 +93,7 @@ private:
     QString m_wallpaperId;
     QString m_basePath;
     nyaa::domain::GpuConfig m_gpu;
+    bool m_nvidia = false;
     bool m_screenshotEnabled = false;
     QString m_screenshotPath;
     int m_screenshotDelay = 5;

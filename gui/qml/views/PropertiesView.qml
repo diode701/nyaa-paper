@@ -502,6 +502,7 @@ Item {
                     Item { Layout.fillWidth: true }
                 }
                 RadioButton {
+                    visible: Controller.nvidiaAvailable   // Java: hidden unless detected
                     text: "NVIDIA Prime Offload"
                     checked: Controller.gpuMode === "NVIDIA"
                     onToggled: if (checked) Controller.gpuMode = "NVIDIA"

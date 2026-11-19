@@ -116,4 +116,12 @@ private:
     QStringList m_connected;
     QStringList m_monitors;
     QString m_message;
+    /// Bumped by every local edit. A reload answer that was asked for before
+    /// the latest edit is stale and must not overwrite it.
+    quint64 m_edits = 0;
+    /// The daemon may run D-Bus calls concurrently, so two Sets in a row can
+    /// land out of order. Only one is in flight; edits made meanwhile are
+    /// sent, as the latest state, when it returns.
+    bool m_saving = false;
+    bool m_dirty = false;
 };

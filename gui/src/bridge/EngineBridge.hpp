@@ -18,7 +18,7 @@ class EngineBridge : public QObject
     Q_PROPERTY(QString version READ version NOTIFY infoChanged)
     Q_PROPERTY(QString enginePath READ enginePath NOTIFY infoChanged)
     Q_PROPERTY(QVariantMap running READ running NOTIFY runningChanged)
-    Q_PROPERTY(QStringList monitors READ monitors CONSTANT)
+    Q_PROPERTY(QStringList monitors READ monitors NOTIFY monitorsChanged)
     Q_PROPERTY(bool mock READ mock CONSTANT)
 
 public:
@@ -34,12 +34,16 @@ public:
     Q_INVOKABLE void stop(const QString &monitor) { m_engine->stop(monitor); }
     Q_INVOKABLE void stopAll() { m_engine->stopAll(); }
 
+    /// Detected screens first, then names added by hand (Settings).
+    void setCustomMonitors(const QStringList &names);
+
     /// Run this exact command on the monitor; the answer is applyFinished().
     void apply(const QString &monitor, const EngineRequest &request) { m_engine->apply(monitor, request); }
 
 Q_SIGNALS:
     void infoChanged();
     void runningChanged();
+    void monitorsChanged();
     void engineExited(const QString &monitor, int code);
     void applyFinished(const QString &monitor, bool ok, const QString &message);
     void error(const QString &message);
@@ -47,6 +51,7 @@ Q_SIGNALS:
 private:
     std::unique_ptr<IEngine> m_engine;
     QVariantMap m_running;
+    QStringList m_detected;
     QStringList m_monitors;
     bool m_mock = false;
 };

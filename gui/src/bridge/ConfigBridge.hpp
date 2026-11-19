@@ -22,6 +22,10 @@ class ConfigBridge : public QObject
     Q_PROPERTY(int pageSlideMs READ pageSlideMs WRITE setPageSlideMs NOTIFY changed)
 
     Q_PROPERTY(QString layer READ layer WRITE setLayer NOTIFY changed)
+    Q_PROPERTY(bool persistOnStart READ persistOnStart WRITE setPersistOnStart NOTIFY changed)
+    Q_PROPERTY(bool autoStartOnBoot READ autoStartOnBoot WRITE setAutoStartOnBoot NOTIFY changed)
+    /// Comma separated, as typed in Settings
+    Q_PROPERTY(QString customMonitors READ customMonitors WRITE setCustomMonitors NOTIFY changed)
 
 public:
     explicit ConfigBridge(QObject *parent = nullptr);
@@ -36,6 +40,12 @@ public:
     QString animation() const;
     int pageSlideMs() const;
     QString layer() const;
+    bool persistOnStart() const { return m_config.startup.persistOnStart; }
+    bool autoStartOnBoot() const { return m_config.startup.autoStartOnBoot; }
+    QString customMonitors() const;
+    void setPersistOnStart(bool on);
+    void setAutoStartOnBoot(bool on);
+    void setCustomMonitors(const QString &commaList);
 
     void setWorkshopPath(const QString &value);
     void setEnginePath(const QString &value);
@@ -55,6 +65,7 @@ public:
 Q_SIGNALS:
     void changed();
     void saved(bool ok);
+    void problem(const QString &message);
 
 private:
     nyaa::io::ConfigStore m_store;

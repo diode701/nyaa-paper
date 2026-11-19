@@ -38,6 +38,14 @@ QJsonObject toJson(const AppConfig &config)
 
     QJsonObject ui;
     ui["monitor"] = QString::fromStdString(config.ui.monitor);
+    QJsonArray custom;
+    for (const auto &name : config.ui.customMonitors)
+        custom.append(QString::fromStdString(name));
+    ui["customMonitors"] = custom;
+
+    QJsonObject startup;
+    startup["persistOnStart"] = config.startup.persistOnStart;
+    startup["autoStartOnBoot"] = config.startup.autoStartOnBoot;
 
     QJsonObject root;
     root["version"] = config.version;
@@ -45,6 +53,7 @@ QJsonObject toJson(const AppConfig &config)
     root["preview"] = preview;
     root["engine"] = engine;
     root["ui"] = ui;
+    root["startup"] = startup;
     return root;
 }
 
@@ -88,6 +97,13 @@ AppConfig fromJson(const QJsonObject &root)
 
     const QJsonObject ui = root.value("ui").toObject();
     config.ui.monitor = stringOr(ui, "monitor", config.ui.monitor);
+    for (const QJsonValue &name : ui.value("customMonitors").toArray())
+        if (!name.toString().trimmed().isEmpty())
+            config.ui.customMonitors.push_back(name.toString().trimmed().toStdString());
+
+    const QJsonObject startup = root.value("startup").toObject();
+    config.startup.persistOnStart = boolOr(startup, "persistOnStart", config.startup.persistOnStart);
+    config.startup.autoStartOnBoot = boolOr(startup, "autoStartOnBoot", config.startup.autoStartOnBoot);
 
     return config;
 }

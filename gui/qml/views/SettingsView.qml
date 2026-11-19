@@ -131,6 +131,32 @@ Item {
                     PathRow { label: "Screenshots"; value: Config.screenshotsPath; onEdited: Config.screenshotsPath = text }
                     PathRow { label: "PyWAL cache"; value: Config.pywalPath; onEdited: Config.pywalPath = text }
 
+                    Section { text: "MONITORS" }
+                    PathRow {
+                        label: "Extra monitors"
+                        value: Config.customMonitors
+                        onEdited: Config.customMonitors = text
+                    }
+                    Text {
+                        text: "Detected: " + Engine.monitors.join(", ") + ". Add outputs Qt does not report, comma separated (e.g. DP-2)."
+                        color: Theme.dim
+                        font.pixelSize: 10
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+
+                    Section { text: "STARTUP" }
+                    CheckBox {
+                        text: "Restore wallpapers on start"
+                        checked: Config.persistOnStart
+                        onToggled: Config.persistOnStart = checked
+                    }
+                    CheckBox {
+                        text: "Start on login (runs in tray)"
+                        checked: Config.autoStartOnBoot
+                        onToggled: Config.autoStartOnBoot = checked
+                    }
+
                     Section { text: "PREVIEWS" }
                     OptionRow {
                         label: "Animated previews"

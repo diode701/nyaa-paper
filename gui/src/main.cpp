@@ -1,4 +1,4 @@
-#include <QGuiApplication>
+#include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include <cstdio>
@@ -10,6 +10,8 @@
 #include <QTimer>
 #include <QtQml>
 
+#include "app/StartupRestore.hpp"
+#include "app/Tray.hpp"
 #include "bridge/ConfigBridge.hpp"
 #include "bridge/EngineBridge.hpp"
 #include "bridge/PlaylistBridge.hpp"
@@ -33,7 +35,9 @@ int main(int argc, char *argv[])
 
     QQuickStyle::setStyle(QStringLiteral("Material"));
 
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);   // QApplication: the tray icon needs widgets
+    // NyaaLauncher --tray: start hidden in the tray (used by autostart)
+    const bool trayStart = app.arguments().contains(QStringLiteral("--tray"));
     app.setApplicationName(QStringLiteral("nyaa-paper"));
     app.setOrganizationName(QStringLiteral("diode701"));
     app.setDesktopFileName(QStringLiteral("io.github.diode701.NyaaPaper"));
@@ -44,16 +48,31 @@ int main(int argc, char *argv[])
     EngineBridge engine;
     WallpaperModel library;
     PlaylistBridge playlist(library, config);
-    playlist.setConnectedMonitors(engine.monitors());
+    // Monitors: detected screens + names added in Settings (Java: monitorConfig)
+    const auto syncMonitors = [&engine, &playlist, &config] {
+        engine.setCustomMonitors(config.customMonitors().split(QLatin1Char(','), Qt::SkipEmptyParts));
+        playlist.setConnectedMonitors(engine.monitors());
+    };
+    syncMonitors();
+    QObject::connect(&config, &ConfigBridge::saved, &app, syncMonitors);
+    Tray tray(engine);
+    StartupRestore restore(config, engine, library);
     PropertyModel properties;
     GlobalOptionsModel globalOptions;
     PropertiesController controller(properties, globalOptions, engine, playlist, config);
     if (qEnvironmentVariableIsSet("NYAA_MOCK")) {
         library.setAll(MockLibrary::load());
+        restore.libraryLoaded();
     } else {
         auto *dbusLibrary = new DbusLibrary(&app);
         QObject::connect(dbusLibrary, &DbusLibrary::wallpapersLoaded,
                          &library, &WallpaperModel::setAll);
+        // autoRestoreWallpapers runs once the library is known
+        QObject::connect(dbusLibrary, &DbusLibrary::wallpapersLoaded, &restore,
+                         [&restore](const QVector<WallpaperItem> &items) {
+                             if (!items.isEmpty())
+                                 restore.libraryLoaded();
+                         });
         // Builder.build(): once at startup, drop saved configs of wallpapers
         // that are no longer subscribed.
         auto cleaned = std::make_shared<bool>(false);
@@ -84,11 +103,15 @@ int main(int argc, char *argv[])
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Engine", &engine);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Controller", &controller);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Library", &library);
+    qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Tray", &tray);
 
     QQmlApplicationEngine qml;
     qml.loadFromModule("NyaaPaper", "Main");
     if (qml.rootObjects().isEmpty())
         return 1;
+
+    if (trayStart && tray.available())
+        QMetaObject::invokeMethod(qml.rootObjects().first(), "hideToTray");
 
     // Dev aid: NYAA_WINDOW=2540x1422 renders at the user's real window size.
     if (qEnvironmentVariableIsSet("NYAA_WINDOW")) {

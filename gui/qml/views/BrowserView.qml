@@ -37,6 +37,17 @@ Item {
     property var prefetch: []           // previews of the pages around this one
     property int flipDir: 1
     property bool searchOpen: false
+    property bool suspended: false
+
+    // suspendToTray: drop every thumbnail while hidden; restoreFromTray reloads
+    onSuspendedChanged: {
+        if (suspended) {
+            pageItems = []
+            prefetch = []
+        } else {
+            rebuild()
+        }
+    }
 
     function itemsOf(p) {
         var start = p * pageSize

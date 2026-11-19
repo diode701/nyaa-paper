@@ -13,6 +13,7 @@
 #include "bridge/ConfigBridge.hpp"
 #include "bridge/EngineBridge.hpp"
 #include "bridge/PlaylistBridge.hpp"
+#include "app/StartupRestore.hpp"
 #include "bridge/PropertiesController.hpp"
 #include "io/WallpaperStore.h"
 #include "models/GlobalOptionsModel.hpp"
@@ -28,6 +29,14 @@ bool hasPair(const QStringList &argv, const QString &flag, const QString &value)
 {
     const int i = argv.indexOf(flag);
     return i >= 0 && i + 1 < argv.size() && argv[i + 1] == value;
+}
+
+void spinFor(int ms)
+{
+    QElapsedTimer t;
+    t.start();
+    while (t.elapsed() < ms)
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
 }
 
 /// Run the event loop until the controller reports `expected`.
@@ -178,6 +187,46 @@ int main(int argc, char *argv[])
     const QStringList entryArgv = entry.value("argv").toStringList();
     assert(has(entryArgv, "fov=0.30"));
     assert(!has(entryArgv, "--screenshot"));
+
+    // ---- J1: autoRestoreWallpapers ------------------------------------------
+    {
+        library.setAll({{"777", "test", "scene", {}, wallpaperDir.path()}});
+        engine.setCustomMonitors({"TEST-R", "TEST-SKIP"});
+
+        auto saved = controller.capture("TEST-R");
+        saved.wallpaperId = "777";   // the one in this library
+        saved.gpu.mode = GpuConfig::Mode::DriPrime;
+        store.save(saved);
+        // a monitor the daemon already runs must be left alone
+        auto running = controller.capture("TEST-SKIP");
+        running.wallpaperId = "777";
+        store.save(running);
+
+        QStringList applied;
+        auto watch = QObject::connect(&engine, &EngineBridge::applyFinished,
+                                      [&applied](const QString &m, bool ok, const QString &) {
+                                          if (ok) applied << m;
+                                      });
+        QStringList restoredMonitors;
+        bool reported = false;
+        {
+            StartupRestore restore(config, engine, library);
+            QObject::connect(&restore, &StartupRestore::restored, [&](const QStringList &m) {
+                restoredMonitors = m;
+                reported = true;
+            });
+            restore.libraryLoaded();
+            QElapsedTimer t;
+            t.start();
+            while (!reported && t.elapsed() < 2000)
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+            spinFor(200);
+        }
+        assert(reported);
+        assert(restoredMonitors.contains("TEST-R"));
+        assert(applied.contains("TEST-R"));
+        QObject::disconnect(watch);
+    }
 
     std::puts("controller tests passed");
     return 0;

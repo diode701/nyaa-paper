@@ -88,6 +88,7 @@ void DbusEngine::stop(const QString &monitor)
 
 void DbusEngine::stopAll()
 {
+    // Used on "Quit and stop wallpapers": wait, or the call dies with us.
     if (m_engine)
-        m_engine->StopAll();
+        m_engine->StopAll().waitForFinished();
 }

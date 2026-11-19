@@ -39,7 +39,8 @@ void appendEnvironment(std::vector<std::string> &env, const GpuConfig &gpu)
 } // namespace
 
 EngineCommand Renderer::render(const std::string &monitor, const Wallpaper &wallpaper,
-                               const settings::SettingList &settings, const GpuConfig &gpu,
+                               const settings::SettingList &settings,
+                               const options::GlobalOptions &globals, const GpuConfig &gpu,
                                const Screenshot &screenshot)
 {
     EngineCommand command;
@@ -48,8 +49,13 @@ EngineCommand Renderer::render(const std::string &monitor, const Wallpaper &wall
     command.argv = {"--screen-root", monitor, "--bg", wallpaper.id};
     appendScreenshot(command.argv, monitor, screenshot);
 
-    // engine-wide flags first, then the property block: LWE's parser needs it
+    // engine-wide flags first (volume, fps, boolean flags), then the flags that
+    // must follow them (scaling, clamp), then the --set-property block.
+    for (const auto &arg : globals.arguments(true))
+        command.argv.push_back(arg);
     for (const auto &arg : settings.arguments(true))
+        command.argv.push_back(arg);
+    for (const auto &arg : globals.arguments(false))
         command.argv.push_back(arg);
     for (const auto &arg : settings.arguments(false))
         command.argv.push_back(arg);

@@ -3,6 +3,7 @@
 #include <string>
 
 #include "domain/Types.hpp"
+#include "domain/options/GlobalOptions.h"
 #include "domain/settings/SettingList.h"
 
 namespace nyaa::domain {
@@ -17,6 +18,7 @@ public:
     static EngineCommand render(const std::string &monitor,
                                 const Wallpaper &wallpaper,
                                 const settings::SettingList &settings,
+                                const options::GlobalOptions &globals,
                                 const GpuConfig &gpu,
                                 const Screenshot &screenshot);
 };

@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstdio>
 
+#include "domain/options/GlobalOptions.h"
 #include "domain/Renderer.h"
 #include "domain/settings/SettingFactory.h"
 #include "domain/settings/SettingList.h"
@@ -70,9 +71,12 @@ int main()
     gpu.driPrimeNumber = 1;
     gpu.glThreaded = true;
 
-    const EngineCommand command = nyaa::domain::Renderer::render("eDP-1", wallpaper, list, gpu, {});
+    nyaa::domain::options::GlobalOptions globals;   // volume 70 default, no flags
+    globals.restore({{"volume", "70"}});
+    const EngineCommand command = nyaa::domain::Renderer::render("eDP-1", wallpaper, list, globals, gpu, {});
     const std::vector<std::string> expected{
         "--screen-root", "eDP-1", "--bg", "1234",
+        "--volume", "70",
         "--set-property", "bloom=1",
         "--set-property", "fov=0.42",
     };

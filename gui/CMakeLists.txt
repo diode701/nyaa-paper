@@ -15,6 +15,9 @@ qt_add_dbus_interface(GUI_DBUS_SOURCES ${INTERFACES_DIR}/org.nyaa.Paper.Playlist
 
 qt_add_executable(nyaa-paper-qt
     src/main.cpp
+    src/domain/BoolSetting.cpp
+    src/domain/SliderSetting.cpp
+    src/domain/ColorSetting.cpp
     src/engine/IEngine.hpp
     src/engine/DbusEngine.hpp
     src/engine/DbusEngine.cpp
@@ -63,3 +66,15 @@ install(TARGETS nyaa-paper-qt
     BUNDLE  DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+# Domain tests: plain executable, no Qt types involved.
+enable_testing()
+add_executable(domain_test
+    tests/domain_test.cpp
+    src/domain/BoolSetting.cpp
+    src/domain/SliderSetting.cpp
+    src/domain/ColorSetting.cpp
+)
+target_include_directories(domain_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_options(domain_test PRIVATE -Wall -Wextra)
+add_test(NAME domain_test COMMAND domain_test)

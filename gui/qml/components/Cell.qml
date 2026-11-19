@@ -80,11 +80,12 @@ Item {
         source: body
         anchors.fill: body
         autoPaddingEnabled: true
+        blurMax: cell.selected ? 44 : 22
         shadowEnabled: true
         shadowColor: Qt.rgba(0.30 * cell.sel, 0.10 + 0.72 * cell.sel, 0.14 + 0.86 * cell.sel, 1.0)
-        shadowOpacity: 0.45 + 0.10 * cell.hot + 0.25 * cell.sel
-        shadowBlur: 0.55 + 0.45 * cell.sel
-        shadowVerticalOffset: 3.0 * (1.0 - cell.sel)
+        shadowOpacity: 0.42 + 0.10 * cell.hot + 0.30 * cell.sel
+        shadowBlur: 0.50 + 0.40 * cell.sel
+        shadowVerticalOffset: 4.0 * (1.0 - cell.sel)
         shadowHorizontalOffset: 0
     }
 

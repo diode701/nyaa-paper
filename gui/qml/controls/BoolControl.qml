@@ -1,17 +1,12 @@
 import QtQuick
-import QtQuick.Controls
 import NyaaPaper.Backend 1.0
+import "../flat"
 
-/// BooleanSetting → a checkbox carrying its own label (BooleanProperty.createControl)
+/// BooleanSetting (BooleanProperty.createControl)
 SettingCard {
     required property string name
     required property string label
     required property var settingValue
-
-    CheckBox {
-        text: label
-        checked: settingValue === true
-        font.pixelSize: 12
-        onToggled: Properties.setValue(name, checked)
-    }
+    caption: label
+    Toggle { checked: settingValue === true; onToggled: c => Properties.setValue(name, c) }
 }

@@ -100,4 +100,6 @@ private:
     Palette m_p;
     QString m_wallpaper;
     Palette m_fromWallpaper;
+    QString m_storedPath;
+    Palette m_fromStored;
 };

@@ -7,9 +7,12 @@ import NyaaPaper.Theme 1.0
 import Qt.labs.qmlmodels
 import "../components"
 import "../controls"
+import "../flat"
 
-/// A 1:1 port of WallpaperPropertiesView: top bar, tab pane with one card per
-/// setting, GPU section, Screenshot section, bottom bar with status + buttons.
+/// WallpaperPropertiesView, redesigned: the wallpaper and where it goes on the
+/// left, its settings on the right in two tabs (Wallpaper: its own
+/// properties; Engine: this monitor's linux-wallpaperengine options, GPU,
+/// capture and theme), actions at the bottom. [ ] switch tabs.
 Item {
     id: view
 
@@ -90,295 +93,312 @@ Item {
     onVisibleChanged: if (visible) openWallpaper()
     onWallpaperBasePathChanged: if (visible) openWallpaper()
 
+    component Section: Text {
+        Layout.fillWidth: true
+        Layout.leftMargin: 22
+        Layout.topMargin: 12
+        color: Theme.accent
+        font.family: Theme.font
+        font.pixelSize: 11
+        font.weight: Font.Bold
+        font.letterSpacing: 1.4
+    }
+    component Row2: SettingCard {}
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
 
-        // ---- top bar ------------------------------------------------------
+        // ---- top bar: back and the wallpaper's actions --------------------
         Rectangle {
             Layout.fillWidth: true
-            height: 50
-            color: "#2d2d2d"
-
+            Layout.preferredHeight: 46
+            color: Theme.panel
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.line }
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 15
-                anchors.rightMargin: 15
-                spacing: 10
-
-                ActionButton { text: "← Back"; onClicked: view.back() }
-
-                ComboBox {
-                    id: monitorCombo
-                    Layout.preferredWidth: 140
-                    implicitHeight: 30
-                    font.pixelSize: 12
-                    editable: true
-                    model: Engine.monitors
-                    currentIndex: Math.max(0, Engine.monitors.indexOf(view.targetMonitor))
-                    onActivated: view.targetMonitor = currentText
-                    onAccepted: view.targetMonitor = editText
-                    background: Rectangle { color: "#444444"; radius: 3; border.color: "#555555" }
-                }
-
-                ActionButton { text: "Load last"; onClicked: view.loadLast() }
-                ActionButton { text: "Add to Playlist"; color: Theme.success; onClicked: view.addCurrent() }
-                ActionButton { text: "▶"; implicitWidth: 32; onClicked: view.toggleMini() }
+                anchors.leftMargin: 14
+                anchors.rightMargin: 14
+                spacing: 8
+                ActionButton { text: "Back"; keyHint: "ESC"; onClicked: view.back() }
                 Item { Layout.fillWidth: true }
-
-                Text {
-                    text: "Properties: " + view.wallpaperTitle
-                    color: "#ffffff"
-                    font.pixelSize: 16
-                    font.bold: true
-                    elide: Text.ElideRight
-                    Layout.maximumWidth: view.width * 0.4
-                }
+                ActionButton { text: "Load last"; keyHint: "L"; onClicked: view.loadLast() }
+                ActionButton { text: "Add to playlist"; keyHint: "A"; outline: true; color: Theme.ok; onClicked: view.addCurrent() }
+                ActionButton { text: "Playlist"; keyHint: "⌃L"; onClicked: view.toggleMini() }
             }
         }
 
-        // ---- tabs ---------------------------------------------------------
-        Rectangle {
+        RowLayout {
             Layout.fillWidth: true
-            height: 34
-            color: "#2d2d2d"
+            Layout.fillHeight: true
+            spacing: 0
 
-            Row {
-                anchors.left: parent.left
-                anchors.leftMargin: 10
-                anchors.bottom: parent.bottom
-                Repeater {
-                    model: ["Custom Properties", "Global Options"]
-                    delegate: Rectangle {
-                        required property int index
-                        required property string modelData
-                        width: tabLabel.implicitWidth + 30
-                        height: 30
-                        color: (index === 1) === view.showGlobal ? "#1e1e1e" : "#3a3a3a"
-                        border.color: "#555555"
+            // ---- left: the wallpaper and where it goes --------------------
+            Rectangle {
+                Layout.preferredWidth: 340
+                Layout.fillHeight: true
+                color: Qt.darker(Theme.panel, 1.08)
+                Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.line }
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 20
+                    spacing: 12
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: width * 10 / 16
+                        radius: Theme.radius
+                        color: Theme.card
+                        border.color: Theme.line
+                        clip: true
+                        AnimatedImage {
+                            anchors.fill: parent
+                            anchors.margins: 1
+                            source: view.wallpaperPreview
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                            playing: Settings.animationMode !== 0 && view.visible
+                        }
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: view.wallpaperTitle
+                        color: Theme.text
+                        font.family: Theme.font
+                        font.pixelSize: 15
+                        font.weight: Font.Bold
+                        wrapMode: Text.WordWrap
+                        maximumLineCount: 3
+                        elide: Text.ElideRight
+                    }
+                    GridLayout {
+                        columns: 2
+                        columnSpacing: 14
+                        rowSpacing: 4
+                        Text { text: "TYPE"; color: Theme.dim; font.family: Theme.font; font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 1 }
+                        Text { text: Library.at(Library.indexOf(view.wallpaperId)).kind || "—"; color: Theme.muted; font.family: Theme.font; font.pixelSize: 12 }
+                        Text { text: "ID"; color: Theme.dim; font.family: Theme.font; font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 1 }
+                        Text { text: view.wallpaperId; color: Theme.muted; font.family: Theme.font; font.pixelSize: 12 }
+                    }
+                    Item { Layout.preferredHeight: 4 }
+                    Text {
+                        text: "APPLY TO · 1–9 OR CLICK"
+                        color: Theme.dim
+                        font.family: Theme.font
+                        font.pixelSize: 10
+                        font.weight: Font.Bold
+                        font.letterSpacing: 1.4
+                    }
+                    MonitorMap {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 118
+                        selected: view.targetMonitor
+                        revision: Controller.revision
+                        onPicked: m => view.targetMonitor = m
+                    }
+                    Item { Layout.fillHeight: true }
+                }
+            }
+
+            // ---- right: tabs and settings ----------------------------------
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                spacing: 0
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 42
+                    color: Theme.bg
+                    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.line }
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 14
+                        anchors.rightMargin: 14
+                        spacing: 4
+                        Repeater {
+                            model: [{ label: "WALLPAPER", count: String(Properties.count), engine: false },
+                                    { label: "ENGINE", count: view.targetMonitor, engine: true }]
+                            delegate: Item {
+                                required property var modelData
+                                readonly property bool on: modelData.engine === view.showGlobal
+                                Layout.fillHeight: true
+                                implicitWidth: tabRow.implicitWidth + 24
+                                Row {
+                                    id: tabRow
+                                    anchors.centerIn: parent
+                                    spacing: 8
+                                    Text { text: modelData.label; color: parent.parent.on ? Theme.text : Theme.dim; font.family: Theme.font; font.pixelSize: 12; font.weight: Font.Bold; font.letterSpacing: 1 }
+                                    Rectangle {
+                                        width: n.implicitWidth + 10; height: 17; radius: Theme.radius; color: Theme.panel
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        Text { id: n; anchors.centerIn: parent; text: modelData.count; color: Theme.dim; font.family: Theme.font; font.pixelSize: 10 }
+                                    }
+                                }
+                                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 2; color: Theme.accent; visible: parent.on }
+                                MouseArea { anchors.fill: parent; onClicked: view.showGlobal = modelData.engine }
+                            }
+                        }
+                        Item { Layout.fillWidth: true }
+                        KeyCap { text: "[" }
+                        KeyCap { text: "]" }
+                        Text { text: "switch"; color: Theme.dim; font.family: Theme.font; font.pixelSize: 11 }
+                    }
+                }
+
+                // ---- Wallpaper tab: the Setting classes, one control each --
+                ScrollView {
+                    id: wallpaperScroll
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    visible: !view.showGlobal
+                    clip: true
+                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                    ColumnLayout {
+                        width: wallpaperScroll.availableWidth
+                        spacing: 6
+                        Item { Layout.preferredHeight: 8 }
+                        // Java: for each Setting, box.add(setting.createControl(...))
+                        Repeater {
+                            model: Properties
+                            delegate: DelegateChooser {
+                                role: "kind"
+                                DelegateChoice { roleValue: 0; BoolControl {} }
+                                DelegateChoice { roleValue: 1; SliderControl {} }
+                                DelegateChoice { roleValue: 2; ColorControl {} }
+                                DelegateChoice { roleValue: 3; ComboControl {} }
+                                DelegateChoice { roleValue: 4; TextControl {} }
+                                DelegateChoice { roleValue: 5; GroupControl {} }
+                                DelegateChoice { roleValue: 6; TextInputControl {} }
+                                DelegateChoice { roleValue: 7; FileControl {} }
+                                DelegateChoice { roleValue: 8; DirectoryControl {} }
+                                DelegateChoice { roleValue: 9; TextureControl {} }
+                            }
+                        }
                         Text {
-                            id: tabLabel
-                            anchors.centerIn: parent
-                            text: modelData
-                            color: "#ffffff"
+                            visible: Properties.count === 0
+                            Layout.leftMargin: 22
+                            Layout.topMargin: 10
+                            text: "This wallpaper has no customizable properties."
+                            color: Theme.dim
+                            font.family: Theme.font
                             font.pixelSize: 12
                         }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: view.showGlobal = index === 1
+                        Item { Layout.preferredHeight: 16 }
+                    }
+                }
+
+                // ---- Engine tab: this monitor's LWE options, GPU, capture --
+                ScrollView {
+                    id: engineScroll
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    visible: view.showGlobal
+                    clip: true
+                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                    ColumnLayout {
+                        width: engineScroll.availableWidth
+                        spacing: 6
+                        Section { text: "LINUX-WALLPAPERENGINE · " + view.targetMonitor.toUpperCase() }
+                        Repeater {
+                            model: GlobalOptions
+                            delegate: DelegateChooser {
+                                role: "kind"
+                                DelegateChoice { roleValue: 10; VolumeControl {} }
+                                DelegateChoice { roleValue: 11; FpsControl {} }
+                                DelegateChoice { roleValue: 12; ScalingControl {} }
+                                DelegateChoice { roleValue: 13; ClampControl {} }
+                                DelegateChoice { roleValue: 14; FlagControl {} }
+                            }
                         }
+
+                        Section { text: "GPU" }
+                        Row2 {
+                            caption: "Render on"
+                            Segmented {
+                                options: Controller.nvidiaAvailable ? ["DEFAULT", "DRI_PRIME", "NVIDIA"] : ["DEFAULT", "DRI_PRIME"]
+                                value: Controller.gpuMode
+                                onPicked: v => Controller.gpuMode = v
+                            }
+                            Stepper {
+                                visible: Controller.gpuMode === "DRI_PRIME"
+                                implicitWidth: 96
+                                from: 0; to: 9
+                                value: Controller.driPrimeNumber
+                                onModified: v => Controller.driPrimeNumber = v
+                            }
+                            Item { Layout.fillWidth: true }
+                        }
+                        Row2 {
+                            caption: "GL threaded optimisations off"
+                            Toggle { checked: Controller.glThreaded; onToggled: c => Controller.glThreaded = c }
+                            Text { text: "fixes GLFW / OpenGL issues"; color: Theme.dim; font.family: Theme.font; font.pixelSize: 11 }
+                            Item { Layout.fillWidth: true }
+                        }
+
+                        Section { text: "CAPTURE & THEME" }
+                        Row2 {
+                            caption: "Screenshot on apply"
+                            Toggle { checked: Controller.screenshotEnabled; onToggled: c => Controller.screenshotEnabled = c }
+                            FlatField {
+                                Layout.preferredWidth: 320
+                                enabled: Controller.screenshotEnabled
+                                opacity: enabled ? 1 : 0.45
+                                text: Controller.screenshotPath
+                                placeholder: "folder for <monitor>_nyaa_sc.png"
+                                onEdited: t => Controller.screenshotPath = t
+                            }
+                            Stepper {
+                                implicitWidth: 104
+                                enabled: Controller.screenshotEnabled
+                                from: 0; to: 100; suffix: " fr"
+                                value: Controller.screenshotDelay
+                                onModified: v => Controller.screenshotDelay = v
+                            }
+                            Item { Layout.fillWidth: true }
+                        }
+                        Row2 {
+                            caption: "Theme from this wallpaper"
+                            Toggle { checked: Controller.themeFromWallpaper; onToggled: c => Controller.themeFromWallpaper = c }
+                            Segmented {
+                                options: Controller.pywalAvailable ? ["built-in", "pywal"] : ["built-in"]
+                                upper: false
+                                value: Controller.themeVia === "pywal" ? "pywal" : "built-in"
+                                opacity: Controller.themeFromWallpaper ? 1 : 0.45
+                                onPicked: v => Controller.themeVia = (v === "pywal" ? "pywal" : "builtin")
+                            }
+                            Text {
+                                text: Controller.pywalAvailable ? "applied with the wallpaper" : "pywal not installed"
+                                color: Theme.dim; font.family: Theme.font; font.pixelSize: 11
+                            }
+                            Item { Layout.fillWidth: true }
+                        }
+                        Item { Layout.preferredHeight: 16 }
                     }
                 }
-            }
-        }
 
-        // ---- custom properties -------------------------------------------
-        ScrollView {
-            id: scroll0
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            visible: !view.showGlobal
-            clip: true
-            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-
-            ColumnLayout {
-                width: scroll0.availableWidth
-                spacing: 15
-                Layout.margins: 20
-
-                // Java: for each Setting, box.add(setting.createControl(...)).
-                // Each Setting class has one control; the chooser creates only
-                // that one for each row (Kind is the class's tag).
-                Repeater {
-                    model: Properties
-                    delegate: DelegateChooser {
-                        role: "kind"
-                        DelegateChoice { roleValue: 0; BoolControl {} }
-                        DelegateChoice { roleValue: 1; SliderControl {} }
-                        DelegateChoice { roleValue: 2; ColorControl {} }
-                        DelegateChoice { roleValue: 3; ComboControl {} }
-                        DelegateChoice { roleValue: 4; TextControl {} }
-                        DelegateChoice { roleValue: 5; GroupControl {} }
-                        DelegateChoice { roleValue: 6; TextInputControl {} }
-                        DelegateChoice { roleValue: 7; FileControl {} }
-                        DelegateChoice { roleValue: 8; DirectoryControl {} }
-                        DelegateChoice { roleValue: 9; TextureControl {} }
-                    }
-                }
-
-                Text {
-                    visible: Properties.count === 0
-                    text: "This wallpaper has no customizable properties."
-                    color: "#d3d3d3"
-                    font.pixelSize: 12
+                // ---- bottom bar ------------------------------------------------
+                Rectangle {
                     Layout.fillWidth: true
-                }
-            }
-        }
-
-        // ---- global options ----------------------------------------------
-        ScrollView {
-            id: scroll1
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            visible: view.showGlobal
-            clip: true
-            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-
-            ColumnLayout {
-                width: scroll1.availableWidth
-                spacing: 15
-
-                // populateGlobalSettings: the same, for the GlobalOption classes
-                Repeater {
-                    model: GlobalOptions
-                    delegate: DelegateChooser {
-                        role: "kind"
-                        DelegateChoice { roleValue: 10; VolumeControl {} }
-                        DelegateChoice { roleValue: 11; FpsControl {} }
-                        DelegateChoice { roleValue: 12; ScalingControl {} }
-                        DelegateChoice { roleValue: 13; ClampControl {} }
-                        DelegateChoice { roleValue: 14; FlagControl {} }
+                    Layout.preferredHeight: 54
+                    color: Theme.panel
+                    Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.line }
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 18
+                        anchors.rightMargin: 14
+                        spacing: 10
+                        Text {
+                            Layout.fillWidth: true
+                            text: view.status
+                            color: view.status.startsWith("Error") ? Theme.danger
+                                   : view.status.startsWith("Applied") ? Theme.ok : Theme.muted
+                            font.family: Theme.font
+                            font.pixelSize: 12
+                            elide: Text.ElideRight
+                        }
+                        ActionButton { text: "Stop on " + view.targetMonitor; keyHint: "S"; outline: true; color: Theme.danger; onClicked: view.stopCurrent() }
+                        ActionButton { text: "Apply to " + view.targetMonitor; keyHint: "⌃↵"; color: Theme.accent; bold: true; onClicked: view.applyCurrent() }
                     }
-                }
-            }
-        }
-
-        // ---- GPU ----------------------------------------------------------
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.leftMargin: 20
-            Layout.rightMargin: 20
-            implicitHeight: gpuColumn.implicitHeight + 20
-            radius: 5
-            color: "#2a2a2a"
-
-            ColumnLayout {
-                id: gpuColumn
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.margins: 10
-                spacing: 6
-
-                Text { text: "GPU"; color: "#ffffff"; font.pixelSize: 16 }
-
-                RadioButton {
-                    text: "Default (auto)"
-                    checked: Controller.gpuMode === "DEFAULT"
-                    onToggled: if (checked) Controller.gpuMode = "DEFAULT"
-                }
-                RadioButton {
-                    text: "DRI_PRIME (AMD/Intel)"
-                    checked: Controller.gpuMode === "DRI_PRIME"
-                    onToggled: if (checked) Controller.gpuMode = "DRI_PRIME"
-                }
-                RowLayout {
-                    spacing: 10
-                    Text { text: "GPU index:"; color: "#d3d3d3"; font.pixelSize: 12 }
-                    SpinBox {
-                        from: 0
-                        to: 9
-                        value: Controller.driPrimeNumber
-                        enabled: Controller.gpuMode === "DRI_PRIME"
-                        onValueModified: Controller.driPrimeNumber = value
-                    }
-                    Item { Layout.fillWidth: true }
-                }
-                RadioButton {
-                    visible: Controller.nvidiaAvailable   // Java: hidden unless detected
-                    text: "NVIDIA Prime Offload"
-                    checked: Controller.gpuMode === "NVIDIA"
-                    onToggled: if (checked) Controller.gpuMode = "NVIDIA"
-                }
-                CheckBox {
-                    text: "Disable GL threaded optimizations (fixes GLFW/OpenGL issues)"
-                    checked: Controller.glThreaded
-                    font.pixelSize: 12
-                    onToggled: Controller.glThreaded = checked
-                }
-            }
-        }
-
-        // ---- screenshot ---------------------------------------------------
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.leftMargin: 20
-            Layout.rightMargin: 20
-            implicitHeight: shotColumn.implicitHeight + 20
-            radius: 5
-            color: "#2a2a2a"
-
-            ColumnLayout {
-                id: shotColumn
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.margins: 10
-                spacing: 6
-
-                Text { text: "📸 Screenshot (for PyWAL etc.)"; color: "#ffffff"; font.pixelSize: 16 }
-                CheckBox {
-                    text: "Generate screenshot on apply"
-                    checked: Controller.screenshotEnabled
-                    onToggled: Controller.screenshotEnabled = checked
-                }
-                RowLayout {
-                    spacing: 10
-                    Text { text: "Output file:"; color: "#d3d3d3"; font.pixelSize: 12 }
-                    TextField {
-                        Layout.preferredWidth: 300
-                        text: Controller.screenshotPath
-                        enabled: Controller.screenshotEnabled
-                        placeholderText: "/path/to/screenshot.png"
-                        onEditingFinished: Controller.screenshotPath = text
-                    }
-                    Item { Layout.fillWidth: true }
-                }
-                RowLayout {
-                    spacing: 10
-                    Text { text: "Delay (frames):"; color: "#d3d3d3"; font.pixelSize: 12 }
-                    SpinBox {
-                        from: 0
-                        to: 100
-                        value: Controller.screenshotDelay
-                        enabled: Controller.screenshotEnabled
-                        onValueModified: Controller.screenshotDelay = value
-                    }
-                    Item { Layout.fillWidth: true }
-                }
-            }
-        }
-
-        // ---- bottom bar ---------------------------------------------------
-        Rectangle {
-            Layout.fillWidth: true
-            height: 62
-            color: "#2d2d2d"
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 15
-                anchors.rightMargin: 15
-                spacing: 10
-
-                Text {
-                    text: view.status
-                    color: "#cccccc"
-                    font.pixelSize: 12
-                    Layout.fillWidth: true
-                    elide: Text.ElideRight
-                }
-                ActionButton {
-                    text: "Apply to Monitor"
-                    color: Theme.accent
-                    bold: true
-                    onClicked: view.applyCurrent()
-                }
-                ActionButton {
-                    text: "Stop on Monitor"
-                    color: Theme.danger
-                    onClicked: view.stopCurrent()
                 }
             }
         }
@@ -412,8 +432,8 @@ Item {
             x: view.miniOpen ? 0 : view.panelWidth
             Behavior on x { NumberAnimation { duration: 200 } }
         }
-        color: "#252525"
-        border.color: "#3a3a3a"
+        color: Theme.panel
+        border.color: Theme.line
         border.width: 1
         z: 20
 
@@ -435,8 +455,9 @@ Item {
                 Text {
                     text: "Playlist — " + (Playlist.message !== "" && Playlist.monitor === view.targetMonitor
                                            ? Playlist.message : view.targetMonitor)
-                    color: "#ffffff"
-                    font.pixelSize: 14
+                    color: Theme.text
+                    font.family: Theme.font
+                    font.pixelSize: 13
                 }
                 Item { Layout.fillWidth: true }
                 Text {
@@ -450,7 +471,8 @@ Item {
             Text {
                 visible: Playlist.entries.length === 0
                 text: "No entries. Use 'Add to Playlist' button."
-                color: "#aaaaaa"
+                color: Theme.dim
+                font.family: Theme.font
                 font.pixelSize: 11
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
@@ -471,10 +493,10 @@ Item {
                     required property var modelData
                     width: miniList.width
                     height: 42
-                    radius: 4
-                    color: rowMouse.containsMouse ? "#333333" : "#2a2a2a"
+                    radius: Theme.radius
+                    color: rowMouse.containsMouse ? Theme.raise : Theme.card
                     border.width: view.miniSelected === index ? 2 : 1
-                    border.color: view.miniSelected === index ? Theme.accent : "#3a3a3a"
+                    border.color: view.miniSelected === index ? Theme.accent : Theme.line
 
                     MouseArea {
                         id: rowMouse
@@ -501,7 +523,8 @@ Item {
                         Text {
                             Layout.fillWidth: true
                             text: modelData.wallpaperId
-                            color: "#d3d3d3"
+                            color: Theme.muted
+                            font.family: Theme.font
                             font.pixelSize: 11
                             elide: Text.ElideRight
                         }

@@ -1,30 +1,22 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import NyaaPaper.Backend 1.0
+import NyaaPaper.Theme 1.0
+import "../flat"
 
-/// FpsOption → heading, "Limit FPS", spinner 0–240 (FpsSetting.createControl)
+/// FpsOption (FpsSetting.createControl): limit on/off and the number
 SettingCard {
     required property string name
     required property string label
     required property var settingValue
     required property var boolValue
-
-    Text { text: label; color: "#e0e0e0"; font.bold: true; font.pixelSize: 12 }
-    RowLayout {
-        spacing: 10
-        CheckBox {
-            text: "Limit FPS"
-            checked: boolValue === true
-            onToggled: GlobalOptions.setValue(name, checked)
-        }
-        SpinBox {
-            from: 0; to: 240
-            editable: true
-            value: typeof settingValue === "number" ? settingValue : 30
-            enabled: boolValue === true
-            onValueModified: GlobalOptions.setValue(name, value)
-        }
-        Item { Layout.fillWidth: true }
+    caption: label
+    Toggle { text: "Limit"; checked: boolValue === true; onToggled: c => GlobalOptions.setValue(name, c) }
+    Stepper {
+        from: 0; to: 240; step: 5; suffix: " fps"
+        value: typeof settingValue === "number" ? settingValue : 30
+        enabled: boolValue === true
+        onModified: v => GlobalOptions.setValue(name, v)
     }
+    Item { Layout.fillWidth: true }
 }

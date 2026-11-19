@@ -1,23 +1,30 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import NyaaPaper.Backend 1.0
+import "../flat"
 
-/// ComboSetting → label above, choice below (ComboProperty.createControl)
+/// ComboSetting (ComboProperty.createControl): segmented when it fits,
+/// a dropdown when the list is long
 SettingCard {
+    id: control
     required property string name
     required property string label
-    required property var display      // the label of the current key
+    required property var display      // label of the current key
     required property var options
-
-    Text { text: label; color: "#d3d3d3"; font.pixelSize: 12 }
-    ComboBox {
-        Layout.preferredWidth: 240
-        implicitHeight: 30
-        font.pixelSize: 12
-        model: options
-        currentIndex: Math.max(0, options.indexOf(String(display)))
-        onActivated: Properties.setValue(name, currentText)
-        background: Rectangle { color: "#444444"; radius: 3; border.color: "#555555" }
+    caption: label
+    readonly property bool shortList: options.length <= 4 && options.join("").length <= 40
+    Segmented {
+        visible: control.shortList
+        options: control.options
+        value: String(control.display)
+        upper: false
+        onPicked: v => Properties.setValue(control.name, v)
     }
+    FlatCombo {
+        visible: !control.shortList
+        model: control.options
+        currentIndex: Math.max(0, control.options.indexOf(String(control.display)))
+        onActivated: Properties.setValue(control.name, currentText)
+    }
+    Item { Layout.fillWidth: true }
 }

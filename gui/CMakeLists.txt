@@ -98,6 +98,13 @@ qt_add_qml_module(nyaa-paper-qt
         qml/components/MonitorPill.qml
         qml/components/Toast.qml
         qml/components/KeysOverlay.qml
+        qml/flat/Toggle.qml
+        qml/flat/FlatSlider.qml
+        qml/flat/Segmented.qml
+        qml/flat/FlatCombo.qml
+        qml/flat/FlatField.qml
+        qml/flat/Stepper.qml
+        qml/components/MonitorMap.qml
         qml/controls/SettingCard.qml
         qml/controls/BoolControl.qml
         qml/controls/SliderControl.qml

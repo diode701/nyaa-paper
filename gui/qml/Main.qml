@@ -107,6 +107,9 @@ ApplicationWindow {
         enabled: app.view === 1 && !properties.miniOpen
         onActivated: properties.loadLast()
     }
+    // Wallpaper / Engine tabs: [ and ] (Ctrl+Tab belongs to the desktop)
+    Shortcut { sequence: "["; enabled: app.view === 1; onActivated: properties.showGlobal = false }
+    Shortcut { sequence: "]"; enabled: app.view === 1; onActivated: properties.showGlobal = true }
     Shortcut {
         sequence: "Ctrl+L"
         enabled: app.view === 1

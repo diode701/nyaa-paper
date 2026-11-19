@@ -44,6 +44,7 @@ QJsonObject toJson(const AppConfig &config)
     ui["customMonitors"] = custom;
     ui["palette"] = QString::fromStdString(config.ui.palette);
     ui["themeSource"] = QString::fromStdString(config.ui.themeSource);
+    ui["themeWallpaper"] = QString::fromStdString(config.ui.themeWallpaper);
     ui["hoverStyle"] = QString::fromStdString(config.ui.hoverStyle);
     ui["selectionStyle"] = QString::fromStdString(config.ui.selectionStyle);
     ui["backdrop"] = config.ui.backdrop;
@@ -112,6 +113,7 @@ AppConfig fromJson(const QJsonObject &root)
 
     config.ui.palette = stringOr(ui, "palette", config.ui.palette);
     config.ui.themeSource = stringOr(ui, "themeSource", config.ui.themeSource);
+    config.ui.themeWallpaper = stringOr(ui, "themeWallpaper", config.ui.themeWallpaper);
     config.ui.hoverStyle = stringOr(ui, "hoverStyle", config.ui.hoverStyle);
     config.ui.selectionStyle = stringOr(ui, "selectionStyle", config.ui.selectionStyle);
     config.ui.backdrop = boolOr(ui, "backdrop", config.ui.backdrop);

@@ -119,7 +119,8 @@ void Theme::followWallpaper(const QString &previewUrl)
     m_wallpaper = previewUrl;
     const QString path = QUrl(previewUrl).isLocalFile() ? QUrl(previewUrl).toLocalFile() : previewUrl;
     m_fromWallpaper = path.isEmpty() ? Palette{} : fromImage(path);
-    const bool follows = m_config.tint() || m_config.themeSource() == QStringLiteral("wallpaper");
+    const bool follows = m_config.tint()
+                         || (m_config.themeSource() == QStringLiteral("wallpaper") && m_config.themeWallpaper().isEmpty());
     if (follows)
         rebuild();
 }
@@ -128,8 +129,22 @@ void Theme::rebuild()
 {
     const QString source = m_config.themeSource();
     Palette next;
-    if ((m_config.tint() || source == QStringLiteral("wallpaper")) && !m_fromWallpaper.key.isEmpty())
-        next = m_fromWallpaper;
+    if (m_config.tint() && !m_fromWallpaper.key.isEmpty()) {
+        next = m_fromWallpaper;                       // follows the selection
+    } else if (source == QStringLiteral("wallpaper")) {
+        // the wallpaper chosen by "Theme from this wallpaper", else the selection
+        const QString stored = m_config.themeWallpaper();
+        if (!stored.isEmpty()) {
+            if (stored != m_storedPath) {
+                m_storedPath = stored;
+                const QUrl url(stored);
+                m_fromStored = fromImage(url.isLocalFile() ? url.toLocalFile() : stored);
+            }
+            next = m_fromStored;
+        }
+        if (next.key.isEmpty())
+            next = m_fromWallpaper;
+    }
     else if (source == QStringLiteral("pywal"))
         next = fromPywal(m_config.pywalPath());
     else if (source == QStringLiteral("system"))

@@ -39,10 +39,16 @@ class PropertiesController : public QObject
     Q_PROPERTY(bool screenshotEnabled READ screenshotEnabled WRITE setScreenshotEnabled NOTIFY screenshotChanged)
     Q_PROPERTY(QString screenshotPath READ screenshotPath WRITE setScreenshotPath NOTIFY screenshotChanged)
     Q_PROPERTY(int screenshotDelay READ screenshotDelay WRITE setScreenshotDelay NOTIFY screenshotChanged)
+    // Capture & theme: on a successful apply, recolour the window from it
+    Q_PROPERTY(bool themeFromWallpaper READ themeFromWallpaper WRITE setThemeFromWallpaper NOTIFY screenshotChanged)
+    Q_PROPERTY(QString themeVia READ themeVia WRITE setThemeVia NOTIFY screenshotChanged)   // builtin | pywal
+    Q_PROPERTY(bool pywalAvailable READ pywalAvailable CONSTANT)
+    /// Bumped after every successful apply, so views showing what runs refresh
+    Q_PROPERTY(int revision READ revision NOTIFY revisionChanged)
 
 public:
     PropertiesController(PropertyModel &properties, GlobalOptionsModel &globals, EngineBridge &engine,
-                         PlaylistBridge &playlist, const ConfigBridge &config,
+                         PlaylistBridge &playlist, ConfigBridge &config,
                          const WallpaperModel &library, QObject *parent = nullptr);
 
     QString gpuMode() const;
@@ -59,6 +65,14 @@ public:
     void setScreenshotEnabled(bool on);
     void setScreenshotPath(const QString &path);
     void setScreenshotDelay(int frames);
+    bool themeFromWallpaper() const { return m_themeFromWallpaper; }
+    void setThemeFromWallpaper(bool on) { m_themeFromWallpaper = on; emit screenshotChanged(); }
+    QString themeVia() const { return m_themeVia; }
+    void setThemeVia(const QString &via) { m_themeVia = via; emit screenshotChanged(); }
+    bool pywalAvailable() const { return m_pywal; }
+    int revision() const { return m_revision; }
+    /// Preview of what a monitor last ran (its current WallpaperConfig), or "".
+    Q_INVOKABLE QString runningPreview(const QString &monitor) const;
 
     /// A new properties view: parse the wallpaper, fresh global options, GPU
     /// back to default. Returns the number of custom properties.
@@ -84,6 +98,7 @@ Q_SIGNALS:
     void screenshotChanged();
     /// The status line under the properties (Java: statusLabel.setText).
     void status(const QString &message);
+    void revisionChanged();
 
 private:
     void onApplyFinished(const QString &monitor, bool ok, const QString &message);
@@ -96,7 +111,7 @@ private:
     GlobalOptionsModel &m_globals;
     EngineBridge &m_engine;
     PlaylistBridge &m_playlist;
-    const ConfigBridge &m_config;
+    ConfigBridge &m_config;   // read for paths; written by "Theme from this wallpaper"
     const WallpaperModel &m_library;
     nyaa::io::WallpaperStore m_store;
 
@@ -107,6 +122,10 @@ private:
     QString m_basePath;
     nyaa::domain::GpuConfig m_gpu;
     bool m_nvidia = false;
+    bool m_themeFromWallpaper = false;
+    QString m_themeVia = QStringLiteral("builtin");
+    bool m_pywal = false;
+    int m_revision = 0;
     bool m_screenshotEnabled = false;
     QString m_screenshotPath;
     int m_screenshotDelay = 5;

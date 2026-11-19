@@ -41,6 +41,7 @@ struct UiConfig
     // ---- look (Settings → Appearance) ----
     std::string palette = "nyaa";          // a key of Theme's palettes
     std::string themeSource = "palette";   // palette | wallpaper | pywal | system
+    std::string themeWallpaper;            // preview the "wallpaper" source uses
     std::string hoverStyle = "java";       // java (scale + border) | lift | off
     std::string selectionStyle = "brackets"; // brackets | outline | quiet
     bool backdrop = true;                  // blurred selected wallpaper behind the grid

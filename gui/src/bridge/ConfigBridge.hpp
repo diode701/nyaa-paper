@@ -28,6 +28,7 @@ class ConfigBridge : public QObject
     Q_PROPERTY(QString customMonitors READ customMonitors WRITE setCustomMonitors NOTIFY changed)
     Q_PROPERTY(QString palette READ palette WRITE setPalette NOTIFY changed)
     Q_PROPERTY(QString themeSource READ themeSource WRITE setThemeSource NOTIFY changed)
+    Q_PROPERTY(QString themeWallpaper READ themeWallpaper WRITE setThemeWallpaper NOTIFY changed)
     Q_PROPERTY(QString hoverStyle READ hoverStyle WRITE setHoverStyle NOTIFY changed)
     Q_PROPERTY(QString selectionStyle READ selectionStyle WRITE setSelectionStyle NOTIFY changed)
     Q_PROPERTY(bool backdrop READ backdrop WRITE setBackdrop NOTIFY changed)
@@ -58,6 +59,8 @@ public:
 
     QString palette() const { return QString::fromStdString(m_config.ui.palette); }
     QString themeSource() const { return QString::fromStdString(m_config.ui.themeSource); }
+    QString themeWallpaper() const { return QString::fromStdString(m_config.ui.themeWallpaper); }
+    void setThemeWallpaper(const QString &v) { m_config.ui.themeWallpaper = v.toStdString(); emit changed(); }
     QString hoverStyle() const { return QString::fromStdString(m_config.ui.hoverStyle); }
     QString selectionStyle() const { return QString::fromStdString(m_config.ui.selectionStyle); }
     bool backdrop() const { return m_config.ui.backdrop; }

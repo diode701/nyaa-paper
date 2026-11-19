@@ -2,6 +2,10 @@
 
 #include <set>
 
+#include <QProcess>
+#include <QStandardPaths>
+#include <QUrl>
+
 #include <QDateTime>
 #include <QFileInfo>
 
@@ -21,7 +25,7 @@ using nyaa::domain::WallpaperConfig;
 
 PropertiesController::PropertiesController(PropertyModel &properties, GlobalOptionsModel &globals,
                                            EngineBridge &engine, PlaylistBridge &playlist,
-                                           const ConfigBridge &config, const WallpaperModel &library,
+                                           ConfigBridge &config, const WallpaperModel &library,
                                            QObject *parent)
     : QObject(parent)
     , m_properties(properties)
@@ -33,6 +37,17 @@ PropertiesController::PropertiesController(PropertyModel &properties, GlobalOpti
 {
     connect(&m_engine, &EngineBridge::applyFinished, this, &PropertiesController::onApplyFinished);
     m_nvidia = nyaa::util::detectNvidia();   // once, like the Java launcher
+    m_pywal = !QStandardPaths::findExecutable(QStringLiteral("wal")).isEmpty();
+}
+
+QString PropertiesController::runningPreview(const QString &monitor) const
+{
+    const nyaa::domain::WallpaperConfig current = m_store.current(monitor.toStdString());
+    if (current.empty())
+        return {};
+    if (const nyaa::domain::Wallpaper *w = m_library.find(QString::fromStdString(current.wallpaperId)))
+        return QString::fromStdString(w->preview);
+    return {};
 }
 
 // ---- GPU / screenshot state ------------------------------------------------
@@ -109,8 +124,8 @@ int PropertiesController::open(const QString &wallpaperId, const QString &basePa
 std::vector<nyaa::domain::settings::Setting *> PropertiesController::allSettings()
 {
     std::vector<nyaa::domain::settings::Setting *> all;
-    for (const auto *option : m_globals.options().all())
-        all.push_back(const_cast<nyaa::domain::options::GlobalOption *>(option));
+    for (auto *option : m_globals.options().all())
+        all.push_back(option);
     for (const auto &setting : m_properties.settings().all())
         all.push_back(setting.get());
     return all;
@@ -210,7 +225,27 @@ void PropertiesController::onApplyFinished(const QString &monitor, bool ok, cons
     }
     // Java saves the config only after the engine started.
     m_store.save(config);
+    ++m_revision;
+    emit revisionChanged();
     emit status(tr("Applied to %1").arg(monitor));
+
+    // Capture & theme: take the window's colours from what was just applied
+    if (m_themeFromWallpaper && !m_wallpaper.preview.empty()) {
+        ConfigBridge &config = m_config;
+        const QString preview = QString::fromStdString(m_wallpaper.preview);
+        if (m_themeVia == QStringLiteral("pywal") && m_pywal) {
+            const QUrl url(preview);
+            // -n: leave the desktop wallpaper alone, -q: quiet, -s -t: no terminal changes
+            QProcess::startDetached(QStringLiteral("wal"),
+                                    {QStringLiteral("-n"), QStringLiteral("-q"), QStringLiteral("-s"), QStringLiteral("-t"),
+                                     QStringLiteral("-i"), url.isLocalFile() ? url.toLocalFile() : preview});
+            config.setThemeSource(QStringLiteral("pywal"));
+        } else {
+            config.setThemeWallpaper(preview);
+            config.setThemeSource(QStringLiteral("wallpaper"));
+        }
+        config.save();
+    }
 }
 
 void PropertiesController::loadLast(const QString &monitorName)

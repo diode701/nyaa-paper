@@ -173,6 +173,14 @@ std::vector<const GlobalOption *> GlobalOptions::all() const
     return out;
 }
 
+std::vector<GlobalOption *> GlobalOptions::all()
+{
+    std::vector<GlobalOption *> out;
+    for (const auto &option : options_)
+        out.push_back(option.get());
+    return out;
+}
+
 std::vector<std::string> GlobalOptions::arguments(bool prePropertyFlags) const
 {
     std::vector<std::string> out;

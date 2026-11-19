@@ -130,6 +130,7 @@ public:
 
     /// In GlobalOptionsFactory order.
     std::vector<const GlobalOption *> all() const;
+    std::vector<GlobalOption *> all();
     std::vector<std::string> arguments(bool prePropertyFlags) const;
     std::map<std::string, std::string> serialize() const;
     void restore(const std::map<std::string, std::string> &saved);

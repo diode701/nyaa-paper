@@ -1,7 +1,7 @@
 <!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
  "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
 <!--
-  org.nyar.Paper.Playlist — one playlist per monitor, executed by the daemon.
+  org.nyaa.Paper.Playlist — one playlist per monitor, executed by the daemon.
 
   The daemon stores the document opaquely except for the fields it needs to
   schedule: intervalSec, mode, loop, currentIndex, and each entry's
@@ -35,7 +35,7 @@
   *Index is the entry being shown, or -1 when idle.
 -->
 <node>
-  <interface name="org.nyar.Paper.Playlist">
+  <interface name="org.nyaa.Paper.Playlist">
     <method name="Set">
       <arg name="monitor" type="s" direction="in"/>
       <arg name="json" type="s" direction="in"/>

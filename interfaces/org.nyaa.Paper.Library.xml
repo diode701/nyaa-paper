@@ -1,7 +1,7 @@
 <!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
  "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
 <!--
-  org.nyar.Paper.Library — what is subscribed, and where it lives.
+  org.nyaa.Paper.Library — what is subscribed, and where it lives.
 
   The daemon only ever reports facts it can see on disk: an id, the directory
   it came from, and a modification stamp. It does NOT parse project.json,
@@ -23,7 +23,7 @@
            changed". The GUI re-lists from offset 0.
 -->
 <node>
-  <interface name="org.nyar.Paper.Library">
+  <interface name="org.nyaa.Paper.Library">
     <method name="List">
       <arg name="offset" type="u" direction="in"/>
       <arg name="limit" type="u" direction="in"/>

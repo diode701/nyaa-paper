@@ -13,7 +13,7 @@ use zbus::Connection;
 ///NEEDS SOME SERIOUS UNDERSTANDING
 use crate::{paths, OBJECT_PATH};
 
-const IFACE: &str = "org.nyar.Paper.Engine";
+const IFACE: &str = "org.nyaa.Paper.Engine";
 const STOP_GRACE: Duration = Duration::from_secs(3);
 
 // One live engine child. Java equivalent: a WallpaperInstance field set.
@@ -59,9 +59,16 @@ impl Engine {
     }
 
     async fn stop_one(&self, monitor: &str) {
-        let running = { self.inner.running.lock().unwrap().remove(monitor) };
+        // Set the flag while we still hold the lock, so a child that exits on its
+        // own in the same microsecond can never be reported as a crash.
+        let running = {
+            let mut map = self.inner.running.lock().unwrap();
+            map.remove(monitor).map(|running| {
+                running.stop_requested.store(true, Ordering::SeqCst);
+                running
+            })
+        };
         let Some(running) = running else { return };
-        running.stop_requested.store(true, Ordering::SeqCst);
         Self::terminate(running).await;
     }
 
@@ -78,7 +85,7 @@ impl Engine {
     }
 }
 
-#[zbus::interface(name = "org.nyar.Paper.Engine")]
+#[zbus::interface(name = "org.nyaa.Paper.Engine")]
 impl Engine {
     async fn apply(
         &self,

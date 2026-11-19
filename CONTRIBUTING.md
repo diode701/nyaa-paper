@@ -34,10 +34,10 @@ Hell yeah. Here's the workflow:
 - **Proper OOP, please.** This isn't a 50-line script — keep it tidy. Single-responsibility classes, sensible abstractions, no god objects. If you're adding something new, think about where it lives before you start typing. The package layout is there for a reason:
 
   ```
-  com.nyar.config.*      — configuration, persistence, settings files
-  com.nyar.settings.*    — property parsing, global options, UI controls
-  com.nyar.wallpaper.*   — engine process management, GPU config, lifecycle
-  com.nyar.*             — UI views and app wiring (browser, properties, etc.)
+  com.nyaa.config.*      — configuration, persistence, settings files
+  com.nyaa.settings.*    — property parsing, global options, UI controls
+  com.nyaa.wallpaper.*   — engine process management, GPU config, lifecycle
+  com.nyaa.*             — UI views and app wiring (browser, properties, etc.)
   ```
 
   If a class is doing two unrelated things, split it. If a method is growing past what fits on one screen, refactor it. Future-you (and me) will thank you.

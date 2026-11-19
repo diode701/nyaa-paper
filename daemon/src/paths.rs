@@ -26,3 +26,13 @@ pub fn state_dir() -> PathBuf {
     }
 }
 
+
+pub fn workshop_root() -> PathBuf {
+    if let Ok(p) = std::env::var("NYAA_WORKSHOP") {
+        if !p.is_empty() {
+            return PathBuf::from(p);
+        }
+    }
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/root".to_string());
+    PathBuf::from(home).join(".local/share/Steam/steamapps/workshop/content/431960")
+}

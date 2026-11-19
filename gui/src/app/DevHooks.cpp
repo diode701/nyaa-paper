@@ -38,7 +38,8 @@ void installDevHooks(QApplication &app, QQmlApplicationEngine &qml)
                 window->setKeyboardGrabEnabled(true);
             }
         });
-        QTimer::singleShot(700, &app, [&app, &qml, keys] {
+        const int keysDelay = qEnvironmentVariableIsSet("NYAA_KEYS_DELAY") ? qEnvironmentVariableIntValue("NYAA_KEYS_DELAY") : 700;
+        QTimer::singleShot(keysDelay, &app, [&app, &qml, keys] {
             auto *window = qobject_cast<QWindow *>(qml.rootObjects().value(0));
             if (!window)
                 return;

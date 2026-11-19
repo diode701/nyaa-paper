@@ -64,6 +64,8 @@ qt_add_executable(nyaa-paper-qt
     src/models/DbusLibrary.cpp
     src/ui/Theme.hpp
     src/ui/Theme.cpp
+    src/ui/Thumbnails.hpp
+    src/ui/Thumbnails.cpp
     src/ui/PreviewSettings.hpp
     src/ui/PreviewSettings.cpp
     ${GUI_DBUS_SOURCES}
@@ -181,10 +183,12 @@ qt_add_executable(controller_test
     src/bridge/ConfigRenderer.cpp
     src/io/WallpaperConfigJson.cpp
     src/models/WallpaperModel.cpp
+    src/ui/Thumbnails.cpp
     src/bridge/EngineBridge.cpp
     src/bridge/PlaylistBridge.cpp
     src/bridge/ConfigRenderer.cpp
     src/models/WallpaperModel.cpp
+    src/ui/Thumbnails.cpp
     src/io/WallpaperConfigJson.cpp
     src/engine/DbusEngine.cpp
     src/engine/IEngine.hpp
@@ -204,7 +208,7 @@ qt_add_executable(controller_test
     ${GUI_DBUS_SOURCES}
 )
 target_include_directories(controller_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(controller_test PRIVATE Qt6::Core Qt6::Gui Qt6::DBus)
+target_link_libraries(controller_test PRIVATE Qt6::Core Qt6::Gui Qt6::Quick Qt6::DBus)
 add_test(NAME controller_test COMMAND controller_test)
 
 # PlaylistBridge against a real daemon; needs a session bus with nyaa-paperd,
@@ -212,6 +216,7 @@ add_test(NAME controller_test COMMAND controller_test)
 qt_add_executable(playlist_test
     tests/playlist_test.cpp
     src/bridge/PlaylistBridge.cpp
+    src/ui/Thumbnails.cpp
     src/bridge/ConfigBridge.cpp
     src/app/Autostart.cpp
     src/bridge/ConfigRenderer.cpp
@@ -228,7 +233,7 @@ qt_add_executable(playlist_test
     ${GUI_DBUS_SOURCES}
 )
 target_include_directories(playlist_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(playlist_test PRIVATE Qt6::Core Qt6::Gui Qt6::DBus)
+target_link_libraries(playlist_test PRIVATE Qt6::Core Qt6::Gui Qt6::Quick Qt6::DBus)
 
 add_executable(autostart_test tests/autostart_test.cpp src/app/Autostart.cpp)
 target_include_directories(autostart_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -240,3 +245,8 @@ qt_add_executable(theme_test tests/theme_test.cpp src/ui/Theme.cpp src/bridge/Co
 target_include_directories(theme_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(theme_test PRIVATE Qt6::Core Qt6::Gui Qt6::DBus)
 add_test(NAME theme_test COMMAND theme_test)
+
+qt_add_executable(thumbs_test tests/thumbs_test.cpp src/ui/Thumbnails.cpp)
+target_include_directories(thumbs_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(thumbs_test PRIVATE Qt6::Core Qt6::Gui Qt6::Quick)
+add_test(NAME thumbs_test COMMAND thumbs_test)

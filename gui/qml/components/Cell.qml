@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import NyaaPaper.Backend 1.0
 import NyaaPaper.Theme 1.0
 
@@ -18,6 +19,8 @@ Item {
 
     readonly property bool hovered: mouse.containsMouse
     readonly property string preview: item ? item.preview : ""
+    readonly property string thumb: item ? (item.thumb || "") : ""
+    readonly property int edge: Math.round(width * Screen.devicePixelRatio)
     readonly property string title: item ? item.title : ""
     readonly property bool animate: Settings.animationMode === 2
                                     || (Settings.animationMode === 1 && (hovered || selected))
@@ -84,17 +87,18 @@ Item {
             horizontalAlignment: Text.AlignHCenter
         }
 
-        // still thumbnail through the pixmap cache (prefetched pages hit it)
+        // the still thumbnail, from the app's own cache (C++, centre-cropped,
+        // decoded at exactly this card's pixel size; prefetched pages are instant)
         Image {
             id: still
             anchors.fill: parent
             anchors.margins: 1
-            source: cell.preview
+            source: cell.thumb
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
-            cache: true
-            sourceSize.width: 360
-            sourceSize.height: 360
+            cache: false            // ThumbnailCache already holds it
+            sourceSize.width: cell.edge
+            sourceSize.height: cell.edge
             visible: !animated.showing
             opacity: cell.imageReady ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 300 } }

@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Effects
 import NyaaPaper.Backend 1.0
@@ -80,13 +81,15 @@ Item {
         }
         setCursor(restored)
 
+        // preloadAdjacentPages: decode the neighbours in C++ worker threads
         var around = []
         for (const p of [page - 1, page + 1]) {
             if (p >= 0 && p < pageCount && p !== page)
                 for (const item of itemsOf(p))
-                    if (item.preview !== "") around.push(item.preview)
+                    if (item.thumb) around.push(item.thumb)
         }
         prefetch = around
+        Thumbs.prefetch(around, Math.round(view.thumb * Screen.devicePixelRatio))
     }
 
     function goTo(newPage, newCursor) {
@@ -100,6 +103,7 @@ Item {
         if (newCursor !== undefined)
             setCursor(newCursor)       // moveSelection across pages picks the cell
         deckAnim.restart()
+        if (Settings.debugTiming) flipProbe.restart()
     }
 
     /// WallpaperBrowser.moveSelection
@@ -144,6 +148,18 @@ Item {
     }
 
     Timer {
+        // NYAA_DEBUG_TIMING: how many cards had their thumbnail 40 ms after a flip
+        id: flipProbe
+        interval: 40
+        onTriggered: {
+            let ready = 0
+            for (let i = 0; i < cards.count; ++i)
+                if (cards.itemAt(i) && cards.itemAt(i).visible && cards.itemAt(i).imageReady) ++ready
+            console.log("flip: " + ready + "/" + view.pageItems.length + " thumbnails ready after 40 ms")
+        }
+    }
+
+    Timer {
         id: resizeDebounce
         interval: 150
         onTriggered: {
@@ -171,19 +187,6 @@ Item {
         function onCountChanged() { view.rebuild() }   // onLibraryChange
     }
 
-    // preloadAdjacentPages: decode the neighbours' thumbnails into the cache
-    Repeater {
-        model: view.prefetch
-        delegate: Image {
-            required property string modelData
-            visible: false
-            source: modelData
-            asynchronous: true
-            cache: true
-            sourceSize.width: 360
-            sourceSize.height: 360
-        }
-    }
 
     // ---- the room: the selected wallpaper, blurred and dark, behind the grid
     Item {
@@ -254,6 +257,7 @@ Item {
 
             // a fixed pool of cards: a page flip swaps their data, not the objects
             Repeater {
+                id: cards
                 model: view.pageSize
                 delegate: Cell {
                     required property int index

@@ -1,5 +1,7 @@
 #include "WallpaperModel.hpp"
 
+#include "ui/Thumbnails.hpp"
+
 namespace {
 QString q(const std::string &value) { return QString::fromStdString(value); }
 } // namespace
@@ -114,6 +116,7 @@ QVariantMap WallpaperModel::at(int row) const
     out.insert(QStringLiteral("title"), q(item.title));
     out.insert(QStringLiteral("kind"), q(item.type));
     out.insert(QStringLiteral("preview"), q(item.preview));
+    out.insert(QStringLiteral("thumb"), ThumbnailCache::idFor(q(item.preview)));
     out.insert(QStringLiteral("basePath"), q(item.basePath));
     return out;
 }

@@ -11,6 +11,7 @@ class PreviewSettings : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(int animationMode READ animationMode WRITE setAnimationMode NOTIFY changed)
+    Q_PROPERTY(bool debugTiming READ debugTiming CONSTANT)
 
 public:
     enum Mode { Off = 0, Hover = 1, Always = 2 };
@@ -19,6 +20,7 @@ public:
     explicit PreviewSettings(ConfigBridge &config, QObject *parent = nullptr);
 
     int animationMode() const;
+    bool debugTiming() const { return qEnvironmentVariableIsSet("NYAA_DEBUG_TIMING"); }
     void setAnimationMode(int mode);
     /// G: always → off → hover → always (cycles like before) and saves.
     Q_INVOKABLE void cycle();

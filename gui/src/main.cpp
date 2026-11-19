@@ -21,6 +21,7 @@
 #include "io/ConfigStore.h"
 #include "ui/PreviewSettings.hpp"
 #include "ui/Theme.hpp"
+#include "ui/Thumbnails.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -114,7 +115,12 @@ int main(int argc, char *argv[])
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Library", &library);
     qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Tray", &tray);
 
+    // grid thumbnails: decoded once, kept near the current page (Java's imageCache)
+    auto thumbnails = std::make_shared<ThumbnailCache>();
+    qmlRegisterSingletonInstance("NyaaPaper.Backend", 1, 0, "Thumbs", thumbnails.get());
+
     QQmlApplicationEngine qml;
+    qml.addImageProvider(QStringLiteral("thumbs"), new ThumbnailProvider(thumbnails));
     qml.loadFromModule("NyaaPaper", "Main");
     if (qml.rootObjects().isEmpty())
         return 1;

@@ -12,7 +12,7 @@ Rectangle {
     property string selection: ""
     property int cols: 1
     property int rows: 1
-    implicitHeight: 28
+    implicitHeight: 32
     color: Theme.panel
 
     function pad(text) {
@@ -34,7 +34,7 @@ Rectangle {
                 required property string modelData
                 readonly property bool live: Engine.running[modelData] !== undefined
                 implicitWidth: tag.implicitWidth + 22
-                implicitHeight: 18
+                implicitHeight: 20
                 radius: Theme.radius
                 color: "transparent"
                 border.color: live ? Qt.tint(Theme.line, Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.55)) : Theme.line
@@ -46,7 +46,7 @@ Rectangle {
                     text: modelData
                     color: live ? Theme.text : Theme.muted
                     font.family: Theme.font
-                    font.pixelSize: 10
+                    font.pixelSize: 11
                     font.weight: Font.DemiBold
                 }
             }
@@ -56,7 +56,7 @@ Rectangle {
             text: bar.pad(bar.pageLabel) + " · " + bar.cols + "×" + bar.rows
             color: Theme.text
             font.family: Theme.font
-            font.pixelSize: 11
+            font.pixelSize: 12
             font.weight: Font.DemiBold
         }
         Text {
@@ -64,7 +64,7 @@ Rectangle {
             text: bar.selection
             color: Theme.muted
             font.family: Theme.font
-            font.pixelSize: 11
+            font.pixelSize: 12
             elide: Text.ElideRight
         }
         Row {

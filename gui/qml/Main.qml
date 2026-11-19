@@ -296,7 +296,7 @@ ApplicationWindow {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             anchors.margins: 14
-            anchors.bottomMargin: 38
+            anchors.bottomMargin: 42
             open: app.view === 0 && app.keysOpen
         }
 

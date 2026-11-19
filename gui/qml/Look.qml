@@ -10,10 +10,11 @@ QtObject {
     property int pageSlide: 170
 
     // card
-    property int cardRadius: 0      // 0 = square cards: the preview can never bleed past the frame
+    property int cardRadius: 6
     property int borderWidth: 1
     property int borderWidthSelected: 2
     property int imageInset: 0          // hides the square corners inside the rounded card
+    property bool roundPreviews: true    // mask the preview to the card shape
     property real hoverScale: 0.025
 
     // shadow / glow.  Keep blurMax under ~thumb/8 or the square turns into a circle.

@@ -32,6 +32,7 @@ Item {
         yScale: 1.0 + Look.hoverScale * cell.hot
     }
 
+    // ---- card body ---------------------------------------------------------
     Rectangle {
         id: body
         anchors.fill: parent
@@ -52,31 +53,9 @@ Item {
                 GradientStop { position: 1.0; color: Qt.hsla(((cell.pageStart + cell.index) * 0.11 + 0.1) % 1.0, 0.6, 0.14, 1.0) }
             }
         }
-
-        AnimatedImage {
-            anchors.fill: parent
-            anchors.margins: Look.imageInset
-            source: cell.preview
-            visible: cell.preview !== ""
-            fillMode: Image.PreserveAspectFit
-            asynchronous: true
-            cache: false
-            playing: cell.animate
-            sourceSize.width: 360
-            sourceSize.height: 360
-        }
-
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 1
-            color: "#1fffffff"
-        }
     }
 
-    // Real gaussian-ish shadow, and the accent glow when selected. The padding
-    // is what lets it bleed outside the card; without it the layer clips it.
+    // Shadow + glow come from the body, so the preview is not part of the shape.
     MultiEffect {
         source: body
         anchors.fill: body
@@ -84,10 +63,57 @@ Item {
         blurMax: cell.selected ? Look.blurMaxSelected : Look.blurMax
         shadowEnabled: true
         shadowColor: Qt.rgba(0.30 * cell.sel, 0.10 + 0.72 * cell.sel, 0.14 + 0.86 * cell.sel, 1.0)
-        shadowOpacity: Look.shadowOpacity + Look.shadowOpacityHover * cell.hot + (Look.shadowOpacitySelected - Look.shadowOpacity) * cell.sel
+        shadowOpacity: Look.shadowOpacity + Look.shadowOpacityHover * cell.hot
+                        + (Look.shadowOpacitySelected - Look.shadowOpacity) * cell.sel
         shadowBlur: cell.selected ? Look.shadowBlurSelected : Look.shadowBlur
         shadowVerticalOffset: Look.shadowOffset * (1.0 - cell.sel)
         shadowHorizontalOffset: 0
+    }
+
+    // ---- preview, masked to the card shape ---------------------------------
+    // When masking is on the image itself must be hidden, otherwise its square
+    // corners stay visible underneath the masked copy. If a backend cannot run
+    // the effect the preview disappears, which is obvious and one Look toggle
+    // away from the plain path.
+    AnimatedImage {
+        id: previewImage
+        anchors.fill: parent
+        anchors.margins: Look.imageInset
+        source: cell.preview
+        visible: cell.preview !== "" && !Look.roundPreviews
+        fillMode: Image.PreserveAspectFit
+        asynchronous: true
+        cache: false
+        playing: cell.animate
+        sourceSize.width: 360
+        sourceSize.height: 360
+    }
+
+    Rectangle {
+        id: maskShape
+        anchors.fill: parent
+        anchors.margins: Look.imageInset
+        radius: Math.max(0, cell.radius - Look.imageInset)
+        color: "black"
+        visible: false
+    }
+
+    MultiEffect {
+        anchors.fill: previewImage
+        source: previewImage
+        visible: Look.roundPreviews && cell.preview !== ""
+        maskEnabled: Look.roundPreviews
+        maskSource: maskShape
+    }
+
+    // top bevel
+    Rectangle {
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.margins: 1
+        height: 1
+        color: "#1fffffff"
     }
 
     Rectangle {

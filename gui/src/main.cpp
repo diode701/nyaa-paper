@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
     // NyaaLauncher --tray: start hidden in the tray (used by autostart)
     const bool trayStart = app.arguments().contains(QStringLiteral("--tray"));
     app.setApplicationName(QStringLiteral("nyaa-paper"));
+    app.setApplicationVersion(QStringLiteral("0.2.0"));
     app.setOrganizationName(QStringLiteral("diode701"));
     app.setDesktopFileName(QStringLiteral("io.github.diode701.NyaaPaper"));
     // JetBrains Mono ships with the app (OFL), so the look does not depend on

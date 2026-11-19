@@ -87,7 +87,15 @@ ApplicationWindow {
     Shortcut { sequence: "G";      enabled: app.keysEnabled && app.view === 0; onActivated: Settings.cycle() }
     Shortcut { sequences: ["?", "H"]; enabled: app.keysEnabled && app.view === 0; onActivated: app.keysOpen = !app.keysOpen }
     Shortcut { sequence: "S";      enabled: app.keysEnabled && app.view === 0; onActivated: app.settingsOpen = true }
-    Shortcut { sequence: "Escape"; enabled: app.view !== 0; onActivated: { app.view = 0; root.forceActiveFocus() } }
+    Shortcut { sequence: "Escape"; enabled: app.view !== 0 && app.view !== 4; onActivated: { app.view = 0; root.forceActiveFocus() } }
+    // the browser's Esc goes back to the title screen (when it is on)
+    Shortcut { sequence: "Escape"; enabled: app.view === 0 && app.keysEnabled && Config.titleScreen; onActivated: app.view = 4 }
+    // title screen: ↑↓ choose, Enter opens, or each item's key
+    Shortcut { sequence: "Up"; enabled: app.view === 4 && app.keysEnabled; onActivated: title.move(-1) }
+    Shortcut { sequence: "Down"; enabled: app.view === 4 && app.keysEnabled; onActivated: title.move(1) }
+    Shortcut { sequences: ["Return", "Enter"]; enabled: app.view === 4 && app.keysEnabled; onActivated: title.activate() }
+    Shortcut { sequence: "M"; enabled: app.view === 4 && app.keysEnabled; onActivated: app.view = 2 }
+    Shortcut { sequence: "S"; enabled: app.view === 4 && app.keysEnabled; onActivated: app.settingsOpen = true }
     Shortcut {
         sequence: "Ctrl+Return"
         enabled: app.view === 1
@@ -281,6 +289,15 @@ ApplicationWindow {
                     visible: app.view === 2
                     onBack: { app.view = 0; root.forceActiveFocus() }
                 }
+                TitleView {
+                    id: title
+                    anchors.fill: parent
+                    visible: app.view === 4
+                    onBrowse: { app.view = 0; root.forceActiveFocus() }
+                    onPlaylists: { app.view = 2; root.forceActiveFocus() }
+                    onSettings: app.settingsOpen = true
+                    onQuit: Qt.quit()
+                }
             }
 
         }
@@ -349,6 +366,9 @@ ApplicationWindow {
     onSettingsOpenChanged: refocus()
 
     Component.onCompleted: {
+        // Java's launcher intro; Settings → Startup turns it off, --browse skips it once
+        if (Config.titleScreen && Qt.application.arguments.indexOf("--browse") < 0)
+            app.view = 4
         root.forceActiveFocus()
         Engine.refreshRunning()
     }

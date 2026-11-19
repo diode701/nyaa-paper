@@ -12,6 +12,11 @@
 
 void installDevHooks(QApplication &app, QQmlApplicationEngine &qml)
 {
+    // Screenshots and key tests start in the browser unless NYAA_TITLE asks
+    // for the title screen (NYAA_VIEW, handled below, picks a view itself).
+    if ((qEnvironmentVariableIsSet("NYAA_SHOT") || qEnvironmentVariableIsSet("NYAA_KEYS"))
+        && !qEnvironmentVariableIsSet("NYAA_TITLE") && !qml.rootObjects().isEmpty())
+        qml.rootObjects().first()->setProperty("view", 0);
     // Dev aid: NYAA_WINDOW=2540x1422 renders at the user's real window size.
     if (qEnvironmentVariableIsSet("NYAA_WINDOW")) {
         const QString size = qEnvironmentVariable("NYAA_WINDOW");

@@ -90,6 +90,7 @@ qt_add_qml_module(nyaa-paper-qt
         qml/views/PropertiesView.qml
         qml/views/PlaylistView.qml
         qml/views/SettingsView.qml
+        qml/views/TitleView.qml
         qml/components/ActionButton.qml
         qml/components/StatusBar.qml
         qml/components/Cell.qml

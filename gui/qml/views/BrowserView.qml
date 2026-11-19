@@ -226,6 +226,7 @@ Item {
             blur: 1.0
             blurMax: 48
             saturation: 0.15
+            brightness: -0.35
             autoPaddingEnabled: false
             opacity: 0.30
         }

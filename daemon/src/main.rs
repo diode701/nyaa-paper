@@ -18,6 +18,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let engine = engine::Engine::new();
     let library = library::Library::new();
+    let playlist = playlist::Playlist::new(engine.clone());
 
     //Using Three itneterfaces: One object Path.... Requesting BUS_NAME also gives us single-instance behaviour: A second daemon fails here and exits. Baisically a documented preset.
 
@@ -25,7 +26,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .name(BUS_NAME)
         .serve_at(OBJECT_PATH, engine.clone())
         .serve_at(OBJECT_PATH, library.clone())
-        .serve_at(OBJECT_PATH, playlist::Playlist::new())
+        .serve_at(OBJECT_PATH, playlist.clone())
         .build()
         .await?;
 
@@ -35,6 +36,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     engine.attach(&conn);
     library.attach(&conn);
     library.start_watching();
+    playlist.attach(&conn);
     info!(%BUS_NAME, %OBJECT_PATH, "nyaa-paperd ready");
 
     wait_for_shutdown().await;

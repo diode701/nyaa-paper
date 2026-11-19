@@ -85,12 +85,18 @@ impl Engine {
     }
 }
 
-#[zbus::interface(name = "org.nyaa.Paper.Engine")]
 impl Engine {
-    async fn apply(
+    /// Stop whatever runs on this monitor. Used by the playlist runner.
+    pub async fn stop_monitor(&self, monitor: &str) {
+        self.stop_one(monitor).await;
+    }
+
+    /// Spawn an engine child from a fully rendered command. Used by the D-Bus
+    /// Apply method and by the playlist runner.
+    pub async fn apply_command(
         &self,
-        monitor: String,
-        wallpaper_id: String,
+        monitor: &str,
+        wallpaper_id: &str,
         argv: Vec<String>,
         env: Vec<String>,
     ) -> zbus::fdo::Result<u32> {
@@ -105,8 +111,7 @@ impl Engine {
             ));
         }
 
-        // Replace semantics from the contract: the old child dies first.
-        self.stop_one(&monitor).await;
+        self.stop_one(monitor).await;
 
         let binary = paths::engine_binary();
         let mut cmd = Command::new(&binary);
@@ -127,14 +132,14 @@ impl Engine {
         let stop_requested = Arc::new(AtomicBool::new(false));
         let reaper = spawn_reaper(
             self.inner.clone(),
-            monitor.clone(),
+            monitor.to_string(),
             pid,
             stop_requested.clone(),
             child,
         );
 
         self.inner.running.lock().unwrap().insert(
-            monitor.clone(),
+            monitor.to_string(),
             Running {
                 pid,
                 stop_requested,
@@ -142,8 +147,21 @@ impl Engine {
             },
         );
 
-        info!(%monitor, %wallpaper_id, pid, "engine started");
+        info!(monitor, wallpaper_id, pid, "engine started");
         Ok(pid)
+    }
+}
+
+#[zbus::interface(name = "org.nyaa.Paper.Engine")]
+impl Engine {
+    async fn apply(
+        &self,
+        monitor: String,
+        wallpaper_id: String,
+        argv: Vec<String>,
+        env: Vec<String>,
+    ) -> zbus::fdo::Result<u32> {
+        self.apply_command(&monitor, &wallpaper_id, argv, env).await
     }
 
     async fn stop(&self, monitor: String) {

@@ -126,14 +126,55 @@ ApplicationWindow {
         enabled: app.view === 2
         onActivated: playlistView.removeSelected()
     }
-    Repeater {
-        model: 10
-        Shortcut {
-            required property int index
-            sequence: index === 9 ? "0" : String(index + 1)
-            enabled: app.view === 1
-            onActivated: properties.selectMonitorByIndex(index === 9 ? 9 : index)
-        }
+    Shortcut {
+        sequence: "1"
+        enabled: app.view === 1
+        onActivated: properties.selectMonitorByIndex(0)
+    }
+    Shortcut {
+        sequence: "2"
+        enabled: app.view === 1
+        onActivated: properties.selectMonitorByIndex(1)
+    }
+    Shortcut {
+        sequence: "3"
+        enabled: app.view === 1
+        onActivated: properties.selectMonitorByIndex(2)
+    }
+    Shortcut {
+        sequence: "4"
+        enabled: app.view === 1
+        onActivated: properties.selectMonitorByIndex(3)
+    }
+    Shortcut {
+        sequence: "5"
+        enabled: app.view === 1
+        onActivated: properties.selectMonitorByIndex(4)
+    }
+    Shortcut {
+        sequence: "6"
+        enabled: app.view === 1
+        onActivated: properties.selectMonitorByIndex(5)
+    }
+    Shortcut {
+        sequence: "7"
+        enabled: app.view === 1
+        onActivated: properties.selectMonitorByIndex(6)
+    }
+    Shortcut {
+        sequence: "8"
+        enabled: app.view === 1
+        onActivated: properties.selectMonitorByIndex(7)
+    }
+    Shortcut {
+        sequence: "9"
+        enabled: app.view === 1
+        onActivated: properties.selectMonitorByIndex(8)
+    }
+    Shortcut {
+        sequence: "0"
+        enabled: app.view === 1
+        onActivated: properties.selectMonitorByIndex(9)
     }
     Shortcut {
         sequence: "S"

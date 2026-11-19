@@ -64,42 +64,65 @@ int main()
     right.gpu.glThreaded = true;
     assert(wallpapers.save(right));
 
-    const WallpaperConfig a = wallpapers.load("eDP-1");
+    const WallpaperConfig a = wallpapers.load("eDP-1", "1234");
     assert(a.wallpaperId == "1234" && a.monitor == "eDP-1");
     assert(a.projectJsonModified == 1700000000123LL);
     assert(a.settings.at("bloom") == "1");
     assert(a.settings.at("volume") == "silent|40");
     assert(a.gpu.mode == GpuConfig::Mode::DriPrime && a.gpu.driPrimeNumber == 2 && !a.gpu.glThreaded);
+    assert(wallpapers.current("eDP-1").wallpaperId == "1234");
 
-    const WallpaperConfig b = wallpapers.load("HDMI-1");
+    const WallpaperConfig b = wallpapers.current("HDMI-1");
     assert(b.wallpaperId == "5678");
     assert(b.gpu.mode == GpuConfig::Mode::Nvidia && b.gpu.glThreaded);   // independent of eDP-1
-    assert(wallpapers.load("DP-3").empty());
+    assert(wallpapers.current("DP-3").empty());
+    assert(wallpapers.load("eDP-1", "5678").empty());                   // never ran there
 
-    // saving again replaces only that monitor (Java: one config per monitor)
-    left.wallpaperId = "9999";
-    assert(wallpapers.save(left));
-    assert(wallpapers.load("eDP-1").wallpaperId == "9999");
-    assert(wallpapers.load("HDMI-1").wallpaperId == "5678");
+    // C8, Java's Load last bug: applying another wallpaper on the same monitor
+    // must not erase the first one's settings.
+    WallpaperConfig other = left;
+    other.wallpaperId = "9999";
+    other.settings = {{"bloom", "0"}};
+    assert(wallpapers.save(other));
+    assert(wallpapers.current("eDP-1").wallpaperId == "9999");
+    assert(wallpapers.load("eDP-1", "1234").settings.at("bloom") == "1");   // still there
+    assert(wallpapers.load("eDP-1", "9999").settings.at("bloom") == "0");
+    assert(wallpapers.current("HDMI-1").wallpaperId == "5678");
 
-    // cleanupStale drops monitors whose wallpaper is no longer subscribed (TODO C7)
-    assert(wallpapers.cleanupStale({"5678"}) == 1);
-    assert(wallpapers.load("eDP-1").empty());
-    assert(!wallpapers.load("HDMI-1").empty());
+    // an empty library (unreadable workshop) must not wipe anything
+    assert(wallpapers.cleanupStale({}) == 0);
+    assert(!wallpapers.load("eDP-1", "1234").empty());
 
-    // delete
-    assert(wallpapers.remove("HDMI-1"));
-    assert(wallpapers.load("HDMI-1").empty());
+    // cleanupStale drops only unsubscribed wallpapers (TODO C7)
+    assert(wallpapers.cleanupStale({"5678", "9999"}) == 1);
+    assert(wallpapers.load("eDP-1", "1234").empty());
+    assert(wallpapers.current("eDP-1").wallpaperId == "9999");
+    assert(!wallpapers.current("HDMI-1").empty());
 
-    // files written by the first v2 builds ("values") still load
+    // delete one config; the monitor goes when nothing is left
+    assert(wallpapers.remove("HDMI-1", "5678"));
+    assert(wallpapers.current("HDMI-1").empty());
+
+    // files written by the first v2 builds (one record, "values") still load
     {
         QFile legacy(QString::fromStdString(wpPath));
         assert(legacy.open(QIODevice::WriteOnly));
         legacy.write(R"({"eDP-1": {"wallpaperId": "42", "values": {"bloom": "0"}}})");
     }
-    const WallpaperConfig old = wallpapers.load("eDP-1");
+    const WallpaperConfig old = wallpapers.current("eDP-1");
     assert(old.wallpaperId == "42" && old.settings.at("bloom") == "0");
     assert(old.gpu.mode == GpuConfig::Mode::Default);
+    assert(wallpapers.load("eDP-1", "42").wallpaperId == "42");
+
+    // a corrupt file is kept aside, not a crash, and the store starts empty
+    {
+        QFile broken(QString::fromStdString(wpPath));
+        assert(broken.open(QIODevice::WriteOnly));
+        broken.write("{ not json");
+    }
+    assert(wallpapers.current("eDP-1").empty());
+    assert(wallpapers.save(left));
+    assert(wallpapers.load("eDP-1", "1234").wallpaperId == "1234");
 
     std::puts("config tests passed");
     return 0;

@@ -193,8 +193,10 @@ void PropertiesController::loadLast(const QString &monitorName)
         return;
     }
 
-    const WallpaperConfig saved = m_store.load(monitor.toStdString());
-    if (saved.empty() || saved.wallpaperId != m_wallpaperId.toStdString() || saved.settings.empty()) {
+    // This wallpaper's own config on this monitor, even if another wallpaper
+    // was applied there since (Java lost it: one file per monitor).
+    const WallpaperConfig saved = m_store.load(monitor.toStdString(), m_wallpaperId.toStdString());
+    if (saved.empty() || saved.settings.empty()) {
         emit status(tr("No saved settings for this wallpaper on %1").arg(monitor));
         return;
     }

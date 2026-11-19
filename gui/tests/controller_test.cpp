@@ -125,8 +125,8 @@ int main(int argc, char *argv[])
     assert(waitForStatus(controller, "Applied to TEST-2"));
 
     nyaa::io::WallpaperStore store;
-    const auto one = store.load("TEST-1");
-    const auto two = store.load("TEST-2");
+    const auto one = store.current("TEST-1");
+    const auto two = store.current("TEST-2");
     assert(one.gpu.mode == GpuConfig::Mode::DriPrime && one.gpu.driPrimeNumber == 2);
     assert(two.gpu.mode == GpuConfig::Mode::Nvidia);   // per monitor, per GPU
     assert(one.settings.at("fov") == "0.90");
@@ -153,6 +153,21 @@ int main(int argc, char *argv[])
     QObject::connect(&controller, &PropertiesController::status, [&message](const QString &m) { message = m; });
     controller.loadLast("TEST-1");
     assert(message == "No saved settings for this wallpaper on TEST-1");
+
+    // C8: apply 888 on TEST-1 too, then go back to 777. Java had deleted 777's
+    // settings when 888 was saved; here Load last still finds them.
+    properties.setValue("fov", 0.2);
+    controller.apply("TEST-1");
+    assert(waitForStatus(controller, "Applied to TEST-1"));
+    assert(store.current("TEST-1").wallpaperId == "888");
+    controller.open("777", wallpaperDir.path());
+    controller.loadLast("TEST-1");
+    assert(message == "Loaded 14 saved settings for TEST-1");
+    r = controller.render("TEST-1", false);
+    assert(has(r.argv, "fov=0.90"));
+    controller.open("888", wallpaperDir.path());
+    controller.loadLast("TEST-1");
+    assert(has(controller.render("TEST-1", false).argv, "fov=0.20"));
 
     // the playlist entry is rendered from the edits too, without a screenshot
     properties.setValue("fov", 0.3);

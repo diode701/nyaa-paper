@@ -17,6 +17,12 @@
 
 int main(int argc, char *argv[])
 {
+    // Vulkan by default: it drives the shader effects (card shadows, selection
+    // glow) more reliably than the GL path on NVIDIA/Wayland. Override with
+    // QSG_RHI_BACKEND=opengl (or =software) when diagnosing.
+    if (qEnvironmentVariableIsEmpty("QSG_RHI_BACKEND"))
+        qputenv("QSG_RHI_BACKEND", "vulkan");
+
     QGuiApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("nyaa-paper"));
     app.setOrganizationName(QStringLiteral("diode701"));

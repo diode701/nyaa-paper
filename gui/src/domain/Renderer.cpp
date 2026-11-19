@@ -1,0 +1,61 @@
+#include "domain/Renderer.h"
+
+#include <format>
+#include <vector>
+
+namespace nyaa::domain {
+
+namespace {
+void appendScreenshot(std::vector<std::string> &argv, const std::string &monitor,
+                      const Screenshot &screenshot)
+{
+    if (!screenshot.enabled())
+        return;
+    std::string dir = screenshot.directory;
+    if (!dir.empty() && dir.back() != '/')
+        dir.push_back('/');
+    argv.push_back("--screenshot");
+    argv.push_back(dir + monitor + "_nyaa_sc.png");   // same name as the Java app
+    argv.push_back("--screenshot-delay");
+    argv.push_back(std::to_string(screenshot.delay));
+}
+
+void appendEnvironment(std::vector<std::string> &env, const GpuConfig &gpu)
+{
+    switch (gpu.mode) {
+    case GpuConfig::Mode::DriPrime:
+        env.push_back(std::format("DRI_PRIME={}", gpu.driPrimeNumber));
+        break;
+    case GpuConfig::Mode::Nvidia:
+        env.push_back("__NV_PRIME_RENDER_OFFLOAD=1");
+        env.push_back("__GLX_VENDOR_LIBRARY_NAME=nvidia");
+        break;
+    case GpuConfig::Mode::Default:
+        break;
+    }
+    if (gpu.glThreaded)
+        env.push_back("__GL_THREADED_OPTIMIZATIONS=0");
+}
+} // namespace
+
+EngineCommand Renderer::render(const std::string &monitor, const Wallpaper &wallpaper,
+                               const settings::SettingList &settings, const GpuConfig &gpu,
+                               const Screenshot &screenshot)
+{
+    EngineCommand command;
+    command.wallpaperId = wallpaper.id;
+
+    command.argv = {"--screen-root", monitor, "--bg", wallpaper.id};
+    appendScreenshot(command.argv, monitor, screenshot);
+
+    // engine-wide flags first, then the property block: LWE's parser needs it
+    for (const auto &arg : settings.arguments(true))
+        command.argv.push_back(arg);
+    for (const auto &arg : settings.arguments(false))
+        command.argv.push_back(arg);
+
+    appendEnvironment(command.env, gpu);
+    return command;
+}
+
+} // namespace nyaa::domain

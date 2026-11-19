@@ -16,6 +16,9 @@ qt_add_dbus_interface(GUI_DBUS_SOURCES ${INTERFACES_DIR}/org.nyaa.Paper.Playlist
 qt_add_executable(nyaa-paper-qt
     src/main.cpp
     src/domain/settings/Setting.cpp
+    src/domain/settings/SettingFactory.cpp
+    src/domain/settings/SettingList.cpp
+    src/domain/Renderer.cpp
     src/domain/settings/Settings.cpp
     src/engine/IEngine.hpp
     src/engine/DbusEngine.hpp
@@ -35,6 +38,9 @@ qt_add_executable(nyaa-paper-qt
     ${GUI_DBUS_SOURCES}
         src/domain/settings/Setting.h
         src/domain/settings/Setting.cpp
+    src/domain/settings/SettingFactory.cpp
+    src/domain/settings/SettingList.cpp
+    src/domain/Renderer.cpp
 )
 
 qt_policy(SET QTP0004 NEW)
@@ -73,6 +79,9 @@ enable_testing()
 add_executable(domain_test
     tests/domain_test.cpp
     src/domain/settings/Setting.cpp
+    src/domain/settings/SettingFactory.cpp
+    src/domain/settings/SettingList.cpp
+    src/domain/Renderer.cpp
     src/domain/settings/Settings.cpp
 )
 target_include_directories(domain_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

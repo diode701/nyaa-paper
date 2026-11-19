@@ -28,6 +28,10 @@ public:
         return {"--set-property", name_ + "=" + valueToString()};
     }
 
+    /// Properties travel after the engine-wide flags: --set-property must come
+    /// after --scaling/--clamp for LWE's parser.
+    bool isPrePropertyFlag() const override { return false; }
+
 protected:
     virtual std::string valueToString() const = 0;
 

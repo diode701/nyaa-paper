@@ -14,7 +14,6 @@
     "--share=ipc",
     "--device=dri",
     "--own-name=org.nyaa.Paper",
-    "--talk-name=org.nyaa.Paper",
     "--talk-name=org.kde.StatusNotifierWatcher",
     "--filesystem=~/.local/share/Steam/steamapps/workshop/content/431960:ro",
     "--filesystem=~/.local/share/Steam/steamapps/common/wallpaper_engine:ro",

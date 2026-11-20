@@ -204,9 +204,8 @@
       "sources": [
         {
           "type": "git",
-          "comment": "local fork until it is published; replace with the public URL then",
-          "url": "file:///home/diode/nyaa-wallpaperengine",
-          "branch": "nyaa-fixes"
+          "url": "https://github.com/diode701/nyaa-wallpaperengine.git",
+          "commit": "8ea13963ab771df1f3ba98227c4721b67d19123f"
         },
         {
           "type": "archive",

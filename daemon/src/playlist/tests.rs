@@ -1,4 +1,4 @@
-//! The runner against Java's PlaylistRunner behaviour (docs/TODO.md group E).
+//! The runner against the behaviour of the original Java PlaylistRunner.
 //! Fake engine, fake library, and tokio's paused clock: "wait 60 s" is instant.
 
 use std::collections::HashSet;

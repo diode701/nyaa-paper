@@ -1,4 +1,3 @@
-> Superseded by `docs/HANDOFF.md` for anything about the current state.
 > This file is kept as the layer contract the client was built against;
 > the pieces marked "to implement" below are now implemented.
 

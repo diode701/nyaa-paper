@@ -20,13 +20,16 @@ without touching it.
 
 ## Status
 
-Pre-release. Working today: library grid with animated previews, per-monitor
-apply/stop, property editing from `project.json`, playlists, shared config,
-per-monitor "Load last". Not finished: the Flatpak build (manifest exists, LWE
-module is a placeholder), tray integration, screenshot capture in the UI.
+Pre-release ([v0.3.0-preview](https://github.com/diode701/nyaa-paper/releases)).
+Working: library grid with animated previews, per-monitor apply/stop, property
+editing from `project.json`, playlists, per-monitor "Load last", tray, the
+Flatpak (GUI, daemon and the bundled engine fork
+[nyaa-wallpaperengine](https://github.com/diode701/nyaa-wallpaperengine)).
+Known gaps: presets (workshop items that only reference another wallpaper),
+Flatpak Steam needs a manual override.
 
-Start with `docs/START-HERE.md`; the port checklist is `docs/TODO.md`. Viva/interview notes:
-`docs/DEFENSE.md`.
+Developer docs: `docs/CLIENT-API.md` (D-Bus contract), `docs/TESTING.md`,
+`docs/AUDIT-JAVA-VS-CPP.md` (behaviour compared with the original Java app).
 
 ## Build
 

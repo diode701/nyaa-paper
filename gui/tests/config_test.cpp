@@ -21,7 +21,7 @@ int main()
 
     // missing file: defaults, and the file is created
     AppConfig config = store.load();
-    assert(config.engine.layer == "bottom");
+    assert(config.engine.layer.empty()); // the engine has no --layer: default must send none
     assert(config.preview.animation == "always");
 
     // round trip

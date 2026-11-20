@@ -28,7 +28,10 @@ struct PreviewConfig
 /// saved per monitor in that monitor's WallpaperConfig.
 struct EngineDefaults
 {
-    std::string layer = "bottom";       // Wayland: background | bottom | top | overlay
+    // empty = no --layer flag. The engine (nyaa-wallpaperengine) has no
+    // --layer option: a value here is parsed as the background id and every
+    // wallpaper fails with "Cannot find workshop directory ... content bottom"
+    std::string layer;                  // Wayland: background | bottom | top | overlay
 };
 
 struct UiConfig

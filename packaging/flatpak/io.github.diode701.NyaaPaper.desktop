@@ -5,6 +5,6 @@ Exec=nyaa-paper
 Icon=io.github.diode701.NyaaPaper
 Terminal=false
 Type=Application
-Categories=Utility;Graphics;
+Categories=Utility;
 Keywords=wallpaper;steam;workshop;
 StartupWMClass=io.github.diode701.NyaaPaper

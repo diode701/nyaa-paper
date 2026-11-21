@@ -12,7 +12,9 @@ jobs=${FP_JOBS:-8}          # ~1 GB RAM per compiler on the heavy engine files
 manifest="$here/packaging/flatpak/io.github.diode701.NyaaPaper.json"
 mkdir -p "$state"
 cd "$state"
-flatpak-builder --user --install --force-clean --ccache --jobs="$jobs" \
+# --disable-updates: sources are pinned, reuse mirrors already downloaded
+# (a build then works while e.g. code.videolan.org is down)
+flatpak-builder --user --install --force-clean --ccache --disable-updates --jobs="$jobs" \
     --state-dir=.flatpak-builder build-dir "$manifest"
 if [ "$1" = bundle ]; then
     version=$(grep -o 'release version="[^"]*"' "$here/packaging/flatpak/io.github.diode701.NyaaPaper.metainfo.xml" | head -1 | cut -d'"' -f2)

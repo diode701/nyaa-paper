@@ -2,28 +2,100 @@
 <component type="desktop-application">
   <id>io.github.diode701.NyaaPaper</id>
   <name>Nyaa Paper</name>
-  <summary>Wallpaper Engine frontend for Linux</summary>
+  <summary>Run Steam Workshop wallpapers on your desktop</summary>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>AGPL-3.0-or-later</project_license>
+  <project_license>AGPL-3.0-or-later AND GPL-3.0-only</project_license>
+
   <description>
     <p>
-      Browses Steam Workshop wallpaper subscriptions, assigns them per monitor,
-      and runs them through linux-wallpaperengine. A background daemon owns the
-      engine processes so wallpapers keep playing when the window is closed.
+      Nyaa Paper is a front end for Wallpaper Engine's Steam Workshop wallpapers
+      on Linux. Browse your subscriptions, tune each wallpaper's settings, give
+      every monitor its own wallpaper and build playlists. Wallpapers keep
+      running after the window is closed.
     </p>
     <ul>
-      <li>Per-monitor assignment with persisted settings</li>
-      <li>Playlists with sequential or random order</li>
-      <li>Keyboard-first library with animated previews</li>
+      <li>A different wallpaper on every monitor, each with its own settings and GPU</li>
+      <li>Settings are remembered per monitor and per wallpaper</li>
+      <li>Playlists per monitor, in order or shuffled, with a set interval</li>
+      <li>Scene, video and web wallpapers, with sound, mouse interaction and presets</li>
+      <li>A keyboard-first library with animated previews and themes</li>
     </ul>
+    <p>
+      Wallpaper Engine must be bought and installed through Steam: Nyaa Paper
+      reads its files from your Steam folder and does not include them.
+      Wallpapers are rendered by a bundled fork of linux-wallpaperengine.
+    </p>
   </description>
+
   <launchable type="desktop-id">io.github.diode701.NyaaPaper.desktop</launchable>
-  <url type="homepage">https://github.com/diode701/nyaa-paper</url>
+
+  <url type="homepage">https://github.com/diode701/nyaapaper</url>
+  <url type="bugtracker">https://github.com/diode701/nyaapaper/issues</url>
+  <url type="vcs-browser">https://github.com/diode701/nyaapaper</url>
+
   <developer id="io.github.diode701">
     <name>diode701</name>
   </developer>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#a9c4e8</color>
+    <color type="primary" scheme_preference="dark">#1b1d26</color>
+  </branding>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>The library, with animated previews</caption>
+      <image>https://raw.githubusercontent.com/diode701/nyaapaper/b5541ddb6f1fd848508e3a45e64f581684cf2302/docs/screens/library.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>A wallpaper's settings, applied per monitor</caption>
+      <image>https://raw.githubusercontent.com/diode701/nyaapaper/b5541ddb6f1fd848508e3a45e64f581684cf2302/docs/screens/properties.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Engine options: audio, frame rate, scaling and GPU</caption>
+      <image>https://raw.githubusercontent.com/diode701/nyaapaper/b5541ddb6f1fd848508e3a45e64f581684cf2302/docs/screens/properties-engine.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Playlists for each monitor</caption>
+      <image>https://raw.githubusercontent.com/diode701/nyaapaper/b5541ddb6f1fd848508e3a45e64f581684cf2302/docs/screens/playlist.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Themes and settings</caption>
+      <image>https://raw.githubusercontent.com/diode701/nyaapaper/b5541ddb6f1fd848508e3a45e64f581684cf2302/docs/screens/settings.png</image>
+    </screenshot>
+  </screenshots>
+
+  <categories>
+    <category>Utility</category>
+  </categories>
+
+  <keywords>
+    <keyword>wallpaper</keyword>
+    <keyword>live wallpaper</keyword>
+    <keyword>steam</keyword>
+    <keyword>workshop</keyword>
+    <keyword>desktop</keyword>
+  </keywords>
+
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </supports>
+
   <content_rating type="oars-1.1"/>
+
   <releases>
-    <release version="0.3.0" date="2026-11-19"/>
+    <release version="0.3.0" date="2026-11-21">
+      <description>
+        <p>Rewrite of the JavaFX app as a native daemon and Qt client, shipped as a Flatpak.</p>
+        <ul>
+          <li>Wallpapers keep running when the window is closed</li>
+          <li>Settings remembered per monitor and per wallpaper</li>
+          <li>Presets, user images and animated GIFs in wallpaper settings</li>
+          <li>Web wallpapers with sound, and fixed audio crackling in scenes</li>
+          <li>Title screen, themes and a keyboard-first library</li>
+        </ul>
+      </description>
+    </release>
   </releases>
 </component>

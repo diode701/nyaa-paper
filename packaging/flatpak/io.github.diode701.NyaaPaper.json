@@ -29,14 +29,10 @@
         "env": {
           "CARGO_HOME": "/run/build/nyaa-paperd/cargo",
           "PATH": "/usr/lib/sdk/rust-stable/bin:/usr/bin:/bin"
-        },
-        "build-args": [
-          "--share=network"
-        ],
-        "comment": "network: cargo fetches crates (local builds; Flathub would need generated cargo sources)"
+        }
       },
       "build-commands": [
-        "cargo build --release --manifest-path daemon/Cargo.toml",
+        "cargo --offline build --release --manifest-path daemon/Cargo.toml",
         "install -Dm755 daemon/target/release/nyaa-paperd /app/bin/nyaa-paperd"
       ],
       "sources": [
@@ -49,7 +45,8 @@
             ".git",
             "packaging/flatpak/.flatpak-builder"
           ]
-        }
+        },
+        "cargo-sources.json"
       ]
     },
     {

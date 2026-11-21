@@ -9,7 +9,7 @@
 
 <p align="center">
   <a href="LICENSE.txt"><img src="https://img.shields.io/badge/license-AGPL%20v3-blue"></a>
-  <a href="https://github.com/diode701/nyaa-paper/releases"><img src="https://img.shields.io/github/v/release/diode701/nyaa-paper?include_prereleases&label=latest"></a>
+  <a href="https://github.com/diode701/nyaapaper/releases"><img src="https://img.shields.io/github/v/release/diode701/nyaapaper?include_prereleases&label=latest"></a>
 </p>
 
 ---
@@ -102,7 +102,7 @@ A walkthrough of the original Java version, which this port follows:
 
 ### Flatpak (any distribution)
 
-Download the bundle from [Releases](https://github.com/diode701/nyaa-paper/releases), then:
+Download the bundle from [Releases](https://github.com/diode701/nyaapaper/releases), then:
 
 ```
 flatpak install --user ./nyaa-paper-0.3.0-x86_64.flatpak
@@ -130,7 +130,7 @@ then set the workshop path in Settings → Paths to
 ## Build from source
 
 ```
-git clone https://github.com/diode701/nyaa-paper.git
+git clone https://github.com/diode701/nyaapaper.git
 cd nyaa-paper
 make daemon && make gui      # cargo build; cmake + ninja in gui/build
 make test                    # Rust tests + C++ test suites
@@ -342,7 +342,7 @@ history on branch `java`.
 ## Original Java version
 
 The JavaFX app (AUR `nyaa-paper-bin`, pre-compiled JARs) lives on branch
-[`java`](https://github.com/diode701/nyaa-paper/tree/java) with its own README
+[`java`](https://github.com/diode701/nyaapaper/tree/java) with its own README
 and changelog. This port keeps its design and fixes bugs found along the way:
 Load last only remembered the last wallpaper per monitor, an empty library
 wiped saved configs and playlists, and a corrupt config crashed start-up.

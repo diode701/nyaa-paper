@@ -4,7 +4,7 @@ Hey, thanks for stopping by. This is a small project with a small team (just me)
 
 ## Found a bug?
 
-Open an [issue](https://github.com/diode701/nyaa-paper/issues/new). Tell me:
+Open an [issue](https://github.com/diode701/nyaapaper/issues/new). Tell me:
 
 - your OS, desktop environment, Java version
 - what you were doing
@@ -59,6 +59,6 @@ Write them like you're telling a coworker what changed in five seconds. A prefix
 
 ## Got questions?
 
-Open a [Discussion](https://github.com/diode701/nyaa-paper/discussions). No question is too small — I'd rather answer a silly question than watch you bang your head against something for an hour.
+Open a [Discussion](https://github.com/diode701/nyaapaper/discussions). No question is too small — I'd rather answer a silly question than watch you bang your head against something for an hour.
 
 Or just open an issue. I'll see it.

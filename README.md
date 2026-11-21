@@ -18,7 +18,7 @@ Browse your Wallpaper Engine workshop subscriptions. Tweak each wallpaper's
 properties. Give every monitor its own wallpaper, settings and GPU. Build
 playlists. Close the window — the wallpapers keep running.
 
-This branch (`v2`) is the rewrite of the original JavaFX app (branch `main`):
+This is the rewrite of the original JavaFX app, which lives on branch `java`:
 same design and behaviour, now as two native processes and a Flatpak that
 bundles its own engine. No Java, no JVM heap to tune, no host libraries to
 install.
@@ -130,7 +130,7 @@ then set the workshop path in Settings → Paths to
 ## Build from source
 
 ```
-git clone -b v2 https://github.com/diode701/nyaa-paper.git
+git clone https://github.com/diode701/nyaa-paper.git
 cd nyaa-paper
 make daemon && make gui      # cargo build; cmake + ninja in gui/build
 make test                    # Rust tests + C++ test suites
@@ -313,7 +313,7 @@ property does not break the rest.
 ## Original Java version
 
 The JavaFX app (AUR `nyaa-paper-bin`, pre-compiled JARs) lives on branch
-[`main`](https://github.com/diode701/nyaa-paper/tree/main) with its own README
+[`java`](https://github.com/diode701/nyaa-paper/tree/java) with its own README
 and changelog. This port keeps its design and fixes bugs found along the way:
 Load last only remembered the last wallpaper per monitor, an empty library
 wiped saved configs and playlists, and a corrupt config crashed start-up.

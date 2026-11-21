@@ -82,12 +82,11 @@ int main()
     nyaa::domain::EngineOptions options;
     options.workshopRoot = "/tmp";             // basePath /tmp/1234 is under it -> id
     options.assetsDir = "/opt/assets";
-    options.layer = "bottom";
+    options.layer = "bottom";                  // saved, but not passed: the engine has no --layer yet
     const EngineCommand command = nyaa::domain::Renderer::render("eDP-1", wallpaper, list, globals, gpu, {}, options);
     const std::vector<std::string> expected{
         "--screen-root", "eDP-1", "--bg", "1234",
         "--assets-dir", "/opt/assets",
-        "--layer", "bottom",
         "--volume", "70",
         "--set-property", "bloom=1",
         "--set-property", "fov=0.42",
@@ -152,7 +151,8 @@ int main()
         const auto one = nyaa::domain::Renderer::render("eDP-1", wallpaper, all, gpu, {}, options);
         const auto two = nyaa::domain::Renderer::render("eDP-1", wallpaper, list, g, gpu, {}, options);
         CHECK(one.argv == two.argv);
-        const std::vector<std::string> tail(one.argv.begin() + 8, one.argv.end());
+        // --screen-root eDP-1 --bg 1234 --assets-dir /opt/assets
+        const std::vector<std::string> tail(one.argv.begin() + 6, one.argv.end());
         CHECK((tail == std::vector<std::string>{"--silent", "--disable-mouse", "--clamp", "border",
                                                   "--set-property", "bloom=1", "--set-property", "fov=0.42"}));
         g.reset();

@@ -290,6 +290,28 @@ property does not break the rest.
 
 ---
 
+## Wallpaper layer and compositor overrides
+
+On Wayland the engine draws each wallpaper as a layer-shell surface on the
+**background** layer, with the namespace `linux-wallpaperengine`, below panels,
+icons and windows. Settings → Paths has a "Wayland layer" option, but it is
+**not implemented yet**: the value is saved and not passed to the engine.
+
+To change how the wallpaper is stacked, use your compositor's own rules and
+match the namespace `linux-wallpaperengine`:
+
+- **Hyprland:** `layerrule` with `namespace:linux-wallpaperengine`
+  (for example to change blur or animations on the wallpaper layer)
+- **Sway / other wlroots compositors:** their layer-shell options for the
+  `linux-wallpaperengine` namespace
+- **KDE Plasma (KWin):** the wallpaper sits under the desktop. If Plasma's own
+  desktop wallpaper covers it, set Plasma's wallpaper to a plain or transparent
+  one so the engine's surface shows through
+
+On X11 the engine draws on the root window instead; layer rules do not apply.
+
+---
+
 ## Troubleshooting
 
 - **A wallpaper does not start** — the status bar names the monitor. Run the engine by hand to see why:

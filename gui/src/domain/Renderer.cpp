@@ -83,10 +83,13 @@ EngineCommand Renderer::render(const std::string &monitor, const Wallpaper &wall
         command.argv.push_back("--assets-dir");
         command.argv.push_back(options.assetsDir);
     }
-    if (!options.layer.empty()) {
-        command.argv.push_back("--layer");
-        command.argv.push_back(options.layer);
-    }
+    // Wayland layer: not implemented in the engine yet (it has no --layer
+    // option; passing one made it read the layer name as the wallpaper id).
+    // The setting is kept and saved so it works once the engine supports it.
+    // if (!options.layer.empty()) {
+    //     command.argv.push_back("--layer");
+    //     command.argv.push_back(options.layer);
+    // }
 
     appendScreenshot(command.argv, monitor, screenshot);
 

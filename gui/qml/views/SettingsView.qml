@@ -301,13 +301,16 @@ Item {
                             PathLine { label: "pywal cache"; value: Config.pywalPath; onEdited: t => Config.pywalPath = t }
                             Note { text: "The daemon re-reads these when you save; the library is rescanned." }
                             Line { label: "Wayland layer"
-                                // none = no --layer flag; the engine picks
+                                // saved but not passed on: the engine has no --layer yet
+                                enabled: false
+                                opacity: 0.5
                                 Segmented {
                                     options: ["none", "background", "bottom", "top", "overlay"]
                                     value: Config.layer === "" ? "none" : Config.layer
                                     onPicked: v => Config.layer = (v === "none" ? "" : v)
                                 }
                             }
+                            Note { text: "Wayland layer: not implemented yet. The engine draws on the background layer; to change stacking, use your compositor's rules (see README)." }
                         }
 
                         // ======== Monitors ========

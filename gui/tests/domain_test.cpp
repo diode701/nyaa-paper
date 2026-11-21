@@ -5,6 +5,8 @@
 // Variadic so braced initialisers with commas stay one argument.
 #define CHECK(...) assert((__VA_ARGS__))
 #include <cstdio>
+#include <fstream>
+#include <filesystem>
 
 #include "domain/options/GlobalOptions.h"
 #include "domain/Renderer.h"
@@ -98,6 +100,40 @@ int main()
     nyaa::domain::Wallpaper odd{"9999", "Odd", "scene", "x.pkg", "/elsewhere/9999", ""};
     const EngineCommand byPath = nyaa::domain::Renderer::render("eDP-1", odd, list, globals, gpu, {}, options);
     CHECK(byPath.argv[3] == "/elsewhere/9999");
+
+    // a preset runs the item it belongs to, handing over its saved values
+    nyaa::domain::Wallpaper preset{"7654", "Preset", "scene", "scene.json", "/tmp/7654", ""};
+    preset.dependency = "3122339805";
+    preset.preset = {{"schemecolor", "0 0 0"}, {"bloom", "true"}};
+    const EngineCommand fromPreset = nyaa::domain::Renderer::render("eDP-1", preset, list, globals, gpu, {}, options);
+    CHECK(fromPreset.argv[3] == "3122339805");
+    CHECK(fromPreset.wallpaperId == "7654");
+    const auto hasArg = [&fromPreset](const std::string &a, const std::string &b) {
+        for (std::size_t i = 0; i + 1 < fromPreset.argv.size(); ++i)
+            if (fromPreset.argv[i] == a && fromPreset.argv[i + 1] == b)
+                return true;
+        return false;
+    };
+    CHECK(hasArg("--set-property", "schemecolor=0 0 0"));
+    CHECK(hasArg("--set-property", "bloom=true"));
+
+    // preset images are files in the preset's folder: passed as absolute paths
+    const auto presetDir = std::filesystem::temp_directory_path() / "nyaa-preset-test";
+    std::filesystem::create_directories(presetDir / "files");
+    std::ofstream(presetDir / "files" / "a.gif") << "GIF89a";
+    nyaa::domain::Wallpaper withImage{"7655", "Img", "scene", "scene.json", presetDir.string(), ""};
+    withImage.dependency = "3122339805";
+    withImage.preset = {{"customimageleft", "files/a.gif"}, {"label", "files/missing.gif"}};
+    const EngineCommand imageArgs = nyaa::domain::Renderer::render("eDP-1", withImage, list, globals, gpu, {}, options);
+    const auto has = [&imageArgs](const std::string &b) {
+        for (std::size_t i = 0; i + 1 < imageArgs.argv.size(); ++i)
+            if (imageArgs.argv[i] == "--set-property" && imageArgs.argv[i + 1] == b)
+                return true;
+        return false;
+    };
+    CHECK(has("customimageleft=" + (presetDir / "files" / "a.gif").string()));
+    CHECK(has("label=files/missing.gif"));   // not a file: passed as it is
+    std::filesystem::remove_all(presetDir);
 
     // K2: a GlobalOption IS a Setting (Java: GlobalOption extends Setting), so
     // one list of Setting* renders exactly like the two containers.

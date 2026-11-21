@@ -15,7 +15,12 @@ struct Wallpaper
     std::string file;       // project.json "file" (the video for video wallpapers)
     std::string basePath;   // the wallpaper's folder
     std::string preview;    // preview.jpg / .gif / .png, empty if none
+    /// Workshop item this one is a preset of; empty unless this is a preset
+    std::string dependency;
+    /// Preset values, already formatted for --set-property (key, value)
+    std::vector<std::pair<std::string, std::string>> preset;
 
+    bool isPreset() const { return !dependency.empty(); }
     bool isVideo() const { return type == "video" || type == "Video"; }
 };
 

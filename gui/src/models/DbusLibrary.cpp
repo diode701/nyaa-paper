@@ -76,11 +76,32 @@ void DbusLibrary::onJson(const QString &json)
     for (const QJsonValue &value : array) {
         const QJsonObject obj = value.toObject();
         const QString basePath = obj.value(QStringLiteral("basePath")).toString();
-        items.push_back(WallpaperModel::make(obj.value(QStringLiteral("id")).toString(),
-                                             obj.value(QStringLiteral("title")).toString(),
-                                             obj.value(QStringLiteral("type")).toString(),
-                                             previewFor(basePath), basePath,
-                                             obj.value(QStringLiteral("file")).toString()));
+        auto wallpaper = WallpaperModel::make(obj.value(QStringLiteral("id")).toString(),
+                                              obj.value(QStringLiteral("title")).toString(),
+                                              obj.value(QStringLiteral("type")).toString(),
+                                              previewFor(basePath), basePath,
+                                              obj.value(QStringLiteral("file")).toString());
+        wallpaper.dependency = obj.value(QStringLiteral("dependency")).toString().toStdString();
+
+        // preset values travel as project.json values (strings, numbers, bools);
+        // the engine takes them the same way --set-property does
+        const QJsonObject preset = obj.value(QStringLiteral("preset")).toObject();
+        for (auto it = preset.begin(); it != preset.end(); ++it) {
+            const QJsonValue &value = it.value();
+            QString text;
+            if (value.isBool())
+                text = value.toBool() ? QStringLiteral("true") : QStringLiteral("false");
+            else if (value.isDouble())
+                text = QString::number(value.toDouble(), 'g', 10);
+            else if (value.isString())
+                text = value.toString();
+            else
+                continue;
+
+            wallpaper.preset.emplace_back(it.key().toStdString(), text.toStdString());
+        }
+
+        items.push_back(wallpaper);
     }
 
     emit wallpapersLoaded(items);

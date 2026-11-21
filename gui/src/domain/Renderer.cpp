@@ -1,5 +1,6 @@
 #include "domain/Renderer.h"
 
+#include <filesystem>
 #include <format>
 #include <vector>
 
@@ -73,7 +74,10 @@ EngineCommand Renderer::render(const std::string &monitor, const Wallpaper &wall
     EngineCommand command;
     command.wallpaperId = wallpaper.id;
 
-    command.argv = {"--screen-root", monitor, "--bg", backgroundArgument(wallpaper, options.workshopRoot)};
+    // a preset runs the wallpaper it belongs to, with the values it saved
+    const std::string background
+        = wallpaper.isPreset() ? wallpaper.dependency : backgroundArgument(wallpaper, options.workshopRoot);
+    command.argv = {"--screen-root", monitor, "--bg", background};
 
     if (!options.assetsDir.empty()) {
         command.argv.push_back("--assets-dir");
@@ -85,6 +89,23 @@ EngineCommand Renderer::render(const std::string &monitor, const Wallpaper &wall
     }
 
     appendScreenshot(command.argv, monitor, screenshot);
+
+    // before the settings, so a value edited here wins over the preset's
+    for (const auto &[key, value] : wallpaper.preset) {
+        if (key.empty())
+            continue;
+        // a preset's images (scenetexture values like "files/x.gif") live in the
+        // preset's own folder; the engine runs the dependency, so pass them whole
+        std::string resolved = value;
+        if (!value.empty() && !wallpaper.basePath.empty() && value.front() != '/') {
+            std::error_code error;
+            const std::filesystem::path file = std::filesystem::path(wallpaper.basePath) / value;
+            if (std::filesystem::is_regular_file(file, error))
+                resolved = file.string();
+        }
+        command.argv.push_back("--set-property");
+        command.argv.push_back(key + "=" + resolved);
+    }
 
     // 1. pre-property flags (volume, fps, boolean flags)
     // 2. the rest (scaling, clamp, then every --set-property)

@@ -22,6 +22,11 @@ struct Entry {
     kind: String,
     file: String,
     mtime: i64,
+    /// Workshop item this one is a preset of (project.json "dependency")
+    dependency: String,
+    /// The preset's stored property values, passed to the engine as
+    /// --set-property overrides when the dependency is run
+    preset: serde_json::Value,
 }
 
 struct Inner {
@@ -166,6 +171,8 @@ impl Library {
                     "type": entry.kind,
                     "file": entry.file,
                     "mtime": entry.mtime,
+                    "dependency": entry.dependency,
+                    "preset": entry.preset,
                 })
             })
             .collect();
@@ -233,8 +240,29 @@ fn scan(root: &Path) -> Vec<Entry> {
         }
         let text = |key: &str| value.get(key).and_then(|v| v.as_str()).map(str::to_string);
         let title = text("title").unwrap_or_else(|| id.clone());
-        let kind = text("type").unwrap_or_default();
-        let file = text("file").unwrap_or_default();
+        let mut kind = text("type").unwrap_or_default();
+        let mut file = text("file").unwrap_or_default();
+
+        // A preset (project.json with "dependency" and "preset", no "type") is
+        // a saved configuration of another workshop item: report the type and
+        // file of the item it belongs to, keep its own title/preview, and hand
+        // its values to the engine as overrides.
+        let mut dependency = String::new();
+        let mut preset = serde_json::Value::Null;
+
+        if kind.is_empty() {
+            if let Some(dep) = value.get("dependency").and_then(|v| v.as_str()) {
+                dependency = dep.to_string();
+                preset = value.get("preset").cloned().unwrap_or(serde_json::Value::Null);
+
+                if let Ok(raw) = std::fs::read_to_string(root.join(dep).join("project.json")) {
+                    if let Ok(dep_value) = serde_json::from_str::<serde_json::Value>(&raw) {
+                        kind = dep_value.get("type").and_then(|v| v.as_str()).unwrap_or_default().to_string();
+                        file = dep_value.get("file").and_then(|v| v.as_str()).unwrap_or_default().to_string();
+                    }
+                }
+            }
+        }
 
         let mtime = std::fs::metadata(&project)
             .and_then(|meta| meta.modified())
@@ -250,6 +278,8 @@ fn scan(root: &Path) -> Vec<Entry> {
             kind,
             file,
             mtime,
+            dependency,
+            preset,
         });
     }
 
@@ -271,6 +301,10 @@ mod tests {
             ("300", Some("{ not json")),                     // broken
             ("400", Some(r#"{"type": "video"}"#)),           // no title
             ("500", Some(r#"{"category": "Asset", "title": "A preset"}"#)), // not a wallpaper
+            (
+                "600",
+                Some(r#"{"title": "Preset", "dependency": "100", "preset": {"schemecolor": "0 0 0"}}"#),
+            ),
         ] {
             let dir = root.join(id);
             std::fs::create_dir_all(&dir).unwrap();
@@ -282,10 +316,15 @@ mod tests {
 
         let entries = scan(&root);
         let ids: Vec<&str> = entries.iter().map(|e| e.id.as_str()).collect();
-        assert_eq!(ids, ["100", "400"]);
+        assert_eq!(ids, ["100", "400", "600"]);
         assert_eq!(entries[0].title, "Good");
         assert_eq!(entries[0].kind, "scene");
         assert_eq!(entries[1].title, "400");
+        // the preset borrows the dependency's type and keeps its own values
+        assert_eq!(entries[2].title, "Preset");
+        assert_eq!(entries[2].kind, "scene");
+        assert_eq!(entries[2].dependency, "100");
+        assert_eq!(entries[2].preset["schemecolor"], "0 0 0");
         let _ = std::fs::remove_dir_all(&root);
     }
 }

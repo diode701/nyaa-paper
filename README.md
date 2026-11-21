@@ -310,6 +310,13 @@ property does not break the rest.
 
 ---
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for every release, including the Java app's
+history on branch `java`.
+
+---
+
 ## Original Java version
 
 The JavaFX app (AUR `nyaa-paper-bin`, pre-compiled JARs) lives on branch

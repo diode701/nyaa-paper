@@ -4,7 +4,7 @@
 
 <h1 align="center">Nyaa Paper</h1>
 <p align="center">
-  <em>Steam Workshop wallpapers on Linux — per-monitor, per-GPU, playlists, one Flatpak</em>
+  <em>Steam Workshop wallpapers on Linux. Per-monitor, per-GPU, playlists, one Flatpak</em>
 </p>
 
 <p align="center">
@@ -16,7 +16,7 @@
 
 Browse your Wallpaper Engine workshop subscriptions. Tweak each wallpaper's
 properties. Give every monitor its own wallpaper, settings and GPU. Build
-playlists. Close the window — the wallpapers keep running.
+playlists. Close the window, and the wallpapers keep running.
 
 This is the rewrite of the original JavaFX app, which lives on branch `java`:
 same design and behaviour, now as two native processes and a Flatpak that

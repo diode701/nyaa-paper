@@ -11,7 +11,7 @@ Item {
     implicitHeight: 22
     activeFocusOnTab: true
 
-    function flip() { checked = !checked; toggled(checked) }
+    function flip() { toggled(!checked) }
     Keys.onSpacePressed: flip()
 
     Rectangle {

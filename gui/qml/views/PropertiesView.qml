@@ -69,6 +69,10 @@ Item {
     function openWallpaper() {
         const count = Controller.open(wallpaperId, wallpaperBasePath)
         status = count > 0 ? "Loaded " + count + " custom properties" : "Ready"
+        // Opening the wallpaper that is running here: show what it runs with
+        if (Engine.running[targetMonitor] !== undefined
+                && Controller.runningId(targetMonitor) === wallpaperId)
+            loadLast()
     }
 
     Connections {

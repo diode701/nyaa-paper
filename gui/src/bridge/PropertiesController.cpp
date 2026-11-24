@@ -50,6 +50,11 @@ QString PropertiesController::runningPreview(const QString &monitor) const
     return {};
 }
 
+QString PropertiesController::runningId(const QString &monitor) const
+{
+    return QString::fromStdString(m_store.current(monitor.toStdString()).wallpaperId);
+}
+
 // ---- GPU / screenshot state ------------------------------------------------
 
 QString PropertiesController::gpuMode() const

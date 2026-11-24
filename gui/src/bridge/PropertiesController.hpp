@@ -73,6 +73,8 @@ public:
     int revision() const { return m_revision; }
     /// Preview of what a monitor last ran (its current WallpaperConfig), or "".
     Q_INVOKABLE QString runningPreview(const QString &monitor) const;
+    /// Id of what a monitor last ran (its current WallpaperConfig), or "".
+    Q_INVOKABLE QString runningId(const QString &monitor) const;
 
     /// A new properties view: parse the wallpaper, fresh global options, GPU
     /// back to default. Returns the number of custom properties.
